@@ -15,8 +15,16 @@
     <div id="gameScreen" style="display: none;">
         <canvas id="pongCanvas" width="800" height="600"></canvas>
         <div id="lives">
-            <span id="leftLives">Vidas: 3</span>
-            <span id="rightLives" style="display: none;">Vidas: 3</span>
+            <div id="leftLives">
+                <span class="life" id="leftLife1"></span>
+                <span class="life" id="leftLife2"></span>
+                <span class="life" id="leftLife3"></span>
+            </div>
+            <div id="rightLives" style="display: none;">
+                <span class="life" id="rightLife1"></span>
+                <span class="life" id="rightLife2"></span>
+                <span class="life" id="rightLife3"></span>
+            </div>
         </div>
         <div id="gameOver" style="display: none;">
             <h2>Fim de Jogo!</h2>
@@ -27,4 +35,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
