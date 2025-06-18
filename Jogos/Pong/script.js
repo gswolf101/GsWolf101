@@ -1,3 +1,4 @@
+// Seleção de elementos DOM
 const canvas = document.getElementById('pongCanvas');
 const ctx = canvas.getContext('2d');
 const startScreen = document.getElementById('startScreen');
@@ -10,9 +11,16 @@ const singlePlayerBtn = document.getElementById('singlePlayerBtn');
 const multiPlayerBtn = document.getElementById('multiPlayerBtn');
 const restartBtn = document.getElementById('restartBtn');
 
+// Verifica se todos os elementos foram encontrados
+if (!canvas || !ctx || !startScreen || !gameScreen || !gameOverScreen || 
+    !gameOverMessage || !leftLivesDisplay || !rightLivesDisplay || 
+    !singlePlayerBtn || !multiPlayerBtn || !restartBtn) {
+    console.error('Um ou mais elementos DOM não foram encontrados.');
+}
+
 // Configurações
 const PADDLE_WIDTH = 15;
-const PADDLE_HEIGHT = 120; // Aumentado levemente
+const PADDLE_HEIGHT = 120;
 const BALL_SIZE = 15;
 const PADDLE_SPEED = 6;
 const INITIAL_BALL_SPEED = 4;
@@ -43,7 +51,18 @@ document.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
 
-// Iniciar jogo
+// Função para iniciar o jogo
+function startGame(isSinglePlayer) {
+    singlePlayer = isSinglePlayer;
+    startScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    rightLivesDisplay.style.display = singlePlayer ? 'none' : 'inline';
+    gameStarted = true;
+    resetGame();
+    console.log(`Jogo iniciado no modo: ${singlePlayer ? 'Single-player' : 'Multiplayer'}`);
+}
+
+// Associa eventos aos botões
 singlePlayerBtn.addEventListener('click', () => startGame(true));
 multiPlayerBtn.addEventListener('click', () => startGame(false));
 restartBtn.addEventListener('click', () => {
@@ -52,15 +71,6 @@ restartBtn.addEventListener('click', () => {
     gameScreen.style.display = 'none';
     resetGame();
 });
-
-function startGame(isSinglePlayer) {
-    singlePlayer = isSinglePlayer;
-    startScreen.style.display = 'none';
-    gameScreen.style.display = 'block';
-    rightLivesDisplay.style.display = singlePlayer ? 'none' : 'inline';
-    gameStarted = true;
-    resetGame();
-}
 
 // Função para desenhar os elementos
 function draw() {
@@ -84,7 +94,7 @@ function draw() {
     ctx.moveTo(canvas.width / 2, 0);
     ctx.lineTo(canvas.width / 2, canvas.height);
     ctx.strokeStyle = 'white';
-    ctx.stroke();
+    ctx.stroke  ();
     ctx.setLineDash([]);
 }
 
@@ -176,7 +186,7 @@ function resetGame() {
     leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
     rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
     resetBall();
-    leftLivesDisplay.textContent = `Vidas: ${leftLives}`;
+    leftLives PillsDisplay.textContent = `Vidas: ${leftLives}`;
     rightLivesDisplay.textContent = `Vidas: ${rightLives}`;
     gameOver = false;
     gameStarted = true;
