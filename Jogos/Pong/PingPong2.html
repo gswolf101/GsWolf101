@@ -3,16 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong2</title>
+    <title>Pong</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <canvas id="pongCanvas" width="800" height="600"></canvas>
-    <div id="score">
-        <span id="leftScore">0</span> - <span id="rightScore">0</span>
-        <span id="hitScore" style="display: none;">Acertos: 0</span>
+    <div id="startScreen">
+        <h1>Pong</h1>
+        <button id="singlePlayerBtn">Single Player</button>
+        <button id="multiPlayerBtn">Multiplayer</button>
     </div>
-    <div id="mode">Modo: Single-player (Pressione 'M' para alternar)</div>
+    <div id="gameScreen" style="display: none;">
+        <canvas id="pongCanvas" width="800" height="600"></canvas>
+        <div id="lives">
+            <span id="leftLives">Vidas: 3</span>
+            <span id="rightLives" style="display: none;">Vidas: 3</span>
+        </div>
+        <div id="gameOver" style="display: none;">
+            <h2>Fim de Jogo!</h2>
+            <p id="gameOverMessage"></p>
+            <button id="restartBtn">Jogar Novamente</button>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
