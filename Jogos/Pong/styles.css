@@ -19,7 +19,7 @@ body {
     margin-bottom: 30px;
 }
 
-#startScreen button, #restartBtn {
+#startScreen button, #restartBtn, #rematchBtn, #backToMenuBtn {
     font-size: 2em;
     padding: 15px 30px;
     min-width: 200px;
@@ -32,7 +32,7 @@ body {
     transition: background-color 0.3s;
 }
 
-#startScreen button:hover, #restartBtn:hover {
+#startScreen button:hover, #restartBtn:hover, #rematchBtn:hover, #backToMenuBtn:hover {
     background-color: #ddd;
 }
 
@@ -64,8 +64,25 @@ body {
     font-size: 2.5em;
 }
 
-
 #gameOver p {
     font-size: 1.5em;
     margin-bottom: 20px;
+}
+
+#rankingSection input, #rankingSection button {
+    width: 200px;
+    font-size: 1em;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+}
+
+#rankingSection button {
+    background-color: #fff;
+    color: #000;
+    cursor: pointer;
+}
+
+#rankingSection button:hover {
+    background-color: #ddd;
 }
