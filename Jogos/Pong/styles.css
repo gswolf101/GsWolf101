@@ -15,23 +15,25 @@ body {
 }
 
 #startScreen h1 {
-    font-size: 3em;
-    margin-bottom: 20px;
+    font-size: 4em;
+    margin-bottom: 30px;
 }
 
 #startScreen button, #restartBtn {
-    font-size: 1.5em;
-    padding: 10px 20px;
-    margin: 10px;
+    font-size: 2em; /* Aumentado */
+    padding: 15px 30px; /* Aumentado */
+    min-width: 200px; /* Garante largura mínima */
+    margin: 15px;
     background-color: #fff;
     color: #000;
     border: none;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 8px;
+    transition: background-color 0.3s;
 }
 
 #startScreen button:hover, #restartBtn:hover {
-    background-color: #ccc;
+    background-color: #ddd;
 }
 
 #pongCanvas {
