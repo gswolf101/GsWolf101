@@ -1,0 +1,25 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+}
+
+#pongCanvas {
+    border: 2px solid #fff;
+}
+
+#score {
+    font-size: 2em;
+    margin-top: 10px;
+}
+
+#mode {
+    font-size: 1.2em;
+    margin-top: 10px;
+}
