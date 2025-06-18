@@ -219,3 +219,4 @@ function gameLoop() {
 
 // Inicia o loop
 gameLoop();
+
