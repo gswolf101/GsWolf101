@@ -10,17 +10,47 @@ body {
     font-family: Arial, sans-serif;
 }
 
+#startScreen, #gameScreen, #gameOver {
+    text-align: center;
+}
+
+#startScreen h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+}
+
+#startScreen button, #restartBtn {
+    font-size: 1.5em;
+    padding: 10px 20px;
+    margin: 10px;
+    background-color: #fff;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#startScreen button:hover, #restartBtn:hover {
+    background-color: #ccc;
+}
+
 #pongCanvas {
     border: 2px solid #fff;
 }
 
-#score {
-    font-size: 2em;
+#lives {
+    font-size: 1.5em;
     margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    width: 800px;
 }
 
-#mode {
-    font-size: 1.2em;
-    margin-top: 10px;
+#gameOver h2 {
+    font-size: 2.5em;
 }
 
+#gameOver p {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
