@@ -185,4 +185,37 @@ function updateLivesDisplay() {
     leftLife1.style.display = leftLives >= 1 ? 'inline-block' : 'none';
     leftLife2.style.display = leftLives >= 2 ? 'inline-block' : 'none';
     leftLife3.style.display = leftLives >= 3 ? 'inline-block' : 'none';
-    rightLife1.style.display = rightLives
+    rightLife1.style.display = rightLives >= 1 ? 'inline-block' : 'none';
+    rightLife2.style.display = rightLives >= 2 ? 'inline-block' : 'none';
+    rightLife3.style.display = rightLives >= 3 ? 'inline-block' : 'none';
+}
+
+// Função para resetar a bola
+function resetBall() {
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+    ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
+    ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
+}
+
+// Função para resetar o jogo
+function resetGame() {
+    leftLives = 3;
+    rightLives = 3;
+    leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
+    rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
+    resetBall();
+    updateLivesDisplay();
+    gameOver = false;
+    gameStarted = true;
+}
+
+// Loop do jogo
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Inicia o loop
+gameLoop();
