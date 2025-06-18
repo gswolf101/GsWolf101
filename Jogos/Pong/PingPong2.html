@@ -12,6 +12,7 @@
         <button id="singlePlayerBtn">Single Player</button>
         <button id="multiPlayerBtn">Multiplayer</button>
     </div>
+
     <div id="gameScreen" style="display: none;">
         <canvas id="pongCanvas" width="800" height="600"></canvas>
         <div id="lives">
@@ -26,13 +27,20 @@
                 <span class="life" id="rightLife3"></span>
             </div>
         </div>
-        <div id="gameOver" style="display: none;">
-            <h2>Fim de Jogo!</h2>
-            <p id="gameOverMessage"></p>
-            <button id="restartBtn">Jogar Novamente</button>
-        </div>
     </div>
+
+    <div id="gameOver" style="display: none;">
+        <h2>Fim de Jogo!</h2>
+        <p id="gameOverMessage"></p>
+        <p id="finalScore" style="display:none;"></p>
+        <div id="rankingSection" style="display:none; flex-direction: column; align-items: center; gap: 10px; margin: 10px 0;">
+            <input type="text" id="playerName" placeholder="Seu nome" />
+            <button id="saveScoreBtn">Salvar Pontuação</button>
+        </div>
+        <button id="rematchBtn">Revanche</button>
+        <button id="backToMenuBtn">Voltar ao Menu</button>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
-
