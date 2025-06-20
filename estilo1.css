@@ -119,15 +119,18 @@ div {
     font-size: 75%;
 }
 
+#contrato {
+    
+}
 /*---------- Bloco do Contato----------*/ 
 
-#Centro #contato h2 {
+#contato h2 {
     text-align: center;
     font-size: small;
     color: #3f3f3f;
 }
 
-#Centro #contato h3 {
+#contato h3 {
     font-size: small;
     color: #3f3f3f;
 }
