@@ -1,15 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contatos</title>
-    <link rel="stylesheet" href="estilo1.css"> 
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contatos</title>
+  <link rel="stylesheet" href="estilo1.css" />
+  <script>
+    function validarFormulario() {
+      const nome = document.forms["formContato"]["nome"].value;
+      const idade = document.forms["formContato"]["idade"].value;
+      const email = document.forms["formContato"]["email"].value;
+
+      if (nome === "" || idade === "" || email === "") {
+        alert("Por favor, preencha todos os campos.");
+        return false;
+      }
+      return true;
+    }
+  </script>
 </head>
 <body>
-    <h2>Email: gswolf101@gmail.com</h2>
+  <h2>Email: gswolf101@gmail.com</h2>
+  <h2>Instagram: Você pode entrar em contato na DM 
+    <a href="https://www.instagram.com/gswolf101/">gswolf101</a>
+  </h2>
 
-    <h2>instagram: Você pode entrar em contato na DM <a href="https://www.instagram.com/gswolf101/">gswolf101a></h2>
-    
+  <h3>Entre em contato pelo formulário:</h3>
+  <form name="formContato" onsubmit="return validarFormulario()">
+    <label for="nome">Nome:</label><br />
+    <input type="text" id="nome" name="nome" /><br /><br />
+
+    <label for="idade">Idade:</label><br />
+    <input type="number" id="idade" name="idade" /><br /><br />
+
+    <label for="email">Email:</label><br />
+    <input type="email" id="email" name="email" /><br /><br />
+
+    <input type="submit" value="Enviar" />
+  </form>
 </body>
 </html>
