@@ -10,7 +10,7 @@ body {
     font-family: Arial, sans-serif;
 }
 
-#startScreen, #singlePlayerStartScreen, #gameScreen, #gameOver {
+#startScreen, #singlePlayerStartScreen, #multiplayerStartScreen, #gameScreen, #gameOver {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -18,12 +18,12 @@ body {
     text-align: center;
 }
 
-#startScreen h1, #singlePlayerStartScreen h1 {
+#startScreen h1, #singlePlayerStartScreen h1, #multiplayerStartScreen h1 {
     font-size: 4em;
     margin-bottom: 30px;
 }
 
-#startScreen button, #singlePlayerStartScreen button, #rematchBtn, #backToMenuBtn {
+#startScreen button, #singlePlayerStartScreen button, #multiplayerStartScreen button, #rematchBtn, #backToMenuBtn {
     font-size: 2em;
     padding: 15px 30px;
     min-width: 200px;
@@ -36,8 +36,39 @@ body {
     transition: background-color 0.3s;
 }
 
-#startScreen button:hover, #singlePlayerStartScreen button:hover, #rematchBtn:hover, #backToMenuBtn:hover {
+#startScreen button:hover, #singlePlayerStartScreen button:hover, #multiplayerStartScreen button:hover, #rematchBtn:hover, #backToMenuBtn:hover {
     background-color: #ddd;
+}
+
+.controls {
+    margin: 20px 0;
+    width: 400px;
+    text-align: left;
+}
+
+.controls h2 {
+    font-size: 1.8em;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.controls p {
+    font-size: 1.2em;
+    margin: 10px 0 5px;
+}
+
+.controls ul {
+    list-style: none;
+    padding: 0;
+    font-size: 1.1em;
+}
+
+.controls ul li {
+    margin: 5px 0;
+}
+
+.controls ul li strong {
+    color: #ff0; /* Amarelo para destaque das teclas */
 }
 
 #pongCanvas {
