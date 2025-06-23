@@ -1,128 +1,128 @@
 body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #000;
-    color: #fff;
-    font-family: Arial, sans-serif;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ height: 100vh;
+ margin: 0;
+ background-color: #000;
+ color: #fff;
+ font-family: Arial, sans-serif;
 }
 
 #startScreen, #singlePlayerStartScreen, #gameScreen, #gameOver {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ text-align: center;
 }
 
 #startScreen h1, #singlePlayerStartScreen h1 {
-    font-size: 4em;
-    margin-bottom: 30px;
+ font-size: 4em;
+ margin-bottom: 30px;
 }
 
 #startScreen button, #singlePlayerStartScreen button, #rematchBtn, #backToMenuBtn {
-    font-size: 2em;
-    padding: 15px 30px;
-    min-width: 200px;
-    margin: 15px;
-    background-color: #fff;
-    color: #000;
-    border: none;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: background-color 0.3s;
+ font-size: 2em;
+ padding: 15px 30px;
+ min-width: 200px;
+ margin: 15px;
+ background-color: #fff;
+ color: #000;
+ border: none;
+ cursor: pointer;
+ border-radius: 8px;
+ transition: background-color 0.3s;
 }
 
 #startScreen button:hover, #singlePlayerStartScreen button:hover, #rematchBtn:hover, #backToMenuBtn:hover {
-    background-color: #ddd;
+ background-color: #ddd;
 }
 
 #pongCanvas {
-    border: 2px solid #fff;
+ border: 2px solid #fff;
 }
 
 #lives {
-    display: flex;
-    justify-content: space-between;
-    width: 800px;
-    margin-top: 10px;
+ display: flex;
+ justify-content: space-between;
+ width: 800px;
+ margin-top: 10px;
 }
 
 #leftLives, #rightLives {
-    display: flex;
-    gap: 10px;
+ display: flex;
+ gap: 10px;
 }
 
 .life {
-    width: 20px;
-    height: 20px;
-    background-color: red;
-    border-radius: 50%;
-    display: inline-block;
+ width: 20px;
+ height: 20px;
+ background-color: red;
+ border-radius: 50%;
+ display: inline-block;
 }
 
 #scoreDisplay {
-    color: white;
-    font-size: 1.5em;
-    text-align: center;
-    margin-top: 10px;
+ color: white;
+ font-size: 1.5em;
+ text-align: center;
+ margin-top: 10px;
 }
 
 #gameOver h2 {
-    font-size: 2.5em;
+ font-size: 2.5em;
 }
 
 #gameOver p {
-    font-size: 1.5em;
-    margin-bottom: 20px;
+ font-size: 1.5em;
+ margin-bottom: 20px;
 }
 
 #rankingSection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin: 10px 0;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ gap: 10px;
+ margin: 10px 0;
 }
 
 #rankingSection input, #rankingSection button {
-    width: 200px;
-    font-size: 1em;
-    padding: 10px;
-    border-radius: 5px;
-    border: none;
+ width: 200px;
+ font-size: 1em;
+ padding: 10px;
+ border-radius: 5px;
+ border: none;
 }
 
 #rankingSection button {
-    background-color: #fff;
-    color: #000;
-    cursor: pointer;
+ background-color: #fff;
+ color: #000;
+ cursor: pointer;
 }
 
 #rankingSection button:hover {
-    background-color: #ddd;
+ background-color: #ddd;
 }
 
 .ranking {
-    margin: 20px 0;
-    width: 300px;
+ margin: 20px 0;
+ width: 300px;
 }
 
 .ranking h2 {
-    font-size: 1.8em;
-    margin-bottom: 10px;
+ font-size: 1.8em;
+ margin-bottom: 10px;
 }
 
 .ranking ol {
-    list-style-position: inside;
-    padding: 0;
-    font-size: 1.2em;
-    text-align: left;
+ list-style-position: inside;
+ padding: 0;
+ font-size: 1.2em;
+ text-align: left;
 }
 
 .ranking li {
-    margin: 5px 0;
+ margin: 5px 0;
 }
