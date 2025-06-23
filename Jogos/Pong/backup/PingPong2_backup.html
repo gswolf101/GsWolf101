@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body id="gameBody">
+    <div id="startScreen">
+        <h1>Pong</h1>
+        <button id="singlePlayerBtn">Single Player</button>
+        <button id="multiPlayerBtn">Multiplayer</button>
+    </div>
+
+    <div id="singlePlayerStartScreen" style="display: none;">
+        <h1>Pong - Solo</h1>
+        <div id="initialRanking" class="ranking">
+            <h2>Ranking</h2>
+            <ol id="initialRankingList"></ol>
+        </div>
+        <button id="startSinglePlayerGameBtn">Começar</button>
+        <button id="backToMenuSinglePlayerBtn">Voltar</button>
+    </div>
+
+    <div id="multiplayerStartScreen" style="display: none;">
+        <h1>Pong - Multiplayer</h1>
+        <div class="controls">
+            <h2>Controles</h2>
+            <p><strong>Jogador 1 (Esquerda):</strong></p>
+            <ul>
+                <li><strong>W</strong>: Subir raquete</li>
+                <li><strong>S</strong>: Descer raquete</li>
+                <li><strong>E</strong>: Ativar poder</li>
+            </ul>
+            <p><strong>Jogador 2 (Direita):</strong></p>
+            <ul>
+                <li><strong>Arrow Up</strong>: Subir raquete</li>
+                <li><strong>Arrow Down</strong>: Descer raquete</li>
+                <li><strong>Enter</strong>: Ativar poder</li>
+            </ul>
+            <p class="description">Poderes: Escudo (2s), Raio (lança após 2s), Inversão (reverte).</p>
+        </div>
+        <button id="startMultiplayerGameBtn">Começar</button>
+        <button id="backToMenuMultiplayerBtn">Voltar</button>
+    </div>
+
+    <div id="gameScreen" style="display: none;">
+        <canvas id="pongCanvas" width="800" height="600"></canvas>
+        <div id="lives">
+            <div id="leftLives">
+                <span class="life" id="leftLife1"></span>
+                <span class="life" id="leftLife2"></span>
+                <span class="life" id="leftLife3"></span>
+                <div id="leftPower" class="power-display">Poder: Nenhum</div>
+            </div>
+            <div id="rightLives" style="display: none;">
+                <span class="life" id="rightLife1"></span>
+                <span class="life" id="rightLife2"></span>
+                <span class="life" id="rightLife3"></span>
+                <div id="rightPower" class="power-display">Poder: Nenhum</div>
+            </div>
+        </div>
+        <div id="scoreDisplay" style="display: none; color: white; font-size: 1.5em; text-align: center; margin-top: 10px;">
+            Pontuação: <span id="currentScore">0</span> | Gols: <span id="currentGoals">0</span>
+        </div>
+    </div>
+
+    <div id="gameOver" style="display: none;">
+        <h2>Fim de Jogo!</h2>
+        <p id="gameOverMessage"></p>
+        <p id="finalScore" style="display: none;"></p>
+        <div id="finalRanking" class="ranking" style="display: none;">
+            <h2>Ranking</h2>
+            <ol id="finalRankingList"></ol>
+        </div>
+        <div id="rankingSection" style="display: none; flex-direction: column; align-items: center; gap: 10px; margin: 10px 0;">
+            <input type="text" id="playerName" placeholder="Seu nome" />
+            <button id="saveScoreBtn">Salvar Pontuação</button>
+        </div>
+        <button id="rematchBtn">Revanche</button>
+        <button id="backToMenuBtn">Voltar ao Menu</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
