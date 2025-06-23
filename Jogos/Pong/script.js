@@ -33,9 +33,9 @@ const PADDLE_HEIGHT = 120;
 const BALL_SIZE = 15;
 const PADDLE_SPEED = 6;
 const INITIAL_BALL_SPEED = 4;
-const BALL_SPEED_INCREMENT = 0.2;
-const MAX_BALL_SPEED = 8;
-const AI_PADDLE_SPEED = 4;
+const BALL_SPEED_INCREMENT = 0.3; // Aumentado para aceleração mais perceptível
+const MAX_BALL_SPEED = 12; // Aumentado de 8 para 12
+const AI_PADDLE_SPEED = 4.5; // Aumentado ligeiramente para acompanhar a bola mais rápida
 
 let ballX = canvas.width / 2;
 let ballY = canvas.height / 2;
@@ -50,9 +50,11 @@ let gameStarted = false;
 let gameOver = false;
 let score = 0;
 
-let keys = {};
+// Array para armazenar as posições do rastro da bola
+const trail = [];
+const TRAIL_LENGTH = 10; // Número de posições no rastro
 
-// Carregar ranking do localStorage
+let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
 
 document.addEventListener('keydown', (e) => (keys[e.key] = true));
@@ -104,8 +106,8 @@ saveScoreBtn.addEventListener('click', () => {
     const name = playerNameInput.value.trim();
     if (name) {
         ranking.push({ name, score });
-        ranking.sort((a, b) => b.score - a.score); // Ordenar do maior para o menor
-        ranking = ranking.slice(0, 10); // Limitar a 10 entradas
+        ranking.sort((a, b) => b.score - a.score);
+        ranking = ranking.slice(0, 10);
         localStorage.setItem('pongRanking', JSON.stringify(ranking));
         updateRankingDisplay();
         alert('Pontuação salva com sucesso!');
@@ -136,6 +138,19 @@ function draw() {
     ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
     ctx.fillRect(canvas.width - PADDLE_WIDTH, rightPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
 
+    // Desenhar o rastro da bola
+    trail.forEach((pos, index) => {
+        ctx.beginPath();
+        const opacity = (index + 1) / TRAIL_LENGTH; // Opacidade aumenta com a proximidade da bola
+        ctx.globalAlpha = opacity * 0.5; // Máximo de 50% de opacidade
+        ctx.arc(pos.x, pos.y, (BALL_SIZE / 2) * (0.5 + 0.5 * opacity), 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.closePath();
+        ctx.globalAlpha = 1; // Restaurar opacidade padrão
+    });
+
+    // Desenhar a bola principal
     ctx.beginPath();
     ctx.arc(ballX, ballY, BALL_SIZE / 2, 0, Math.PI * 2);
     ctx.fillStyle = 'white';
@@ -168,6 +183,12 @@ function update() {
             rightPaddleY -= AI_PADDLE_SPEED;
         }
         rightPaddleY = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, rightPaddleY));
+    }
+
+    // Atualizar o rastro da bola
+    trail.push({ x: ballX, y: ballY });
+    if (trail.length > TRAIL_LENGTH) {
+        trail.shift();
     }
 
     ballX += ballSpeedX;
@@ -252,6 +273,7 @@ function resetBall() {
     ballY = canvas.height / 2;
     ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
+    trail.length = 0; // Limpar o rastro ao resetar a bola
 }
 
 function resetGame() {
