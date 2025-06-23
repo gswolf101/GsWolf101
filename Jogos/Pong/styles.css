@@ -68,7 +68,7 @@ body {
 }
 
 .controls ul li strong {
-    color: #ff0; /* Amarelo para destaque das teclas */
+    color: #ff0;
 }
 
 #pongCanvas {
