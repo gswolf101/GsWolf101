@@ -67,6 +67,7 @@ let lastBoxSpawnTime = 0;
 let isBallPaused = false;
 let pauseStartTime = 0;
 let pendingLightningLaunch = null;
+let powerCounts = { shield: 0, lightning: 0, reverse: 0 }; // Contador para depuração
 
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
@@ -197,7 +198,7 @@ function draw() {
 
     ctx.beginPath();
     ctx.arc(ballX, ballY, BALL_SIZE / 2, 0, Math.PI * 2);
-    ctx.fillStyle = isBallPaused ? '#800080' : 'white'; // Roxo durante pausa
+    ctx.fillStyle = isBallPaused ? '#800080' : 'white';
     ctx.fill();
     ctx.closePath();
 
@@ -209,7 +210,6 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Contagem regressiva para o Raio
     if (isBallPaused) {
         ctx.font = '20px Arial';
         ctx.fillStyle = 'white';
@@ -232,7 +232,8 @@ function getRandomPower() {
     const powers = ['shield', 'lightning', 'reverse'];
     const randomIndex = Math.floor(Math.random() * powers.length);
     const selectedPower = powers[randomIndex];
-    console.log(`Poder sorteado: ${selectedPower} (índice: ${randomIndex})`);
+    powerCounts[selectedPower]++;
+    console.log(`Poder sorteado: ${selectedPower} (índice: ${randomIndex})`, powerCounts);
     return selectedPower;
 }
 
@@ -263,18 +264,21 @@ function activatePower(player) {
             speedY: 0
         };
         lastPlayerTouched = player;
+        console.log(`Raio ativado para ${player}: Pausado em x=${ballX}, y=${ballY}`);
     } else if (power === 'reverse') {
         ballSpeedX = -ballSpeedX;
         ballSpeedY = -ballSpeedY;
-        console.log(`Inversão ativada: Velocidade X=${ballSpeedX}, Y=${ballSpeedY}`);
+        console.log(`Inversão ativada: Velocidade X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
     }
 
     if (player === 'left') {
         leftPower = null;
         leftPowerDisplay.textContent = 'Poder: Nenhum';
+        leftPowerDisplay.className = 'power-display';
     } else {
         rightPower = null;
         rightPowerDisplay.textContent = 'Poder: Nenhum';
+        rightPowerDisplay.className = 'power-display';
     }
 }
 
@@ -299,15 +303,17 @@ function update() {
 
     if (isBallPaused && pendingLightningLaunch) {
         if (Date.now() - pauseStartTime >= LIGHTNING_PAUSE_DURATION) {
-            ballSpeedX = pendingLightningLaunch.speedX;
-            ballSpeedY = pendingLightningLaunch.speedY;
+            console.log(`Lançando bola: speedX=${pendingLightningLaunch.speedX}, speedY=${pendingLightningLaunch.speedY}`);
+            ballSpeedX = pendingLightningLaunch.speedX || 0;
+            ballSpeedY = pendingLightningLaunch.speedY || 0;
             isBallPaused = false;
             pendingLightningLaunch = null;
-        }
-        if (pendingLightningLaunch.player === 'left') {
-            ballY = leftPaddleY + PADDLE_HEIGHT / 2;
         } else {
-            ballY = rightPaddleY + PADDLE_HEIGHT / 2;
+            if (pendingLightningLaunch.player === 'left') {
+                ballY = leftPaddleY + PADDLE_HEIGHT / 2;
+            } else {
+                ballY = rightPaddleY + PADDLE_HEIGHT / 2;
+            }
         }
         trail = [];
         return;
@@ -363,9 +369,11 @@ function update() {
                 if (lastPlayerTouched === 'left') {
                     leftPower = power;
                     leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : 'Inversão'}`;
+                    leftPowerDisplay.className = `power-display power-${power}`;
                 } else {
                     rightPower = power;
                     rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : 'Inversão'}`;
+                    rightPowerDisplay.className = `power-display power-${power}`;
                 }
             }
             mysteryBox = null;
@@ -381,11 +389,13 @@ function update() {
         leftShieldActive = false;
         leftPower = null;
         leftPowerDisplay.textContent = 'Poder: Nenhum';
+        leftPowerDisplay.className = 'power-display';
     }
     if (rightShieldActive && Date.now() > rightShieldEndTime) {
         rightShieldActive = false;
         rightPower = null;
         rightPowerDisplay.textContent = 'Poder: Nenhum';
+        rightPowerDisplay.className = 'power-display';
     }
 
     if (ballX <= BALL_SIZE / 2) {
@@ -482,8 +492,11 @@ function resetGame() {
     lastBoxSpawnTime = 0;
     isBallPaused = false;
     pendingLightningLaunch = null;
+    powerCounts = { shield: 0, lightning: 0, reverse: 0 };
     leftPowerDisplay.textContent = 'Poder: Nenhum';
+    leftPowerDisplay.className = 'power-display';
     rightPowerDisplay.textContent = 'Poder: Nenhum';
+    rightPowerDisplay.className = 'power-display';
     updateLivesDisplay();
     updateScoreDisplay();
     gameOver = false;
