@@ -20,6 +20,7 @@ const startSinglePlayerGameBtn = document.getElementById('startSinglePlayerGameB
 const rematchBtn = document.getElementById('rematchBtn');
 const backToMenuBtn = document.getElementById('backToMenuBtn');
 const currentScoreDisplay = document.getElementById('currentScore');
+const currentGoalsDisplay = document.getElementById('currentGoals');
 
 const leftLife1 = document.getElementById('leftLife1');
 const leftLife2 = document.getElementById('leftLife2');
@@ -35,7 +36,8 @@ const PADDLE_SPEED = 6;
 const INITIAL_BALL_SPEED = 4;
 const BALL_SPEED_INCREMENT = 0.4;
 const MAX_BALL_SPEED = 14;
-const AI_PADDLE_SPEED = 5;
+const AI_PADDLE_SPEED = 7; // Aumentado para IA mais rápida
+const AI_TRACKING_MARGIN = 10; // Reduzido para acompanhamento mais preciso
 const TRAIL_LENGTH = 12;
 
 let ballX = canvas.width / 2;
@@ -50,6 +52,7 @@ let singlePlayer = false;
 let gameStarted = false;
 let gameOver = false;
 let score = 0;
+let goals = 0; // Novo contador de gols
 let trail = [];
 
 let keys = {};
@@ -179,9 +182,9 @@ function update() {
         if (keys['ArrowDown'] && rightPaddleY < canvas.height - PADDLE_HEIGHT) rightPaddleY += PADDLE_SPEED;
     } else {
         const paddleCenter = rightPaddleY + PADDLE_HEIGHT / 2;
-        if (paddleCenter < ballY - 35) {
+        if (paddleCenter < ballY - AI_TRACKING_MARGIN) {
             rightPaddleY += AI_PADDLE_SPEED;
-        } else if (paddleCenter > ballY + 35) {
+        } else if (paddleCenter > ballY + AI_TRACKING_MARGIN) {
             rightPaddleY -= AI_PADDLE_SPEED;
         }
         rightPaddleY = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, rightPaddleY));
@@ -206,7 +209,7 @@ function update() {
     if (ballSpeedX < 0 && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
-        ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2); // Corrigido: ajusta velocidade, não posição
+        ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = leftPaddle.x + leftPaddle.width + BALL_SIZE / 2;
         if (singlePlayer) score++;
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
@@ -221,7 +224,9 @@ function update() {
 
     if (ballX <= BALL_SIZE / 2) {
         leftLives--;
+        if (singlePlayer) goals++; // Incrementar gols no single-player
         updateLivesDisplay();
+        updateScoreDisplay();
         resetBall();
     } else if (ballX >= canvas.width - BALL_SIZE / 2) {
         rightLives--;
@@ -268,6 +273,9 @@ function updateScoreDisplay() {
     if (currentScoreDisplay) {
         currentScoreDisplay.textContent = score;
     }
+    if (currentGoalsDisplay) {
+        currentGoalsDisplay.textContent = goals;
+    }
 }
 
 function resetBall() {
@@ -282,6 +290,7 @@ function resetGame() {
     leftLives = 3;
     rightLives = 3;
     score = 0;
+    goals = 0; // Resetar gols
     leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
     rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
     ballX = canvas.width / 2;
