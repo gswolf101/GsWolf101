@@ -10,7 +10,7 @@ body {
     font-family: Arial, sans-serif;
 }
 
-#startScreen, #gameScreen, #gameOver {
+#startScreen, #singlePlayerStartScreen, #gameScreen, #gameOver {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -18,12 +18,12 @@ body {
     text-align: center;
 }
 
-#startScreen h1 {
+#startScreen h1, #singlePlayerStartScreen h1 {
     font-size: 4em;
     margin-bottom: 30px;
 }
 
-#startScreen button, #rematchBtn, #backToMenuBtn {
+#startScreen button, #singlePlayerStartScreen button, #rematchBtn, #backToMenuBtn {
     font-size: 2em;
     padding: 15px 30px;
     min-width: 200px;
@@ -36,7 +36,7 @@ body {
     transition: background-color 0.3s;
 }
 
-#startScreen button:hover, #rematchBtn:hover, #backToMenuBtn:hover {
+#startScreen button:hover, #singlePlayerStartScreen button:hover, #rematchBtn:hover, #backToMenuBtn:hover {
     background-color: #ddd;
 }
 
@@ -102,7 +102,27 @@ body {
     cursor: pointer;
 }
 
-
 #rankingSection button:hover {
     background-color: #ddd;
+}
+
+.ranking {
+    margin: 20px 0;
+    width: 300px;
+}
+
+.ranking h2 {
+    font-size: 1.8em;
+    margin-bottom: 10px;
+}
+
+.ranking ol {
+    list-style-position: inside;
+    padding: 0;
+    font-size: 1.2em;
+    text-align: left;
+}
+
+.ranking li {
+    margin: 5px 0;
 }
