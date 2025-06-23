@@ -2,6 +2,7 @@ const canvas = document.getElementById('pongCanvas');
 const ctx = canvas.getContext('2d');
 const startScreen = document.getElementById('startScreen');
 const singlePlayerStartScreen = document.getElementById('singlePlayerStartScreen');
+const multiplayerStartScreen = document.getElementById('multiplayerStartScreen');
 const gameScreen = document.getElementById('gameScreen');
 const gameOverScreen = document.getElementById('gameOver');
 const gameOverMessage = document.getElementById('gameOverMessage');
@@ -17,6 +18,7 @@ const rightLivesContainer = document.getElementById('rightLives');
 const singlePlayerBtn = document.getElementById('singlePlayerBtn');
 const multiPlayerBtn = document.getElementById('multiPlayerBtn');
 const startSinglePlayerGameBtn = document.getElementById('startSinglePlayerGameBtn');
+const startMultiplayerGameBtn = document.getElementById('startMultiplayerGameBtn');
 const rematchBtn = document.getElementById('rematchBtn');
 const backToMenuBtn = document.getElementById('backToMenuBtn');
 const currentScoreDisplay = document.getElementById('currentScore');
@@ -52,14 +54,14 @@ let gameOver = false;
 let score = 0;
 let goals = 0;
 let trail = [];
-let lastPlayerTouched = null; // Identificador do último jogador
-let mysteryBox = null; // Caixa misteriosa
-let leftPower = null; // Poder do jogador esquerdo
-let rightPower = null; // Poder do jogador direito
-let leftShieldActive = false; // Escudo ativo (esquerdo)
-let rightShieldActive = false; // Escudo ativo (direito)
-let leftShieldEndTime = 0; // Tempo de expiração do escudo
-let rightShieldEndTime = 0; // Tempo de expiração do escudo
+let lastPlayerTouched = null;
+let mysteryBox = null;
+let leftPower = null;
+let rightPower = null;
+let leftShieldActive = false;
+let rightShieldActive = false;
+let leftShieldEndTime = 0;
+let rightShieldEndTime = 0;
 let lastBoxSpawnTime = 0;
 
 let keys = {};
@@ -67,7 +69,6 @@ let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
 
 document.addEventListener('keydown', (e) => {
     keys[e.key] = true;
-    // Ativar poderes
     if (e.key === 'e' && leftPower && !gameOver) {
         activatePower('left');
     }
@@ -80,6 +81,7 @@ document.addEventListener('keyup', (e) => (keys[e.key] = false));
 function hideAllScreens() {
     startScreen.style.display = 'none';
     singlePlayerStartScreen.style.display = 'none';
+    multiplayerStartScreen.style.display = 'none';
     gameScreen.style.display = 'none';
     gameOverScreen.style.display = 'none';
 }
@@ -88,6 +90,11 @@ function showSinglePlayerScreen() {
     hideAllScreens();
     singlePlayerStartScreen.style.display = 'flex';
     updateRankingDisplay();
+}
+
+function showMultiplayerScreen() {
+    hideAllScreens();
+    multiplayerStartScreen.style.display = 'flex';
 }
 
 function startGame(isSinglePlayer) {
@@ -101,8 +108,9 @@ function startGame(isSinglePlayer) {
 }
 
 singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
-multiPlayerBtn.addEventListener('click', () => startGame(false));
+multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
 startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
+startMultiplayerGameBtn.addEventListener('click', () => startGame(false));
 
 rematchBtn.addEventListener('click', () => {
     hideAllScreens();
@@ -157,13 +165,11 @@ function draw() {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Desenhar raquetes com escudo, se ativo
     ctx.fillStyle = leftShieldActive ? '#00f' : 'white';
     ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
     ctx.fillStyle = rightShieldActive ? '#00f' : 'white';
     ctx.fillRect(canvas.width - PADDLE_WIDTH, rightPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
 
-    // Desenhar caixa misteriosa
     if (mysteryBox) {
         ctx.fillStyle = 'yellow';
         ctx.fillRect(mysteryBox.x, mysteryBox.y, MYSTERY_BOX_SIZE, MYSTERY_BOX_SIZE);
@@ -174,7 +180,6 @@ function draw() {
         ctx.fillText('?', mysteryBox.x + MYSTERY_BOX_SIZE / 2, mysteryBox.y + MYSTERY_BOX_SIZE / 2);
     }
 
-    // Desenhar rastro da bola
     trail.forEach((pos, index) => {
         ctx.beginPath();
         const opacity = (index + 1) / TRAIL_LENGTH;
@@ -186,14 +191,12 @@ function draw() {
     });
     ctx.globalAlpha = 1;
 
-    // Desenhar bola
     ctx.beginPath();
     ctx.arc(ballX, ballY, BALL_SIZE / 2, 0, Math.PI * 2);
     ctx.fillStyle = 'white';
     ctx.fill();
     ctx.closePath();
 
-    // Desenhar linha central
     ctx.setLineDash([5, 15]);
     ctx.beginPath();
     ctx.moveTo(canvas.width / 2, 0);
@@ -241,7 +244,6 @@ function activatePower(player) {
         ballSpeedY = -ballSpeedY;
     }
 
-    // Limpar poder após uso
     if (player === 'left') {
         leftPower = null;
         leftPowerDisplay.textContent = 'Poder: Nenhum';
@@ -282,7 +284,6 @@ function update() {
         ballSpeedY = -ballSpeedY;
     }
 
-    // Colisão com raquetes
     const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
     const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
@@ -305,7 +306,6 @@ function update() {
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
     }
 
-    // Colisão com caixa misteriosa
     if (mysteryBox) {
         const box = {
             x: mysteryBox.x,
@@ -324,17 +324,15 @@ function update() {
                     rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : 'Inversão'}`;
                 }
             }
-            mysteryBox = null; // Remove a caixa após ser acertada
+            mysteryBox = null;
         }
     }
 
-    // Gerar nova caixa misteriosa
     if (!mysteryBox && Date.now() - lastBoxSpawnTime > MYSTERY_BOX_SPAWN_INTERVAL && Math.random() < 0.01) {
         spawnMysteryBox();
         lastBoxSpawnTime = Date.now();
     }
 
-    // Gerenciar escudos
     if (leftShieldActive && Date.now() > leftShieldEndTime) {
         leftShieldActive = false;
         leftPower = null;
@@ -346,7 +344,6 @@ function update() {
         rightPowerDisplay.textContent = 'Poder: Nenhum';
     }
 
-    // Perda de vida
     if (ballX <= BALL_SIZE / 2) {
         if (!leftShieldActive) {
             leftLives--;
@@ -413,7 +410,7 @@ function resetBall() {
     ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     trail = [];
-    lastPlayerTouched = null; // Resetar último jogador
+    lastPlayerTouched = null;
 }
 
 function resetGame() {
