@@ -102,6 +102,10 @@ body {
     margin-left: 10px;
 }
 
+.power-display.power-shield { color: #00f; }
+.power-display.power-lightning { color: #800080; }
+.power-display.power-reverse { color: #f00; }
+
 #scoreDisplay {
     color: white;
     font-size: 1.5em;
