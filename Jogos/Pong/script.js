@@ -70,6 +70,7 @@ let isBallPaused = false;
 let pauseStartTime = 0;
 let pendingLightningLaunch = null;
 let powerCounts = { shield: 0, lightning: 0, reverse: 0 };
+let animationFrameId = null;
 
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
@@ -94,17 +95,20 @@ function hideAllScreens() {
 }
 
 function showStartScreen() {
+    console.log('Exibindo menu principal');
     hideAllScreens();
     startScreen.style.display = 'flex';
 }
 
 function showSinglePlayerScreen() {
+    console.log('Exibindo tela de single-player');
     hideAllScreens();
     singlePlayerStartScreen.style.display = 'flex';
     updateRankingDisplay();
 }
 
 function showMultiplayerScreen() {
+    console.log('Exibindo tela de multiplayer');
     hideAllScreens();
     multiplayerStartScreen.style.display = 'flex';
 }
@@ -129,6 +133,10 @@ backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
 
 rematchBtn.addEventListener('click', () => {
     console.log('Revanche iniciada');
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
     hideAllScreens();
     gameScreen.style.display = 'flex';
     rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
@@ -139,12 +147,16 @@ rematchBtn.addEventListener('click', () => {
     playerNameInput.value = '';
     saveScoreBtn.disabled = false;
     resetGame();
-    gameOver = false; // Explicitamente resetar gameOver
-    gameLoop(); // Reiniciar o loop
+    gameOver = false;
+    gameLoop();
 });
 
 backToMenuBtn.addEventListener('click', () => {
     console.log('Voltando ao menu principal');
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
     showStartScreen();
     rankingSection.style.display = 'none';
     finalRanking.style.display = 'none';
@@ -284,16 +296,16 @@ function activatePower(player) {
     } else if (power === 'reverse') {
         ballSpeedX = -ballSpeedX;
         ballSpeedY = -ballSpeedY;
-        console.log(`Inversão ativado: Velocidade X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+        console.log(`Inversão ativada: Velocidade X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
     }
 
     if (player === 'left') {
         leftPower = null;
-        leftPowerDisplay.textContent = 'Poder: nenhum';
+        leftPowerDisplay.textContent = 'Poder: Nenhum';
         leftPowerDisplay.className = 'power-display';
     } else {
         rightPower = null;
-        rightPowerDisplay.textContent = 'Poder: nenhum';
+        rightPowerDisplay.textContent = 'Poder: Nenhum';
         rightPowerDisplay.className = 'power-display';
     }
 }
@@ -301,20 +313,20 @@ function activatePower(player) {
 function update() {
     if (!gameStarted || gameOver) return;
 
-    if (keys['w'] && leftPaddleY > 1) leftPaddleY -= PADDLE_SPEED;
-    if (keys['s'] && leftPaddleY < canvas.height - PADDLE_HEIGHT - 1) leftPaddleY += PADDLE_SPEED;
+    if (keys['w'] && leftPaddleY > 0) leftPaddleY -= PADDLE_SPEED;
+    if (keys['s'] && leftPaddleY < canvas.height - PADDLE_HEIGHT) leftPaddleY += PADDLE_SPEED;
 
     if (!singlePlayer) {
-        if (keys['ArrowUp'] && rightPaddleY > 1) rightPaddleY -= PADDLE_SPEED;
-        if (keys['ArrowDown'] && rightPaddleY < canvas.height - PADDLE_HEIGHT - 1) rightPaddleY += PADDLE_SPEED;
+        if (keys['ArrowUp'] && rightPaddleY > 0) rightPaddleY -= PADDLE_SPEED;
+        if (keys['ArrowDown'] && rightPaddleY < canvas.height - PADDLE_HEIGHT) rightPaddleY += PADDLE_SPEED;
     } else {
         const paddleCenter = rightPaddleY + PADDLE_HEIGHT / 2;
-        if (paddleCenter < ballY - 1 && !isBallPaused) {
+        if (paddleCenter < ballY - AI_TRACKING_MARGIN && !isBallPaused) {
             rightPaddleY += AI_PADDLE_SPEED;
-        } else if (paddleCenter > ballY + 1 && !isBallPaused) {
+        } else if (paddleCenter > ballY + AI_TRACKING_MARGIN && !isBallPaused) {
             rightPaddleY -= AI_PADDLE_SPEED;
         }
-        rightPaddleY = Math.max(1, Math.min(canvas.height - PADDLE_HEIGHT - 1, rightPaddleY));
+        rightPaddleY = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, rightPaddleY));
     }
 
     if (isBallPaused) {
@@ -360,6 +372,8 @@ function update() {
 
     const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
+    const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
+
     if (ballSpeedX < 0 && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
@@ -411,17 +425,17 @@ function update() {
     if (leftShieldActive && Date.now() > leftShieldEndTime) {
         leftShieldActive = false;
         leftPower = null;
-        leftPowerDisplay.textContent = 'Poder: nenhum';
+        leftPowerDisplay.textContent = 'Poder: Nenhum';
         leftPowerDisplay.className = 'power-display';
     }
     if (rightShieldActive && Date.now() > rightShieldEndTime) {
         rightShieldActive = false;
         rightPower = null;
-        rightPowerDisplay.textContent = 'Poder: nenhum';
+        rightPowerDisplay.textContent = 'Poder: Nenhum';
         rightPowerDisplay.className = 'power-display';
     }
 
-    if (ballX <= 0) {
+    if (ballX <= BALL_SIZE / 2) {
         if (!leftShieldActive) {
             leftLives--;
             if (singlePlayer) goals++;
@@ -429,7 +443,7 @@ function update() {
         updateLivesDisplay();
         updateScoreDisplay();
         resetBall();
-    } else if (ballX >= canvas.width) {
+    } else if (ballX >= canvas.width - BALL_SIZE / 2) {
         if (!rightShieldActive) {
             rightLives--;
         }
@@ -443,7 +457,7 @@ function update() {
         gameOverScreen.style.display = 'flex';
         if (singlePlayer) {
             gameOverMessage.textContent = 'Você perdeu todas as vidas!';
-            finalScoreDisplay.textContent = `Sua pontuação: ${score} pontos`;
+            finalScoreDisplay.textContent = `Sua pontuação: ${score} ponto${score !== 1 ? 's' : ''}`;
             finalScoreDisplay.style.display = 'block';
             rankingSection.style.display = 'flex';
             finalRanking.style.display = 'none';
@@ -495,6 +509,10 @@ function resetBall() {
 
 function resetGame() {
     console.log('Resetando estado do jogo');
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
     leftLives = 3;
     rightLives = 3;
     score = 0;
@@ -519,19 +537,20 @@ function resetGame() {
     pendingLightningLaunch = null;
     pauseStartTime = 0;
     powerCounts = { shield: 0, lightning: 0, reverse: 0 };
-    leftPowerDisplay.textContent = 'Poder: none';
+    leftPowerDisplay.textContent = 'Poder: Nenhum';
     leftPowerDisplay.className = 'power-display';
-    rightPowerDisplay.textContent = 'Poder: none';
+    rightPowerDisplay.textContent = 'Poder: Nenhum';
     rightPowerDisplay.className = 'power-display';
     updateLivesDisplay();
     updateScoreDisplay();
     gameStarted = true;
+    gameOver = false;
 }
 
 function gameLoop() {
     if (!gameOver) {
         update();
         draw();
-        requestAnimationFrame(gameLoop);
+        animationFrameId = requestAnimationFrame(gameLoop);
     }
 }
