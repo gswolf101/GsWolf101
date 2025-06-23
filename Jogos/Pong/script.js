@@ -21,13 +21,8 @@ const rematchBtn = document.getElementById('rematchBtn');
 const backToMenuBtn = document.getElementById('backToMenuBtn');
 const currentScoreDisplay = document.getElementById('currentScore');
 const currentGoalsDisplay = document.getElementById('currentGoals');
-
-const leftLife1 = document.getElementById('leftLife1');
-const leftLife2 = document.getElementById('leftLife2');
-const leftLife3 = document.getElementById('leftLife3');
-const rightLife1 = document.getElementById('rightLife1');
-const rightLife2 = document.getElementById('rightLife2');
-const rightLife3 = document.getElementById('rightLife3');
+const leftPowerDisplay = document.getElementById('leftPower');
+const rightPowerDisplay = document.getElementById('rightPower');
 
 const PADDLE_WIDTH = 15;
 const PADDLE_HEIGHT = 120;
@@ -36,9 +31,12 @@ const PADDLE_SPEED = 6;
 const INITIAL_BALL_SPEED = 4;
 const BALL_SPEED_INCREMENT = 0.4;
 const MAX_BALL_SPEED = 14;
-const AI_PADDLE_SPEED = 7; // Aumentado para IA mais rápida
-const AI_TRACKING_MARGIN = 10; // Reduzido para acompanhamento mais preciso
+const AI_PADDLE_SPEED = 7;
+const AI_TRACKING_MARGIN = 10;
 const TRAIL_LENGTH = 12;
+const MYSTERY_BOX_SIZE = 30;
+const MYSTERY_BOX_SPAWN_INTERVAL = 5000; // 5 segundos
+const SHIELD_DURATION = 2000; // 2 segundos
 
 let ballX = canvas.width / 2;
 let ballY = canvas.height / 2;
@@ -52,13 +50,31 @@ let singlePlayer = false;
 let gameStarted = false;
 let gameOver = false;
 let score = 0;
-let goals = 0; // Novo contador de gols
+let goals = 0;
 let trail = [];
+let lastPlayerTouched = null; // Identificador do último jogador
+let mysteryBox = null; // Caixa misteriosa
+let leftPower = null; // Poder do jogador esquerdo
+let rightPower = null; // Poder do jogador direito
+let leftShieldActive = false; // Escudo ativo (esquerdo)
+let rightShieldActive = false; // Escudo ativo (direito)
+let leftShieldEndTime = 0; // Tempo de expiração do escudo
+let rightShieldEndTime = 0; // Tempo de expiração do escudo
+let lastBoxSpawnTime = 0;
 
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
 
-document.addEventListener('keydown', (e) => (keys[e.key] = true));
+document.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+    // Ativar poderes
+    if (e.key === 'e' && leftPower && !gameOver) {
+        activatePower('left');
+    }
+    if (e.key === 'Enter' && rightPower && !gameOver && !singlePlayer) {
+        activatePower('right');
+    }
+});
 document.addEventListener('keyup', (e) => (keys[e.key] = false));
 
 function hideAllScreens() {
@@ -141,10 +157,24 @@ function draw() {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = 'white';
+    // Desenhar raquetes com escudo, se ativo
+    ctx.fillStyle = leftShieldActive ? '#00f' : 'white';
     ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
+    ctx.fillStyle = rightShieldActive ? '#00f' : 'white';
     ctx.fillRect(canvas.width - PADDLE_WIDTH, rightPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
 
+    // Desenhar caixa misteriosa
+    if (mysteryBox) {
+        ctx.fillStyle = 'yellow';
+        ctx.fillRect(mysteryBox.x, mysteryBox.y, MYSTERY_BOX_SIZE, MYSTERY_BOX_SIZE);
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('?', mysteryBox.x + MYSTERY_BOX_SIZE / 2, mysteryBox.y + MYSTERY_BOX_SIZE / 2);
+    }
+
+    // Desenhar rastro da bola
     trail.forEach((pos, index) => {
         ctx.beginPath();
         const opacity = (index + 1) / TRAIL_LENGTH;
@@ -156,12 +186,14 @@ function draw() {
     });
     ctx.globalAlpha = 1;
 
+    // Desenhar bola
     ctx.beginPath();
     ctx.arc(ballX, ballY, BALL_SIZE / 2, 0, Math.PI * 2);
     ctx.fillStyle = 'white';
     ctx.fill();
     ctx.closePath();
 
+    // Desenhar linha central
     ctx.setLineDash([5, 15]);
     ctx.beginPath();
     ctx.moveTo(canvas.width / 2, 0);
@@ -169,6 +201,54 @@ function draw() {
     ctx.strokeStyle = 'white';
     ctx.stroke();
     ctx.setLineDash([]);
+}
+
+function spawnMysteryBox() {
+    const possiblePositions = [
+        { x: canvas.width / 4, y: canvas.height / 4 },
+        { x: canvas.width / 4, y: (3 * canvas.height) / 4 },
+        { x: (3 * canvas.width) / 4, y: canvas.height / 4 },
+        { x: (3 * canvas.width) / 4, y: (3 * canvas.height) / 4 },
+    ];
+    mysteryBox = possiblePositions[Math.floor(Math.random() * possiblePositions.length)];
+}
+
+function getRandomPower() {
+    const powers = ['shield', 'lightning', 'reverse'];
+    return powers[Math.floor(Math.random() * powers.length)];
+}
+
+function activatePower(player) {
+    const power = player === 'left' ? leftPower : rightPower;
+    if (!power) return;
+
+    if (power === 'shield') {
+        if (player === 'left') {
+            leftShieldActive = true;
+            leftShieldEndTime = Date.now() + SHIELD_DURATION;
+        } else {
+            rightShieldActive = true;
+            rightShieldEndTime = Date.now() + SHIELD_DURATION;
+        }
+    } else if (power === 'lightning') {
+        ballX = player === 'left' ? PADDLE_WIDTH + BALL_SIZE / 2 : canvas.width - PADDLE_WIDTH - BALL_SIZE / 2;
+        ballY = (player === 'left' ? leftPaddleY : rightPaddleY) + PADDLE_HEIGHT / 2;
+        ballSpeedX = (player === 'left' ? 1 : -1) * MAX_BALL_SPEED * 1.5;
+        ballSpeedY = 0;
+        lastPlayerTouched = player;
+    } else if (power === 'reverse') {
+        ballSpeedX = -ballSpeedX;
+        ballSpeedY = -ballSpeedY;
+    }
+
+    // Limpar poder após uso
+    if (player === 'left') {
+        leftPower = null;
+        leftPowerDisplay.textContent = 'Poder: Nenhum';
+    } else {
+        rightPower = null;
+        rightPowerDisplay.textContent = 'Poder: Nenhum';
+    }
 }
 
 function update() {
@@ -202,6 +282,7 @@ function update() {
         ballSpeedY = -ballSpeedY;
     }
 
+    // Colisão com raquetes
     const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
     const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
@@ -211,6 +292,7 @@ function update() {
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = leftPaddle.x + leftPaddle.width + BALL_SIZE / 2;
+        lastPlayerTouched = 'left';
         if (singlePlayer) score++;
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
         updateScoreDisplay();
@@ -219,17 +301,64 @@ function update() {
         ballSpeedX = -Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = rightPaddle.x - BALL_SIZE / 2;
+        lastPlayerTouched = 'right';
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
     }
 
+    // Colisão com caixa misteriosa
+    if (mysteryBox) {
+        const box = {
+            x: mysteryBox.x,
+            y: mysteryBox.y,
+            width: MYSTERY_BOX_SIZE,
+            height: MYSTERY_BOX_SIZE,
+        };
+        if (collides(ball, box)) {
+            if (lastPlayerTouched) {
+                const power = getRandomPower();
+                if (lastPlayerTouched === 'left') {
+                    leftPower = power;
+                    leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : 'Inversão'}`;
+                } else {
+                    rightPower = power;
+                    rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : 'Inversão'}`;
+                }
+            }
+            mysteryBox = null; // Remove a caixa após ser acertada
+        }
+    }
+
+    // Gerar nova caixa misteriosa
+    if (!mysteryBox && Date.now() - lastBoxSpawnTime > MYSTERY_BOX_SPAWN_INTERVAL && Math.random() < 0.01) {
+        spawnMysteryBox();
+        lastBoxSpawnTime = Date.now();
+    }
+
+    // Gerenciar escudos
+    if (leftShieldActive && Date.now() > leftShieldEndTime) {
+        leftShieldActive = false;
+        leftPower = null;
+        leftPowerDisplay.textContent = 'Poder: Nenhum';
+    }
+    if (rightShieldActive && Date.now() > rightShieldEndTime) {
+        rightShieldActive = false;
+        rightPower = null;
+        rightPowerDisplay.textContent = 'Poder: Nenhum';
+    }
+
+    // Perda de vida
     if (ballX <= BALL_SIZE / 2) {
-        leftLives--;
-        if (singlePlayer) goals++; // Incrementar gols no single-player
+        if (!leftShieldActive) {
+            leftLives--;
+            if (singlePlayer) goals++;
+        }
         updateLivesDisplay();
         updateScoreDisplay();
         resetBall();
     } else if (ballX >= canvas.width - BALL_SIZE / 2) {
-        rightLives--;
+        if (!rightShieldActive) {
+            rightLives--;
+        }
         updateLivesDisplay();
         resetBall();
     }
@@ -251,12 +380,12 @@ function update() {
     }
 }
 
-function collides(ball, paddle) {
+function collides(ball, obj) {
     return (
-        ball.x - BALL_SIZE / 2 < paddle.x + paddle.width &&
-        ball.x + BALL_SIZE / 2 > paddle.x &&
-        ball.y - BALL_SIZE / 2 < paddle.y + paddle.height &&
-        ball.y + BALL_SIZE / 2 > paddle.y
+        ball.x - BALL_SIZE / 2 < obj.x + obj.width &&
+        ball.x + BALL_SIZE / 2 > obj.x &&
+        ball.y - BALL_SIZE / 2 < obj.y + obj.height &&
+        ball.y + BALL_SIZE / 2 > obj.y
     );
 }
 
@@ -284,13 +413,14 @@ function resetBall() {
     ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     trail = [];
+    lastPlayerTouched = null; // Resetar último jogador
 }
 
 function resetGame() {
     leftLives = 3;
     rightLives = 3;
     score = 0;
-    goals = 0; // Resetar gols
+    goals = 0;
     leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
     rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
     ballX = canvas.width / 2;
@@ -298,6 +428,17 @@ function resetGame() {
     ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     trail = [];
+    lastPlayerTouched = null;
+    mysteryBox = null;
+    leftPower = null;
+    rightPower = null;
+    leftShieldActive = false;
+    rightShieldActive = false;
+    leftShieldEndTime = 0;
+    rightShieldEndTime = 0;
+    lastBoxSpawnTime = 0;
+    leftPowerDisplay.textContent = 'Poder: Nenhum';
+    rightPowerDisplay.textContent = 'Poder: Nenhum';
     updateLivesDisplay();
     updateScoreDisplay();
     gameOver = false;
