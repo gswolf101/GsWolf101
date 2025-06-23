@@ -33,10 +33,10 @@ const PADDLE_HEIGHT = 120;
 const BALL_SIZE = 15;
 const PADDLE_SPEED = 6;
 const INITIAL_BALL_SPEED = 4;
-const BALL_SPEED_INCREMENT = 0.4; // Increased for faster acceleration
-const MAX_BALL_SPEED = 14; // Increased for higher maximum speed
-const AI_PADDLE_SPEED = 5; // Adjusted to keep up with faster ball
-const TRAIL_LENGTH = 12; // Increased for more visible trail
+const BALL_SPEED_INCREMENT = 0.4; // Incremento de velocidade
+const MAX_BALL_SPEED = 14; // Velocidade máxima
+const AI_PADDLE_SPEED = 5; // Velocidade da IA ajustada
+const TRAIL_LENGTH = 12; // Comprimento do rastro
 
 let ballX = canvas.width / 2;
 let ballY = canvas.height / 2;
@@ -58,7 +58,7 @@ let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
 document.addEventListener('keydown', (e) => (keys[e.key] = true));
 document.addEventListener('keyup', (e) => (keys[e.key] = false));
 
-// Function to hide all screens
+// Função para ocultar todas as telas
 function hideAllScreens() {
     startScreen.style.display = 'none';
     singlePlayerStartScreen.style.display = 'none';
@@ -66,7 +66,7 @@ function hideAllScreens() {
     gameOverScreen.style.display = 'none';
 }
 
-function showSinglePlayerStartScreen() {
+function showSinglePlayerScreen() {
     hideAllScreens();
     singlePlayerStartScreen.style.display = 'flex';
     updateRankingDisplay();
@@ -76,13 +76,15 @@ function startGame(isSinglePlayer) {
     singlePlayer = isSinglePlayer;
     hideAllScreens();
     gameScreen.style.display = 'flex';
-    rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
-    currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
+    rightLivesContainer.style.display = singlePlayer ? 'none';
+ : 'flex';
+    currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block';
+ : 'none';
     resetGame();
     gameLoop();
 }
 
-singlePlayerBtn.addEventListener('click', showSinglePlayerStartScreen);
+singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
 multiPlayerBtn.addEventListener('click', () => startGame(false));
 startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
 
@@ -136,35 +138,35 @@ function updateRankingDisplay() {
 }
 
 function draw() {
-    // Clear canvas
+    // Limpar o canvas
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw paddles
+    // Desenhar raquetes
     ctx.fillStyle = 'white';
     ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
     ctx.fillRect(canvas.width - PADDLE_WIDTH, rightPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
 
-    // Draw ball trail
+    // Desenhar rastro da bola
     trail.forEach((pos, index) => {
         ctx.beginPath();
         const opacity = (index + 1) / TRAIL_LENGTH;
-        ctx.globalAlpha = opacity * 0.7; // Increased for better visibility
+        ctx.globalAlpha = opacity * 0.7;
         ctx.arc(pos.x, pos.y, (BALL_SIZE / 2) * (0.6 + 0.4 * opacity), 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff'; // White trail
+        ctx.fillStyle = '#ffffff';
         ctx.fill();
         ctx.closePath();
     });
-    ctx.globalAlpha = 1; // Reset opacity
+    ctx.globalAlpha = 1;
 
-    // Draw main ball
+    // Desenhar bola principal
     ctx.beginPath();
     ctx.arc(ballX, ballY, BALL_SIZE / 2, 0, Math.PI * 2);
     ctx.fillStyle = 'white';
     ctx.fill();
     ctx.closePath();
 
-    // Draw center line
+    // Desenhar linha central
     ctx.setLineDash([5, 15]);
     ctx.beginPath();
     ctx.moveTo(canvas.width / 2, 0);
@@ -177,11 +179,11 @@ function draw() {
 function update() {
     if (!gameStarted || gameOver) return;
 
-    // Move left paddle (player 1)
+    // Mover raquete esquerda (jogador 1)
     if (keys['w'] && leftPaddleY > 0) leftPaddleY -= PADDLE_SPEED;
     if (keys['s'] && leftPaddleY < canvas.height - PADDLE_HEIGHT) leftPaddleY += PADDLE_SPEED;
 
-    // Move right paddle (player 2 or AI)
+    // Mover raquete direita (jogador 2 ou IA)
     if (!singlePlayer) {
         if (keys['ArrowUp'] && rightPaddleY > 0) rightPaddleY -= PADDLE_SPEED;
         if (keys['ArrowDown'] && rightPaddleY < canvas.height - PADDLE_HEIGHT) rightPaddleY += PADDLE_SPEED;
@@ -195,57 +197,57 @@ function update() {
         rightPaddleY = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, rightPaddleY));
     }
 
-    // Update ball trail
+    // Atualizar rastro da bola
     trail.push({ x: ballX, y: ballY });
     if (trail.length > TRAIL_LENGTH) {
         trail.shift();
     }
 
-    // Update ball position
+    // Atualizar posição da bola
     ballX += ballSpeedX;
     ballY += ballSpeedY;
 
-    // Bounce off top and bottom
+    // Colisão com bordas superior e inferior
     if (ballY <= BALL_SIZE / 2 || ballY >= canvas.height - BALL_SIZE / 2) {
         ballSpeedY = -ballSpeedY;
     }
 
-    // Collision objects
+    // Objetos de colisão
     const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
-    //const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
     const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
 
-    // Paddle collisions
+    // Colisão com raquetes
     if (ballSpeedX < 0 && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
-        ballY = hitPoint * (MAX_BALL_SPEED / 2);
+        ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2); // Corrigido para ajustar velocidade, não posição
         ballX = leftPaddle.x + leftPaddle.width + BALL_SIZE / 2;
         if (singlePlayer) score++;
-        console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`); // Debug log
+        console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`); // Log de depuração
         updateScoreDisplay();
     } else if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
         const hitPoint = (ballY - (rightPaddle.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
         ballSpeedX = -Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
-        ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
+        ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2); // Corrigido para ajustar velocidade
         ballX = rightPaddle.x - BALL_SIZE / 2;
-        console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`); // Debug log
+        console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`); // Log de depuração
     }
 
-    // Lose life
+    // Perda de vida
     if (ballX <= BALL_SIZE / 2) {
-        if (!singlePlayer) rightLives--;
-        else leftLives--;
+        // Bola passou pelo lado esquerdo: jogador esquerdo perde vida
+        leftLives--;
         updateLivesDisplay();
         resetBall();
     } else if (ballX >= canvas.width - BALL_SIZE / 2) {
-        if (!singlePlayer) leftLives--;
+        // Bola passou pelo lado direito: jogador direito perde vida
+        rightLives--;
         updateLivesDisplay();
         resetBall();
     }
 
-    // Game over condition
+    // Condição de fim de jogo
     if (leftLives <= 0 || (!singlePlayer && rightLives <= 0)) {
         gameOver = true;
         hideAllScreens();
@@ -292,7 +294,7 @@ function resetBall() {
     ballY = canvas.height / 2;
     ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
-    trail = []; // Clear trail on ball reset
+    trail = []; // Limpar rastro ao resetar a bola
 }
 
 function resetGame() {
