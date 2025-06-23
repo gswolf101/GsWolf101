@@ -112,6 +112,7 @@ body {
 .power-display.power-shield { color: #00f; }
 .power-display.power-lightning { color: #800080; }
 .power-display.power-reverse { color: #f00; }
+.power-display.power-grow { color: #ffa500; } /* Cor laranja para Crescer */
 
 #scoreDisplay {
     color: white;
