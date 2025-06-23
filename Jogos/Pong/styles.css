@@ -71,6 +71,13 @@ body {
     color: #ff0;
 }
 
+.controls .description {
+    font-style: italic;
+    color: #aaa;
+    margin-top: 10px;
+    text-align: center;
+}
+
 #pongCanvas {
     border: 2px solid #fff;
 }
