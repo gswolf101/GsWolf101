@@ -67,7 +67,7 @@ let lastBoxSpawnTime = 0;
 let isBallPaused = false;
 let pauseStartTime = 0;
 let pendingLightningLaunch = null;
-let powerCounts = { shield: 0, lightning: 0, reverse: 0 }; // Contador para depuração
+let powerCounts = { shield: 0, lightning: 0, reverse: 0 };
 
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
@@ -210,11 +210,12 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    if (isBallPaused) {
+    if (isBallPaused && pauseStartTime > 0) {
+        const timeLeft = Math.max(0, (LIGHTNING_PAUSE_DURATION - (Date.now() - pauseStartTime)) / 1000);
         ctx.font = '20px Arial';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText(`Lançando em: ${Math.ceil((LIGHTNING_PAUSE_DURATION - (Date.now() - pauseStartTime)) / 1000)}s`, canvas.width / 2, 50);
+        ctx.fillText(`Lançando em: ${Math.ceil(timeLeft)}s`, canvas.width / 2, 50);
     }
 }
 
@@ -260,11 +261,11 @@ function activatePower(player) {
         pauseStartTime = Date.now();
         pendingLightningLaunch = {
             player: player,
-            speedX: (player === 'left' ? 1 : -1) * MAX_BALL_SPEED * 1.5,
+            speedX: (player === 'left' ? 1 : -1) * MAX_BALL_SPEED * 1.2, // Reduzido de 1.5 para 1.2
             speedY: 0
         };
         lastPlayerTouched = player;
-        console.log(`Raio ativado para ${player}: Pausado em x=${ballX}, y=${ballY}`);
+        console.log(`Raio ativado para ${player}: Pausado em x=${ballX.toFixed(2)}, y=${ballY.toFixed(2)}`);
     } else if (power === 'reverse') {
         ballSpeedX = -ballSpeedX;
         ballSpeedY = -ballSpeedY;
@@ -301,19 +302,30 @@ function update() {
         rightPaddleY = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, rightPaddleY));
     }
 
-    if (isBallPaused && pendingLightningLaunch) {
-        if (Date.now() - pauseStartTime >= LIGHTNING_PAUSE_DURATION) {
-            console.log(`Lançando bola: speedX=${pendingLightningLaunch.speedX}, speedY=${pendingLightningLaunch.speedY}`);
-            ballSpeedX = pendingLightningLaunch.speedX || 0;
-            ballSpeedY = pendingLightningLaunch.speedY || 0;
+    if (isBallPaused) {
+        if (!pendingLightningLaunch || !pauseStartTime) {
+            console.error('Erro: Estado inválido do Raio', { pendingLightningLaunch, pauseStartTime });
             isBallPaused = false;
             pendingLightningLaunch = null;
+            pauseStartTime = 0;
+            resetBall();
+            return;
+        }
+
+        if (Date.now() - pauseStartTime >= LIGHTNING_PAUSE_DURATION) {
+            console.log(`Lançando bola: speedX=${pendingLightningLaunch.speedX.toFixed(2)}, speedY=${pendingLightningLaunch.speedY.toFixed(2)}`);
+            ballSpeedX = pendingLightningLaunch.speedX;
+            ballSpeedY = pendingLightningLaunch.speedY;
+            isBallPaused = false;
+            pendingLightningLaunch = null;
+            pauseStartTime = 0;
+            return; // Evita atualizações adicionais neste frame
+        }
+
+        if (pendingLightningLaunch.player === 'left') {
+            ballY = leftPaddleY + PADDLE_HEIGHT / 2;
         } else {
-            if (pendingLightningLaunch.player === 'left') {
-                ballY = leftPaddleY + PADDLE_HEIGHT / 2;
-            } else {
-                ballY = rightPaddleY + PADDLE_HEIGHT / 2;
-            }
+            ballY = rightPaddleY + PADDLE_HEIGHT / 2;
         }
         trail = [];
         return;
@@ -324,10 +336,8 @@ function update() {
         trail.shift();
     }
 
-    if (!isBallPaused) {
-        ballX += ballSpeedX;
-        ballY += ballSpeedY;
-    }
+    ballX += ballSpeedX;
+    ballY += ballSpeedY;
 
     if (ballY <= BALL_SIZE / 2 || ballY >= canvas.height - BALL_SIZE / 2) {
         ballSpeedY = -ballSpeedY;
@@ -467,6 +477,7 @@ function resetBall() {
     lastPlayerTouched = null;
     isBallPaused = false;
     pendingLightningLaunch = null;
+    pauseStartTime = 0;
 }
 
 function resetGame() {
@@ -492,6 +503,7 @@ function resetGame() {
     lastBoxSpawnTime = 0;
     isBallPaused = false;
     pendingLightningLaunch = null;
+    pauseStartTime = 0;
     powerCounts = { shield: 0, lightning: 0, reverse: 0 };
     leftPowerDisplay.textContent = 'Poder: Nenhum';
     leftPowerDisplay.className = 'power-display';
