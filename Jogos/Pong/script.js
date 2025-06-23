@@ -21,6 +21,8 @@ const startSinglePlayerGameBtn = document.getElementById('startSinglePlayerGameB
 const startMultiplayerGameBtn = document.getElementById('startMultiplayerGameBtn');
 const rematchBtn = document.getElementById('rematchBtn');
 const backToMenuBtn = document.getElementById('backToMenuBtn');
+const backToMenuSinglePlayerBtn = document.getElementById('backToMenuSinglePlayerBtn');
+const backToMenuMultiplayerBtn = document.getElementById('backToMenuMultiplayerBtn');
 const currentScoreDisplay = document.getElementById('currentScore');
 const currentGoalsDisplay = document.getElementById('currentGoals');
 const leftPowerDisplay = document.getElementById('leftPower');
@@ -91,6 +93,11 @@ function hideAllScreens() {
     gameOverScreen.style.display = 'none';
 }
 
+function showStartScreen() {
+    hideAllScreens();
+    startScreen.style.display = 'flex';
+}
+
 function showSinglePlayerScreen() {
     hideAllScreens();
     singlePlayerStartScreen.style.display = 'flex';
@@ -103,6 +110,7 @@ function showMultiplayerScreen() {
 }
 
 function startGame(isSinglePlayer) {
+    console.log(`Iniciando jogo: ${isSinglePlayer ? 'Single Player' : 'Multiplayer'}`);
     singlePlayer = isSinglePlayer;
     hideAllScreens();
     gameScreen.style.display = 'flex';
@@ -116,21 +124,28 @@ singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
 multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
 startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
 startMultiplayerGameBtn.addEventListener('click', () => startGame(false));
+backToMenuSinglePlayerBtn.addEventListener('click', showStartScreen);
+backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
 
 rematchBtn.addEventListener('click', () => {
+    console.log('Revanche iniciada');
     hideAllScreens();
     gameScreen.style.display = 'flex';
+    rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
+    currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
     rankingSection.style.display = 'none';
     finalRanking.style.display = 'none';
     finalScoreDisplay.style.display = 'none';
     playerNameInput.value = '';
     saveScoreBtn.disabled = false;
     resetGame();
+    gameOver = false; // Explicitamente resetar gameOver
+    gameLoop(); // Reiniciar o loop
 });
 
 backToMenuBtn.addEventListener('click', () => {
-    hideAllScreens();
-    startScreen.style.display = 'flex';
+    console.log('Voltando ao menu principal');
+    showStartScreen();
     rankingSection.style.display = 'none';
     finalRanking.style.display = 'none';
     finalScoreDisplay.style.display = 'none';
@@ -261,7 +276,7 @@ function activatePower(player) {
         pauseStartTime = Date.now();
         pendingLightningLaunch = {
             player: player,
-            speedX: (player === 'left' ? 1 : -1) * MAX_BALL_SPEED * 1.2, // Reduzido de 1.5 para 1.2
+            speedX: (player === 'left' ? 1 : -1) * MAX_BALL_SPEED * 1.2,
             speedY: 0
         };
         lastPlayerTouched = player;
@@ -269,16 +284,16 @@ function activatePower(player) {
     } else if (power === 'reverse') {
         ballSpeedX = -ballSpeedX;
         ballSpeedY = -ballSpeedY;
-        console.log(`Inversão ativada: Velocidade X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+        console.log(`Inversão ativado: Velocidade X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
     }
 
     if (player === 'left') {
         leftPower = null;
-        leftPowerDisplay.textContent = 'Poder: Nenhum';
+        leftPowerDisplay.textContent = 'Poder: nenhum';
         leftPowerDisplay.className = 'power-display';
     } else {
         rightPower = null;
-        rightPowerDisplay.textContent = 'Poder: Nenhum';
+        rightPowerDisplay.textContent = 'Poder: nenhum';
         rightPowerDisplay.className = 'power-display';
     }
 }
@@ -286,20 +301,20 @@ function activatePower(player) {
 function update() {
     if (!gameStarted || gameOver) return;
 
-    if (keys['w'] && leftPaddleY > 0) leftPaddleY -= PADDLE_SPEED;
-    if (keys['s'] && leftPaddleY < canvas.height - PADDLE_HEIGHT) leftPaddleY += PADDLE_SPEED;
+    if (keys['w'] && leftPaddleY > 1) leftPaddleY -= PADDLE_SPEED;
+    if (keys['s'] && leftPaddleY < canvas.height - PADDLE_HEIGHT - 1) leftPaddleY += PADDLE_SPEED;
 
     if (!singlePlayer) {
-        if (keys['ArrowUp'] && rightPaddleY > 0) rightPaddleY -= PADDLE_SPEED;
-        if (keys['ArrowDown'] && rightPaddleY < canvas.height - PADDLE_HEIGHT) rightPaddleY += PADDLE_SPEED;
+        if (keys['ArrowUp'] && rightPaddleY > 1) rightPaddleY -= PADDLE_SPEED;
+        if (keys['ArrowDown'] && rightPaddleY < canvas.height - PADDLE_HEIGHT - 1) rightPaddleY += PADDLE_SPEED;
     } else {
         const paddleCenter = rightPaddleY + PADDLE_HEIGHT / 2;
-        if (paddleCenter < ballY - AI_TRACKING_MARGIN && !isBallPaused) {
+        if (paddleCenter < ballY - 1 && !isBallPaused) {
             rightPaddleY += AI_PADDLE_SPEED;
-        } else if (paddleCenter > ballY + AI_TRACKING_MARGIN && !isBallPaused) {
+        } else if (paddleCenter > ballY + 1 && !isBallPaused) {
             rightPaddleY -= AI_PADDLE_SPEED;
         }
-        rightPaddleY = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, rightPaddleY));
+        rightPaddleY = Math.max(1, Math.min(canvas.height - PADDLE_HEIGHT - 1, rightPaddleY));
     }
 
     if (isBallPaused) {
@@ -319,7 +334,7 @@ function update() {
             isBallPaused = false;
             pendingLightningLaunch = null;
             pauseStartTime = 0;
-            return; // Evita atualizações adicionais neste frame
+            return;
         }
 
         if (pendingLightningLaunch.player === 'left') {
@@ -345,8 +360,6 @@ function update() {
 
     const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
-    const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
-
     if (ballSpeedX < 0 && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
@@ -398,17 +411,17 @@ function update() {
     if (leftShieldActive && Date.now() > leftShieldEndTime) {
         leftShieldActive = false;
         leftPower = null;
-        leftPowerDisplay.textContent = 'Poder: Nenhum';
+        leftPowerDisplay.textContent = 'Poder: nenhum';
         leftPowerDisplay.className = 'power-display';
     }
     if (rightShieldActive && Date.now() > rightShieldEndTime) {
         rightShieldActive = false;
         rightPower = null;
-        rightPowerDisplay.textContent = 'Poder: Nenhum';
+        rightPowerDisplay.textContent = 'Poder: nenhum';
         rightPowerDisplay.className = 'power-display';
     }
 
-    if (ballX <= BALL_SIZE / 2) {
+    if (ballX <= 0) {
         if (!leftShieldActive) {
             leftLives--;
             if (singlePlayer) goals++;
@@ -416,7 +429,7 @@ function update() {
         updateLivesDisplay();
         updateScoreDisplay();
         resetBall();
-    } else if (ballX >= canvas.width - BALL_SIZE / 2) {
+    } else if (ballX >= canvas.width) {
         if (!rightShieldActive) {
             rightLives--;
         }
@@ -430,7 +443,7 @@ function update() {
         gameOverScreen.style.display = 'flex';
         if (singlePlayer) {
             gameOverMessage.textContent = 'Você perdeu todas as vidas!';
-            finalScoreDisplay.textContent = `Sua pontuação: ${score} ponto${score !== 1 ? 's' : ''}`;
+            finalScoreDisplay.textContent = `Sua pontuação: ${score} pontos`;
             finalScoreDisplay.style.display = 'block';
             rankingSection.style.display = 'flex';
             finalRanking.style.display = 'none';
@@ -451,12 +464,12 @@ function collides(ball, obj) {
 }
 
 function updateLivesDisplay() {
-    leftLife1.style.display = leftLives >= 1 ? 'inline-block' : 'none';
-    leftLife2.style.display = leftLives >= 2 ? 'inline-block' : 'none';
-    leftLife3.style.display = leftLives >= 3 ? 'inline-block' : 'none';
-    rightLife1.style.display = rightLives >= 1 ? 'inline-block' : 'none';
-    rightLife2.style.display = rightLives >= 2 ? 'inline-block' : 'none';
-    rightLife3.style.display = rightLives >= 3 ? 'inline-block' : 'none';
+    document.getElementById('leftLife1').style.display = leftLives >= 1 ? 'inline-block' : 'none';
+    document.getElementById('leftLife2').style.display = leftLives >= 2 ? 'inline-block' : 'none';
+    document.getElementById('leftLife3').style.display = leftLives >= 3 ? 'inline-block' : 'none';
+    document.getElementById('rightLife1').style.display = rightLives >= 1 ? 'inline-block' : 'none';
+    document.getElementById('rightLife2').style.display = rightLives >= 2 ? 'inline-block' : 'none';
+    document.getElementById('rightLife3').style.display = rightLives >= 3 ? 'inline-block' : 'none';
 }
 
 function updateScoreDisplay() {
@@ -481,6 +494,7 @@ function resetBall() {
 }
 
 function resetGame() {
+    console.log('Resetando estado do jogo');
     leftLives = 3;
     rightLives = 3;
     score = 0;
@@ -505,13 +519,12 @@ function resetGame() {
     pendingLightningLaunch = null;
     pauseStartTime = 0;
     powerCounts = { shield: 0, lightning: 0, reverse: 0 };
-    leftPowerDisplay.textContent = 'Poder: Nenhum';
+    leftPowerDisplay.textContent = 'Poder: none';
     leftPowerDisplay.className = 'power-display';
-    rightPowerDisplay.textContent = 'Poder: Nenhum';
+    rightPowerDisplay.textContent = 'Poder: none';
     rightPowerDisplay.className = 'power-display';
     updateLivesDisplay();
     updateScoreDisplay();
-    gameOver = false;
     gameStarted = true;
 }
 
@@ -522,4 +535,3 @@ function gameLoop() {
         requestAnimationFrame(gameLoop);
     }
 }
-
