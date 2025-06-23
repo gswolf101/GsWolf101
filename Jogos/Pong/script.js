@@ -380,7 +380,6 @@ function update() {
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = leftPaddle.x + leftPaddle.width + BALL_SIZE / 2;
         lastPlayerTouched = 'left';
-        if (singlePlayer) score++;
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
         updateScoreDisplay();
     } else if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
@@ -390,6 +389,7 @@ function update() {
         ballX = rightPaddle.x - BALL_SIZE / 2;
         lastPlayerTouched = 'right';
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+        updateScoreDisplay();
     }
 
     if (mysteryBox) {
@@ -438,7 +438,6 @@ function update() {
     if (ballX <= BALL_SIZE / 2) {
         if (!leftShieldActive) {
             leftLives--;
-            if (singlePlayer) goals++;
         }
         updateLivesDisplay();
         updateScoreDisplay();
@@ -446,8 +445,14 @@ function update() {
     } else if (ballX >= canvas.width - BALL_SIZE / 2) {
         if (!rightShieldActive) {
             rightLives--;
+            if (singlePlayer) {
+                score += 2; // 2 pontos por gol no modo solo
+                goals++; // Contar gol feito pelo jogador
+                console.log(`Gol marcado pelo jogador! Pontos: ${score}, Gols: ${goals}`);
+            }
         }
         updateLivesDisplay();
+        updateScoreDisplay();
         resetBall();
     }
 
