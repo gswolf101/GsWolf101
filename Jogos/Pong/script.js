@@ -32,11 +32,11 @@ const PADDLE_WIDTH = 15;
 const PADDLE_HEIGHT = 120;
 const PADDLE_GROW_HEIGHT = 200; // Altura da raquete ao ativar Crescer
 const BALL_SIZE = 15;
-const PADDLE_SPEED = 6;
-const INITIAL_BALL_SPEED = 4;
-const BALL_SPEED_INCREMENT = 0.4;
-const MAX_BALL_SPEED = 14;
-const AI_PADDLE_SPEED = 7;
+const PADDLE_SPEED = 360; // Pixels por segundo (6 pixels por quadro a 60 FPS)
+const INITIAL_BALL_SPEED = 240; // Pixels por segundo (4 pixels por quadro a 60 FPS)
+const BALL_SPEED_INCREMENT = 24; // Incremento por segundo (0.4 pixels por quadro a 60 FPS)
+const MAX_BALL_SPEED = 840; // Pixels por segundo (14 pixels por quadro a 60 FPS)
+const AI_PADDLE_SPEED = 420; // Pixels por segundo (7 pixels por quadro a 60 FPS)
 const AI_TRACKING_MARGIN = 10;
 const TRAIL_LENGTH = 12;
 const MYSTERY_BOX_SIZE = 30;
@@ -80,6 +80,7 @@ let pendingLightningLaunch = null;
 let powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
 let animationFrameId = null;
 let lastLeftPaddleCollision = false; // Controla colisão com raquete esquerda
+let lastTime = performance.now(); // Para calcular delta time
 
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
@@ -130,6 +131,7 @@ function startGame(isSinglePlayer) {
     rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
     currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
     resetGame();
+    lastTime = performance.now(); // Inicializa lastTime
     gameLoop();
 }
 
@@ -156,6 +158,7 @@ rematchBtn.addEventListener('click', () => {
     playerNameInput.value = '';
     saveScoreBtn.disabled = false;
     resetGame();
+    lastTime = performance.now(); // Reseta lastTime
     gameOver = false;
     gameLoop();
 });
@@ -335,18 +338,23 @@ function activatePower(player) {
 function update() {
     if (!gameStarted || gameOver) return;
 
-    if (keys['w'] && leftPaddleY > 0) leftPaddleY -= PADDLE_SPEED;
-    if (keys['s'] && leftPaddleY < canvas.height - leftPaddleHeight) leftPaddleY += PADDLE_SPEED;
+    const currentTime = performance.now();
+    const deltaTime = (currentTime - lastTime) / 1000; // Delta time em segundos
+    lastTime = currentTime;
+
+    // Movimento das raquetes
+    if (keys['w'] && leftPaddleY > 0) leftPaddleY -= PADDLE_SPEED * deltaTime;
+    if (keys['s'] && leftPaddleY < canvas.height - leftPaddleHeight) leftPaddleY += PADDLE_SPEED * deltaTime;
 
     if (!singlePlayer) {
-        if (keys['ArrowUp'] && rightPaddleY > 0) rightPaddleY -= PADDLE_SPEED;
-        if (keys['ArrowDown'] && rightPaddleY < canvas.height - rightPaddleHeight) rightPaddleY += PADDLE_SPEED;
+        if (keys['ArrowUp'] && rightPaddleY > 0) rightPaddleY -= PADDLE_SPEED * deltaTime;
+        if (keys['ArrowDown'] && rightPaddleY < canvas.height - rightPaddleHeight) rightPaddleY += PADDLE_SPEED * deltaTime;
     } else {
         const paddleCenter = rightPaddleY + rightPaddleHeight / 2;
         if (paddleCenter < ballY - AI_TRACKING_MARGIN && !isBallPaused) {
-            rightPaddleY += AI_PADDLE_SPEED;
+            rightPaddleY += AI_PADDLE_SPEED * deltaTime;
         } else if (paddleCenter > ballY + AI_TRACKING_MARGIN && !isBallPaused) {
-            rightPaddleY -= AI_PADDLE_SPEED;
+            rightPaddleY -= AI_PADDLE_SPEED * deltaTime;
         }
         rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
     }
@@ -385,8 +393,9 @@ function update() {
         trail.shift();
     }
 
-    ballX += ballSpeedX;
-    ballY += ballSpeedY;
+    // Movimento da bola ajustado por deltaTime
+    ballX += ballSpeedX * deltaTime;
+    ballY += ballSpeedY * deltaTime;
 
     // Corrige colisão com bordas superior e inferior
     if (ballY <= BALL_SIZE / 2) {
