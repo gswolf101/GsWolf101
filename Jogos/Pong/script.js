@@ -79,6 +79,7 @@ let pauseStartTime = 0;
 let pendingLightningLaunch = null;
 let powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
 let animationFrameId = null;
+let lastLeftPaddleCollision = false; // Controla colisão com raquete esquerda
 
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
@@ -387,27 +388,40 @@ function update() {
     ballX += ballSpeedX;
     ballY += ballSpeedY;
 
-    if (ballY <= BALL_SIZE / 2 || ballY >= canvas.height - BALL_SIZE / 2) {
-        ballSpeedY = -ballSpeedY;
+    // Corrige colisão com bordas superior e inferior
+    if (ballY <= BALL_SIZE / 2) {
+        ballY = BALL_SIZE / 2; // Reposiciona a bola fora da borda superior
+        ballSpeedY = Math.abs(ballSpeedY); // Garante movimento para baixo
+        console.log(`Colisão com borda superior: ballY=${ballY.toFixed(2)}, ballSpeedY=${ballSpeedY.toFixed(2)}`);
+    } else if (ballY >= canvas.height - BALL_SIZE / 2) {
+        ballY = canvas.height - BALL_SIZE / 2; // Reposiciona a bola fora da borda inferior
+        ballSpeedY = -Math.abs(ballSpeedY); // Garante movimento para cima
+        console.log(`Colisão com borda inferior: ballY=${ballY.toFixed(2)}, ballSpeedY=${ballSpeedY.toFixed(2)}`);
     }
 
     const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: leftPaddleHeight };
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: rightPaddleHeight };
     const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
 
-    if (ballSpeedX < 0 && collides(ball, leftPaddle)) {
+    // Verifica colisão com a raquete esquerda apenas se não houve colisão no quadro anterior
+    if (ballSpeedX < 0 && !lastLeftPaddleCollision && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + leftPaddleHeight / 2)) / (leftPaddleHeight / 2);
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = leftPaddle.x + leftPaddle.width + BALL_SIZE / 2;
         lastPlayerTouched = 'left';
+        lastLeftPaddleCollision = true; // Marca colisão
         if (singlePlayer) {
             score += 1; // 1 ponto por rebatida no modo solo
             console.log(`Rebatida pelo jogador! Pontos: ${score}`);
         }
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
         updateScoreDisplay();
-    } else if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
+    } else if (ballSpeedX >= 0) {
+        lastLeftPaddleCollision = false; // Reseta ao mover para a direita
+    }
+
+    if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
         const hitPoint = (ballY - (rightPaddle.y + rightPaddleHeight / 2)) / (rightPaddleHeight / 2);
         ballSpeedX = -Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
@@ -548,6 +562,7 @@ function resetBall() {
     isBallPaused = false;
     pendingLightningLaunch = null;
     pauseStartTime = 0;
+    lastLeftPaddleCollision = false; // Reseta colisão ao reiniciar a bola
 }
 
 function resetGame() {
@@ -586,6 +601,7 @@ function resetGame() {
     pendingLightningLaunch = null;
     pauseStartTime = 0;
     powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
+    lastLeftPaddleCollision = false; // Inicializa como false
     leftPowerDisplay.textContent = 'Poder: Nenhum';
     leftPowerDisplay.className = 'power-display';
     rightPowerDisplay.textContent = 'Poder: Nenhum';
