@@ -401,6 +401,10 @@ function update() {
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = leftPaddle.x + leftPaddle.width + BALL_SIZE / 2;
         lastPlayerTouched = 'left';
+        if (singlePlayer) {
+            score += 1; // 1 ponto por rebatida no modo solo
+            console.log(`Rebatida pelo jogador! Pontos: ${score}`);
+        }
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
         updateScoreDisplay();
     } else if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
