@@ -115,10 +115,11 @@ function showSinglePlayerScreen() {
     console.log('Exibindo tela de single-player');
     hideAllScreens();
     singlePlayerStartScreen.style.display = 'flex';
-    console.log('Botões da tela de single-player:', {
+    console.log('Elementos da tela de single-player:', {
+        title: singlePlayerStartScreen.querySelector('h2')?.outerHTML,
+        rankingList: document.getElementById('initialRankingList')?.outerHTML,
         startBtn: document.getElementById('startSinglePlayerGameBtn')?.outerHTML,
-        backBtn: document.getElementById('backToMenuSinglePlayerBtn')?.outerHTML,
-        rankingList: document.getElementById('initialRankingList')?.outerHTML
+        backBtn: document.getElementById('backToMenuSinglePlayerBtn')?.outerHTML
     });
     updateRankingDisplay();
 }
