@@ -1,5 +1,11 @@
+// Verificação inicial de elementos críticos
 const canvas = document.getElementById('pongCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas ? canvas.getContext('2d') : null;
+if (!canvas || !ctx) {
+    console.error('Erro: Canvas ou contexto 2D não encontrado');
+    alert('Erro ao carregar o jogo: Canvas não encontrado. Verifique o HTML.');
+}
+
 const startScreen = document.getElementById('startScreen');
 const singlePlayerStartScreen = document.getElementById('singlePlayerStartScreen');
 const multiplayerStartScreen = document.getElementById('multiplayerStartScreen');
@@ -27,32 +33,41 @@ const currentGoalsDisplay = document.getElementById('currentGoals');
 const leftPowerDisplay = document.getElementById('leftPower');
 const rightPowerDisplay = document.getElementById('rightPower');
 
+// Verificar elementos essenciais
+if (!startScreen || !singlePlayerStartScreen || !gameScreen) {
+    console.error('Erro: Elementos DOM essenciais não encontrados', {
+        startScreen: !!startScreen,
+        singlePlayerStartScreen: !!singlePlayerStartScreen,
+        gameScreen: !!gameScreen
+    });
+}
+
 const PADDLE_WIDTH = 15;
 const PADDLE_HEIGHT = 120;
-const PADDLE_GROW_HEIGHT = 200; // Altura da raquete ao ativar Crescer
+const PADDLE_GROW_HEIGHT = 200;
 const BALL_SIZE = 15;
-const PADDLE_SPEED = 360; // Pixels por segundo
-const INITIAL_BALL_SPEED = 240; // Pixels por segundo
-const BALL_SPEED_INCREMENT = 24; // Incremento por segundo
-const MAX_BALL_SPEED = 840; // Pixels por segundo
-const AI_PADDLE_SPEED = 420; // Pixels por segundo
+const PADDLE_SPEED = 360;
+const INITIAL_BALL_SPEED = 240;
+const BALL_SPEED_INCREMENT = 24;
+const MAX_BALL_SPEED = 840;
+const AI_PADDLE_SPEED = 420;
 const AI_TRACKING_MARGIN = 10;
 const TRAIL_LENGTH = 12;
-const TRAIL_SPACING = 5; // Distância mínima entre pontos do rastro
+const TRAIL_SPACING = 5;
 const MYSTERY_BOX_SIZE = 30;
-const MYSTERY_BOX_SPAWN_INTERVAL = 5000; // 5 segundos
-const SHIELD_DURATION = 2000; // 2 segundos
-const LIGHTNING_PAUSE_DURATION = 2000; // 2 segundos para Raio
-const GROW_DURATION = 10000; // 10 segundos para Crescer
+const MYSTERY_BOX_SPAWN_INTERVAL = 5000;
+const SHIELD_DURATION = 2000;
+const LIGHTNING_PAUSE_DURATION = 2000;
+const GROW_DURATION = 10000;
 
-let ballX = canvas.width / 2;
-let ballY = canvas.height / 2;
+let ballX = canvas ? canvas.width / 2 : 400;
+let ballY = canvas ? canvas.height / 2 : 300;
 let ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
 let ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
-let leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
-let rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
-let leftPaddleHeight = PADDLE_HEIGHT; // Altura dinâmica para a raquete esquerda
-let rightPaddleHeight = PADDLE_HEIGHT; // Altura dinâmica para a raquete direita
+let leftPaddleY = canvas ? canvas.height / 2 - PADDLE_HEIGHT / 2 : 240;
+let rightPaddleY = canvas ? canvas.height / 2 - PADDLE_HEIGHT / 2 : 240;
+let leftPaddleHeight = PADDLE_HEIGHT;
+let rightPaddleHeight = PADDLE_HEIGHT;
 let leftLives = 3;
 let rightLives = 3;
 let singlePlayer = false;
@@ -79,9 +94,9 @@ let pauseStartTime = 0;
 let pendingLightningLaunch = null;
 let powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
 let animationFrameId = null;
-let lastLeftPaddleCollision = false; // Controla colisão com raquete esquerda
-let lastTime = performance.now(); // Para calcular delta time
-let lastTrailPosition = { x: ballX, y: ballY }; // Última posição do rastro
+let lastLeftPaddleCollision = false;
+let lastTime = performance.now();
+let lastTrailPosition = { x: ballX, y: ballY };
 
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
@@ -98,120 +113,139 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => (keys[e.key] = false));
 
 function hideAllScreens() {
-    startScreen.style.display = 'none';
-    singlePlayerStartScreen.style.display = 'none';
-    multiplayerStartScreen.style.display = 'none';
-    gameScreen.style.display = 'none';
-    gameOverScreen.style.display = 'none';
+    if (startScreen) startScreen.style.display = 'none';
+    if (singlePlayerStartScreen) singlePlayerStartScreen.style.display = 'none';
+    if (multiplayerStartScreen) multiplayerStartScreen.style.display = 'none';
+    if (gameScreen) gameScreen.style.display = 'none';
+    if (gameOverScreen) gameOverScreen.style.display = 'none';
 }
 
 function showStartScreen() {
     console.log('Exibindo menu principal');
     hideAllScreens();
-    startScreen.style.display = 'flex';
+    if (startScreen) startScreen.style.display = 'flex';
 }
 
 function showSinglePlayerScreen() {
     console.log('Exibindo tela de single-player');
     hideAllScreens();
-    singlePlayerStartScreen.style.display = 'flex';
-    console.log('Elementos da tela de single-player:', {
-        title: singlePlayerStartScreen.querySelector('h2')?.outerHTML,
-        rankingList: document.getElementById('initialRankingList')?.outerHTML,
-        startBtn: document.getElementById('startSinglePlayerGameBtn')?.outerHTML,
-        backBtn: document.getElementById('backToMenuSinglePlayerBtn')?.outerHTML
-    });
-    updateRankingDisplay();
+    if (singlePlayerStartScreen) {
+        singlePlayerStartScreen.style.display = 'flex';
+        console.log('Elementos da tela de single-player:', {
+            title: singlePlayerStartScreen.querySelector('h2')?.outerHTML,
+            rankingList: initialRankingList?.outerHTML,
+            startBtn: startSinglePlayerGameBtn?.outerHTML,
+            backBtn: backToMenuSinglePlayerBtn?.outerHTML
+        });
+        updateRankingDisplay();
+    } else {
+        console.error('Erro: singlePlayerStartScreen não encontrado');
+    }
 }
 
 function showMultiplayerScreen() {
     console.log('Exibindo tela de multiplayer');
     hideAllScreens();
-    multiplayerStartScreen.style.display = 'flex';
+    if (multiplayerStartScreen) multiplayerStartScreen.style.display = 'flex';
 }
 
 function startGame(isSinglePlayer) {
     console.log(`Iniciando jogo: ${isSinglePlayer ? 'Single Player' : 'Multiplayer'}`);
     singlePlayer = isSinglePlayer;
     hideAllScreens();
-    gameScreen.style.display = 'flex';
-    rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
-    currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
-    resetGame();
-    lastTime = performance.now();
-    gameLoop();
+    if (gameScreen && rightLivesContainer && currentScoreDisplay) {
+        gameScreen.style.display = 'flex';
+        rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
+        currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
+        resetGame();
+        lastTime = performance.now();
+        gameLoop();
+    } else {
+        console.error('Erro: Elementos do gameScreen não encontrados');
+    }
 }
 
-singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
-multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
-startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
-backToMenuSinglePlayerBtn.addEventListener('click', showStartScreen);
-backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
+if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
+if (multiPlayerBtn) multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
+if (startSinglePlayerGameBtn) startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
+if (backToMenuSinglePlayerBtn) backToMenuSinglePlayerBtn.addEventListener('click', showStartScreen);
+if (backToMenuMultiplayerBtn) backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
 
-rematchBtn.addEventListener('click', () => {
-    console.log('Revanche iniciada');
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-    }
-    hideAllScreens();
-    gameScreen.style.display = 'flex';
-    rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
-    currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
-    rankingSection.style.display = 'none';
-    finalRanking.style.display = 'none';
-    finalScoreDisplay.style.display = 'none';
-    playerNameInput.value = '';
-    saveScoreBtn.disabled = false;
-    resetGame();
-    lastTime = performance.now();
-    gameOver = false;
-    gameLoop();
-});
-
-backToMenuBtn.addEventListener('click', () => {
-    console.log('Voltando ao menu principal');
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-    }
-    showStartScreen();
-    rankingSection.style.display = 'none';
-    finalRanking.style.display = 'none';
-    finalScoreDisplay.style.display = 'none';
-    playerNameInput.value = '';
-    saveScoreBtn.disabled = false;
-});
-
-saveScoreBtn.addEventListener('click', () => {
-    const name = playerNameInput.value.trim();
-    if (name) {
-        ranking.push({ name, score });
-        ranking.sort((a, b) => b.score - a.score);
-        ranking = ranking.slice(0, 10);
-        localStorage.setItem('pongRanking', JSON.stringify(ranking));
-        updateRankingDisplay();
-        alert('Pontuação salva com sucesso!');
-        saveScoreBtn.disabled = true;
-        rankingSection.style.display = 'none';
-        finalRanking.style.display = 'block';
-    } else {
-        alert('Digite seu nome para salvar a pontuação.');
-    }
-});
-
-function updateRankingDisplay() {
-    initialRankingList.innerHTML = '';
-    finalRankingList.innerHTML = '';
-    ranking.forEach((entry, index) => {
-        const li = document.createElement('li');
-        li.textContent = `${index + 1}. ${entry.name}: ${entry.score} ponto${entry.score !== 1 ? 's' : ''}`;
-        initialRankingList.appendChild(li);
-        finalRankingList.appendChild(li.cloneNode(true));
+if (rematchBtn) {
+    rematchBtn.addEventListener('click', () => {
+        console.log('Revanche iniciada');
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        hideAllScreens();
+        if (gameScreen && rightLivesContainer && currentScoreDisplay) {
+            gameScreen.style.display = 'flex';
+            rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
+            currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
+            rankingSection.style.display = 'none';
+            finalRanking.style.display = 'none';
+            finalScoreDisplay.style.display = 'none';
+            playerNameInput.value = '';
+            saveScoreBtn.disabled = false;
+            resetGame();
+            lastTime = performance.now();
+            gameOver = false;
+            gameLoop();
+        }
     });
 }
 
+if (backToMenuBtn) {
+    backToMenuBtn.addEventListener('click', () => {
+        console.log('Voltando ao menu principal');
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        showStartScreen();
+        if (rankingSection) rankingSection.style.display = 'none';
+        if (finalRanking) finalRanking.style.display = 'none';
+        if (finalScoreDisplay) finalScoreDisplay.style.display = 'none';
+        if (playerNameInput) playerNameInput.value = '';
+        if (saveScoreBtn) saveScoreBtn.disabled = false;
+    });
+}
+
+if (saveScoreBtn) {
+    saveScoreBtn.addEventListener('click', () => {
+        const name = playerNameInput?.value.trim();
+        if (name) {
+            ranking.push({ name, score });
+            ranking.sort((a, b) => b.score - a.score);
+            ranking = ranking.slice(0, 10);
+            localStorage.setItem('pongRanking', JSON.stringify(ranking));
+            updateRankingDisplay();
+            alert('Pontuação salva com sucesso!');
+            saveScoreBtn.disabled = true;
+            if (rankingSection) rankingSection.style.display = 'none';
+            if (finalRanking) finalRanking.style.display = 'block';
+        } else {
+            alert('Digite seu nome para salvar a pontuação.');
+        }
+    });
+}
+
+function updateRankingDisplay() {
+    if (initialRankingList && finalRankingList) {
+        initialRankingList.innerHTML = '';
+        finalRankingList.innerHTML = '';
+        ranking.forEach((entry, index) => {
+            const li = document.createElement('li');
+            li.textContent = `${index + 1}. ${entry.name}: ${entry.score} ponto${entry.score !== 1 ? 's' : ''}`;
+            initialRankingList.appendChild(li);
+            finalRankingList.appendChild(li.cloneNode(true));
+        });
+    }
+}
+
 function draw() {
+    if (!ctx) return;
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -316,7 +350,7 @@ function activatePower(player) {
             speedY: 0
         };
         lastPlayerTouched = player;
-        trail = []; // Limpa o rastro ao pausar
+        trail = [];
         console.log(`Raio ativado para ${player}: Pausado em x=${ballX.toFixed(2)}, y=${ballY.toFixed(2)}`);
     } else if (power === 'reverse') {
         ballSpeedX = -ballSpeedX;
@@ -340,23 +374,22 @@ function activatePower(player) {
 
     if (player === 'left') {
         leftPower = null;
-        leftPowerDisplay.textContent = 'Poder: Nenhum';
-        leftPowerDisplay.className = 'power-display';
+        if (leftPowerDisplay) leftPowerDisplay.textContent = 'Poder: Nenhum';
+        if (leftPowerDisplay) leftPowerDisplay.className = 'power-display';
     } else {
         rightPower = null;
-        rightPowerDisplay.textContent = 'Poder: Nenhum';
-        rightPowerDisplay.className = 'power-display';
+        if (rightPowerDisplay) rightPowerDisplay.textContent = 'Poder: Nenhum';
+        if (rightPowerDisplay) rightPowerDisplay.className = 'power-display';
     }
 }
 
 function update() {
-    if (!gameStarted || gameOver) return;
+    if (!gameStarted || gameOver || !ctx) return;
 
     const currentTime = performance.now();
-    const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.033); // Limite a 30 FPS
+    const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.033);
     lastTime = currentTime;
 
-    // Movimento das raquetes
     if (keys['w'] && leftPaddleY > 0) leftPaddleY -= PADDLE_SPEED * deltaTime;
     if (keys['s'] && leftPaddleY < canvas.height - leftPaddleHeight) leftPaddleY += PADDLE_SPEED * deltaTime;
 
@@ -390,7 +423,7 @@ function update() {
             isBallPaused = false;
             pendingLightningLaunch = null;
             pauseStartTime = 0;
-            lastTrailPosition = { x: ballX, y: ballY }; // Reseta posição do rastro
+            lastTrailPosition = { x: ballX, y: ballY };
             return;
         }
 
@@ -399,10 +432,9 @@ function update() {
         } else {
             ballY = rightPaddleY + rightPaddleHeight / 2;
         }
-        return; // Não atualiza rastro durante pausa
+        return;
     }
 
-    // Adiciona ao rastro com base na distância
     const distanceMoved = Math.sqrt((ballX - lastTrailPosition.x) ** 2 + (ballY - lastTrailPosition.y) ** 2);
     if (distanceMoved >= TRAIL_SPACING) {
         trail.push({ x: ballX, y: ballY });
@@ -413,11 +445,9 @@ function update() {
         console.log(`Adicionando ao rastro: x=${ballX.toFixed(2)}, y=${ballY.toFixed(2)}, distance=${distanceMoved.toFixed(2)}`);
     }
 
-    // Movimento da bola
     ballX += ballSpeedX * deltaTime;
     ballY += ballSpeedY * deltaTime;
 
-    // Corrige colisão com bordas superior e inferior
     if (ballY <= BALL_SIZE / 2) {
         ballY = BALL_SIZE / 2;
         ballSpeedY = Math.abs(ballSpeedY);
@@ -432,7 +462,6 @@ function update() {
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: rightPaddleHeight };
     const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
 
-    // Colisão com raquete esquerda
     if (ballSpeedX < 0 && !lastLeftPaddleCollision && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + leftPaddleHeight / 2)) / (leftPaddleHeight / 2);
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
@@ -450,7 +479,6 @@ function update() {
         lastLeftPaddleCollision = false;
     }
 
-    // Colisão com raquete direita
     if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
         const hitPoint = (ballY - (rightPaddle.y + rightPaddleHeight / 2)) / (rightPaddleHeight / 2);
         ballSpeedX = -Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
@@ -461,7 +489,6 @@ function update() {
         updateScoreDisplay();
     }
 
-    // Colisão com caixa misteriosa
     if (mysteryBox) {
         const box = {
             x: mysteryBox.x,
@@ -476,19 +503,18 @@ function update() {
                 console.log(`Atribuindo poder ${power} ao jogador ${lastPlayerTouched}`);
                 if (lastPlayerTouched === 'left') {
                     leftPower = power;
-                    leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : 'Crescer'}`;
-                    leftPowerDisplay.className = `power-display power-${power}`;
+                    if (leftPowerDisplay) leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : 'Crescer'}`;
+                    if (leftPowerDisplay) leftPowerDisplay.className = `power-display power-${power}`;
                 } else {
                     rightPower = power;
-                    rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : 'Crescer'}`;
-                    rightPowerDisplay.className = `power-display power-${power}`;
+                    if (rightPowerDisplay) rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : 'Crescer'}`;
+                    if (rightPowerDisplay) rightPowerDisplay.className = `power-display power-${power}`;
                 }
             }
             mysteryBox = null;
         }
     }
 
-    // Gerar caixa misteriosa
     if (!mysteryBox && Date.now() - lastBoxSpawnTime > MYSTERY_BOX_SPAWN_INTERVAL) {
         if (Math.random() < 0.5) {
             spawnMysteryBox();
@@ -497,18 +523,17 @@ function update() {
         console.log(`Verificando geração de caixa: lastBoxSpawnTime=${lastBoxSpawnTime}, currentTime=${Date.now()}`);
     }
 
-    // Expirar poderes
     if (leftShieldActive && Date.now() > leftShieldEndTime) {
         leftShieldActive = false;
         console.log('Escudo expirado para esquerda');
-        leftPowerDisplay.textContent = 'Poder: Nenhum';
-        leftPowerDisplay.className = 'power-display';
+        if (leftPowerDisplay) leftPowerDisplay.textContent = 'Poder: Nenhum';
+        if (leftPowerDisplay) leftPowerDisplay.className = 'power-display';
     }
     if (rightShieldActive && Date.now() > rightShieldEndTime) {
         rightShieldActive = false;
         console.log('Escudo expirado para direita');
-        rightPowerDisplay.textContent = 'Poder: Nenhum';
-        rightPowerDisplay.className = 'power-display';
+        if (rightPowerDisplay) rightPowerDisplay.textContent = 'Poder: Nenhum';
+        if (rightPowerDisplay) rightPowerDisplay.className = 'power-display';
     }
 
     if (leftGrowActive && Date.now() > leftGrowEndTime) {
@@ -524,7 +549,6 @@ function update() {
         console.log('Crescer expirado para direita: Altura da raquete=', rightPaddleHeight);
     }
 
-    // Verificar gol
     if (ballX <= BALL_SIZE / 2) {
         if (!leftShieldActive) {
             leftLives--;
@@ -546,20 +570,21 @@ function update() {
         resetBall();
     }
 
-    // Fim de jogo
     if (leftLives <= 0 || (!singlePlayer && rightLives <= 0)) {
         gameOver = true;
         hideAllScreens();
-        gameOverScreen.style.display = 'flex';
-        if (singlePlayer) {
-            gameOverMessage.textContent = 'Você perdeu todas as vidas!';
-            finalScoreDisplay.textContent = `Sua pontuação: ${score} ponto${score !== 1 ? 's' : ''}`;
-            finalScoreDisplay.style.display = 'block';
-            rankingSection.style.display = 'flex';
-            finalRanking.style.display = 'none';
-            updateRankingDisplay();
-        } else {
-            gameOverMessage.textContent = leftLives <= 0 ? 'Jogador 2 venceu!' : 'Jogador 1 venceu!';
+        if (gameOverScreen && gameOverMessage && finalScoreDisplay && rankingSection && finalRanking) {
+            gameOverScreen.style.display = 'flex';
+            if (singlePlayer) {
+                gameOverMessage.textContent = 'Você perdeu todas as vidas!';
+                finalScoreDisplay.textContent = `Sua pontuação: ${score} ponto${score !== 1 ? 's' : ''}`;
+                finalScoreDisplay.style.display = 'block';
+                rankingSection.style.display = 'flex';
+                finalRanking.style.display = 'none';
+                updateRankingDisplay();
+            } else {
+                gameOverMessage.textContent = leftLives <= 0 ? 'Jogador 2 venceu!' : 'Jogador 1 venceu!';
+            }
         }
     }
 }
@@ -574,89 +599,5 @@ function collides(ball, obj) {
 }
 
 function updateLivesDisplay() {
-    document.getElementById('leftLife1').style.display = leftLives >= 1 ? 'inline-block' : 'none';
-    document.getElementById('leftLife2').style.display = leftLives >= 2 ? 'inline-block' : 'none';
-    document.getElementById('leftLife3').style.display = leftLives >= 3 ? 'inline-block' : 'none';
-    document.getElementById('rightLife1').style.display = rightLives >= 1 ? 'inline-block' : 'none';
-    document.getElementById('rightLife2').style.display = rightLives >= 2 ? 'inline-block' : 'none';
-    document.getElementById('rightLife3').style.display = rightLives >= 3 ? 'inline-block' : 'none';
-}
-
-function updateScoreDisplay() {
-    if (currentScoreDisplay) {
-        currentScoreDisplay.textContent = score;
-    }
-    if (currentGoalsDisplay) {
-        currentGoalsDisplay.textContent = goals;
-    }
-}
-
-function resetBall() {
-    ballX = canvas.width / 2;
-    ballY = canvas.height / 2;
-    ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
-    ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
-    trail = [];
-    lastPlayerTouched = null;
-    isBallPaused = false;
-    pendingLightningLaunch = null;
-    pauseStartTime = 0;
-    lastLeftPaddleCollision = false;
-    lastTrailPosition = { x: ballX, y: ballY };
-}
-
-function resetGame() {
-    console.log('Resetando estado do jogo');
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-    }
-    leftLives = 3;
-    rightLives = 3;
-    score = 0;
-    goals = 0;
-    leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
-    rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
-    leftPaddleHeight = PADDLE_HEIGHT;
-    rightPaddleHeight = PADDLE_HEIGHT;
-    ballX = canvas.width / 2;
-    ballY = canvas.height / 2;
-    ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
-    ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
-    trail = [];
-    lastPlayerTouched = null;
-    mysteryBox = null;
-    leftPower = null;
-    rightPower = null;
-    leftShieldActive = false;
-    rightShieldActive = false;
-    leftShieldEndTime = 0;
-    rightShieldEndTime = 0;
-    leftGrowActive = false;
-    rightGrowActive = false;
-    leftGrowEndTime = 0;
-    rightGrowEndTime = 0;
-    lastBoxSpawnTime = 0;
-    isBallPaused = false;
-    pendingLightningLaunch = null;
-    pauseStartTime = 0;
-    powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
-    lastLeftPaddleCollision = false;
-    lastTrailPosition = { x: ballX, y: ballY };
-    leftPowerDisplay.textContent = 'Poder: Nenhum';
-    leftPowerDisplay.className = 'power-display';
-    rightPowerDisplay.textContent = 'Poder: Nenhum';
-    rightPowerDisplay.className = 'power-display';
-    updateLivesDisplay();
-    updateScoreDisplay();
-    gameStarted = true;
-    gameOver = false;
-}
-
-function gameLoop() {
-    if (!gameOver) {
-        update();
-        draw();
-        animationFrameId = requestAnimationFrame(gameLoop);
-    }
-}
+    if (document.getElementById('leftLife1')) document.getElementById('leftLife1').style.display = leftLives >= 1 ? 'inline-block' : 'none';
+    if (document.getElementById('leftLife2')) document.getElementById('
