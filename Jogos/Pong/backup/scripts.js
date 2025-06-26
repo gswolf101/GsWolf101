@@ -30,18 +30,20 @@ const rightPowerDisplay = document.getElementById('rightPower');
 
 const PADDLE_WIDTH = 15;
 const PADDLE_HEIGHT = 120;
+const PADDLE_GROW_HEIGHT = 200; // Altura da raquete ao ativar Crescer
 const BALL_SIZE = 15;
-const PADDLE_SPEED = 6;
-const INITIAL_BALL_SPEED = 4;
-const BALL_SPEED_INCREMENT = 0.4;
-const MAX_BALL_SPEED = 14;
-const AI_PADDLE_SPEED = 7;
+const PADDLE_SPEED = 360; // Pixels por segundo (6 pixels por quadro a 60 FPS)
+const INITIAL_BALL_SPEED = 240; // Pixels por segundo (4 pixels por quadro a 60 FPS)
+const BALL_SPEED_INCREMENT = 24; // Incremento por segundo (0.4 pixels por quadro a 60 FPS)
+const MAX_BALL_SPEED = 840; // Pixels por segundo (14 pixels por quadro a 60 FPS)
+const AI_PADDLE_SPEED = 420; // Pixels por segundo (7 pixels por quadro a 60 FPS)
 const AI_TRACKING_MARGIN = 10;
 const TRAIL_LENGTH = 12;
 const MYSTERY_BOX_SIZE = 30;
 const MYSTERY_BOX_SPAWN_INTERVAL = 5000; // 5 segundos
 const SHIELD_DURATION = 2000; // 2 segundos
 const LIGHTNING_PAUSE_DURATION = 2000; // 2 segundos para Raio
+const GROW_DURATION = 10000; // 10 segundos para Crescer
 
 let ballX = canvas.width / 2;
 let ballY = canvas.height / 2;
@@ -49,6 +51,8 @@ let ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
 let ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
 let leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
 let rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
+let leftPaddleHeight = PADDLE_HEIGHT; // Altura dinâmica para a raquete esquerda
+let rightPaddleHeight = PADDLE_HEIGHT; // Altura dinâmica para a raquete direita
 let leftLives = 3;
 let rightLives = 3;
 let singlePlayer = false;
@@ -65,11 +69,18 @@ let leftShieldActive = false;
 let rightShieldActive = false;
 let leftShieldEndTime = 0;
 let rightShieldEndTime = 0;
+let leftGrowActive = false;
+let rightGrowActive = false;
+let leftGrowEndTime = 0;
+let rightGrowEndTime = 0;
 let lastBoxSpawnTime = 0;
 let isBallPaused = false;
 let pauseStartTime = 0;
 let pendingLightningLaunch = null;
-let powerCounts = { shield: 0, lightning: 0, reverse: 0 };
+let powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
+let animationFrameId = null;
+let lastLeftPaddleCollision = false; // Controla colisão com raquete esquerda
+let lastTime = performance.now(); // Para calcular delta time
 
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
@@ -94,17 +105,20 @@ function hideAllScreens() {
 }
 
 function showStartScreen() {
+    console.log('Exibindo menu principal');
     hideAllScreens();
     startScreen.style.display = 'flex';
 }
 
 function showSinglePlayerScreen() {
+    console.log('Exibindo tela de single-player');
     hideAllScreens();
     singlePlayerStartScreen.style.display = 'flex';
     updateRankingDisplay();
 }
 
 function showMultiplayerScreen() {
+    console.log('Exibindo tela de multiplayer');
     hideAllScreens();
     multiplayerStartScreen.style.display = 'flex';
 }
@@ -117,6 +131,7 @@ function startGame(isSinglePlayer) {
     rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
     currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
     resetGame();
+    lastTime = performance.now(); // Inicializa lastTime
     gameLoop();
 }
 
@@ -129,6 +144,10 @@ backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
 
 rematchBtn.addEventListener('click', () => {
     console.log('Revanche iniciada');
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
     hideAllScreens();
     gameScreen.style.display = 'flex';
     rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
@@ -139,12 +158,17 @@ rematchBtn.addEventListener('click', () => {
     playerNameInput.value = '';
     saveScoreBtn.disabled = false;
     resetGame();
-    gameOver = false; // Explicitamente resetar gameOver
-    gameLoop(); // Reiniciar o loop
+    lastTime = performance.now(); // Reseta lastTime
+    gameOver = false;
+    gameLoop();
 });
 
 backToMenuBtn.addEventListener('click', () => {
     console.log('Voltando ao menu principal');
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
     showStartScreen();
     rankingSection.style.display = 'none';
     finalRanking.style.display = 'none';
@@ -186,9 +210,9 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = leftShieldActive ? '#00f' : 'white';
-    ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
+    ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, leftPaddleHeight);
     ctx.fillStyle = rightShieldActive ? '#00f' : 'white';
-    ctx.fillRect(canvas.width - PADDLE_WIDTH, rightPaddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
+    ctx.fillRect(canvas.width - PADDLE_WIDTH, rightPaddleY, PADDLE_WIDTH, rightPaddleHeight);
 
     if (mysteryBox) {
         ctx.fillStyle = 'yellow';
@@ -245,7 +269,7 @@ function spawnMysteryBox() {
 }
 
 function getRandomPower() {
-    const powers = ['shield', 'lightning', 'reverse'];
+    const powers = ['shield', 'lightning', 'reverse', 'grow'];
     const randomIndex = Math.floor(Math.random() * powers.length);
     const selectedPower = powers[randomIndex];
     powerCounts[selectedPower]++;
@@ -269,7 +293,7 @@ function activatePower(player) {
         }
     } else if (power === 'lightning') {
         ballX = player === 'left' ? PADDLE_WIDTH + BALL_SIZE / 2 : canvas.width - PADDLE_WIDTH - BALL_SIZE / 2;
-        ballY = (player === 'left' ? leftPaddleY : rightPaddleY) + PADDLE_HEIGHT / 2;
+        ballY = (player === 'left' ? leftPaddleY : rightPaddleY) + (player === 'left' ? leftPaddleHeight : rightPaddleHeight) / 2;
         ballSpeedX = 0;
         ballSpeedY = 0;
         isBallPaused = true;
@@ -284,16 +308,29 @@ function activatePower(player) {
     } else if (power === 'reverse') {
         ballSpeedX = -ballSpeedX;
         ballSpeedY = -ballSpeedY;
-        console.log(`Inversão ativado: Velocidade X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+        console.log(`Inversão ativada: Velocidade X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+    } else if (power === 'grow') {
+        if (player === 'left') {
+            leftGrowActive = true;
+            leftGrowEndTime = Date.now() + GROW_DURATION;
+            leftPaddleHeight = PADDLE_GROW_HEIGHT;
+            leftPaddleY = Math.max(0, Math.min(canvas.height - leftPaddleHeight, leftPaddleY));
+        } else {
+            rightGrowActive = true;
+            rightGrowEndTime = Date.now() + GROW_DURATION;
+            rightPaddleHeight = PADDLE_GROW_HEIGHT;
+            rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
+        }
+        console.log(`Crescer ativado para ${player}: Altura da raquete=${player === 'left' ? leftPaddleHeight : rightPaddleHeight}`);
     }
 
     if (player === 'left') {
         leftPower = null;
-        leftPowerDisplay.textContent = 'Poder: nenhum';
+        leftPowerDisplay.textContent = 'Poder: Nenhum';
         leftPowerDisplay.className = 'power-display';
     } else {
         rightPower = null;
-        rightPowerDisplay.textContent = 'Poder: nenhum';
+        rightPowerDisplay.textContent = 'Poder: Nenhum';
         rightPowerDisplay.className = 'power-display';
     }
 }
@@ -301,20 +338,25 @@ function activatePower(player) {
 function update() {
     if (!gameStarted || gameOver) return;
 
-    if (keys['w'] && leftPaddleY > 1) leftPaddleY -= PADDLE_SPEED;
-    if (keys['s'] && leftPaddleY < canvas.height - PADDLE_HEIGHT - 1) leftPaddleY += PADDLE_SPEED;
+    const currentTime = performance.now();
+    const deltaTime = (currentTime - lastTime) / 1000; // Delta time em segundos
+    lastTime = currentTime;
+
+    // Movimento das raquetes
+    if (keys['w'] && leftPaddleY > 0) leftPaddleY -= PADDLE_SPEED * deltaTime;
+    if (keys['s'] && leftPaddleY < canvas.height - leftPaddleHeight) leftPaddleY += PADDLE_SPEED * deltaTime;
 
     if (!singlePlayer) {
-        if (keys['ArrowUp'] && rightPaddleY > 1) rightPaddleY -= PADDLE_SPEED;
-        if (keys['ArrowDown'] && rightPaddleY < canvas.height - PADDLE_HEIGHT - 1) rightPaddleY += PADDLE_SPEED;
+        if (keys['ArrowUp'] && rightPaddleY > 0) rightPaddleY -= PADDLE_SPEED * deltaTime;
+        if (keys['ArrowDown'] && rightPaddleY < canvas.height - rightPaddleHeight) rightPaddleY += PADDLE_SPEED * deltaTime;
     } else {
-        const paddleCenter = rightPaddleY + PADDLE_HEIGHT / 2;
-        if (paddleCenter < ballY - 1 && !isBallPaused) {
-            rightPaddleY += AI_PADDLE_SPEED;
-        } else if (paddleCenter > ballY + 1 && !isBallPaused) {
-            rightPaddleY -= AI_PADDLE_SPEED;
+        const paddleCenter = rightPaddleY + rightPaddleHeight / 2;
+        if (paddleCenter < ballY - AI_TRACKING_MARGIN && !isBallPaused) {
+            rightPaddleY += AI_PADDLE_SPEED * deltaTime;
+        } else if (paddleCenter > ballY + AI_TRACKING_MARGIN && !isBallPaused) {
+            rightPaddleY -= AI_PADDLE_SPEED * deltaTime;
         }
-        rightPaddleY = Math.max(1, Math.min(canvas.height - PADDLE_HEIGHT - 1, rightPaddleY));
+        rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
     }
 
     if (isBallPaused) {
@@ -338,9 +380,9 @@ function update() {
         }
 
         if (pendingLightningLaunch.player === 'left') {
-            ballY = leftPaddleY + PADDLE_HEIGHT / 2;
+            ballY = leftPaddleY + leftPaddleHeight / 2;
         } else {
-            ballY = rightPaddleY + PADDLE_HEIGHT / 2;
+            ballY = rightPaddleY + rightPaddleHeight / 2;
         }
         trail = [];
         return;
@@ -351,31 +393,51 @@ function update() {
         trail.shift();
     }
 
-    ballX += ballSpeedX;
-    ballY += ballSpeedY;
+    // Movimento da bola ajustado por deltaTime
+    ballX += ballSpeedX * deltaTime;
+    ballY += ballSpeedY * deltaTime;
 
-    if (ballY <= BALL_SIZE / 2 || ballY >= canvas.height - BALL_SIZE / 2) {
-        ballSpeedY = -ballSpeedY;
+    // Corrige colisão com bordas superior e inferior
+    if (ballY <= BALL_SIZE / 2) {
+        ballY = BALL_SIZE / 2; // Reposiciona a bola fora da borda superior
+        ballSpeedY = Math.abs(ballSpeedY); // Garante movimento para baixo
+        console.log(`Colisão com borda superior: ballY=${ballY.toFixed(2)}, ballSpeedY=${ballSpeedY.toFixed(2)}`);
+    } else if (ballY >= canvas.height - BALL_SIZE / 2) {
+        ballY = canvas.height - BALL_SIZE / 2; // Reposiciona a bola fora da borda inferior
+        ballSpeedY = -Math.abs(ballSpeedY); // Garante movimento para cima
+        console.log(`Colisão com borda inferior: ballY=${ballY.toFixed(2)}, ballSpeedY=${ballSpeedY.toFixed(2)}`);
     }
 
-    const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
-    const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
-    if (ballSpeedX < 0 && collides(ball, leftPaddle)) {
-        const hitPoint = (ballY - (leftPaddle.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
+    const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: leftPaddleHeight };
+    const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: rightPaddleHeight };
+    const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
+
+    // Verifica colisão com a raquete esquerda apenas se não houve colisão no quadro anterior
+    if (ballSpeedX < 0 && !lastLeftPaddleCollision && collides(ball, leftPaddle)) {
+        const hitPoint = (ballY - (leftPaddle.y + leftPaddleHeight / 2)) / (leftPaddleHeight / 2);
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = leftPaddle.x + leftPaddle.width + BALL_SIZE / 2;
         lastPlayerTouched = 'left';
-        if (singlePlayer) score++;
+        lastLeftPaddleCollision = true; // Marca colisão
+        if (singlePlayer) {
+            score += 1; // 1 ponto por rebatida no modo solo
+            console.log(`Rebatida pelo jogador! Pontos: ${score}`);
+        }
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
         updateScoreDisplay();
-    } else if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
-        const hitPoint = (ballY - (rightPaddle.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
+    } else if (ballSpeedX >= 0) {
+        lastLeftPaddleCollision = false; // Reseta ao mover para a direita
+    }
+
+    if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
+        const hitPoint = (ballY - (rightPaddle.y + rightPaddleHeight / 2)) / (rightPaddleHeight / 2);
         ballSpeedX = -Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = rightPaddle.x - BALL_SIZE / 2;
         lastPlayerTouched = 'right';
         console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+        updateScoreDisplay();
     }
 
     if (mysteryBox) {
@@ -391,11 +453,11 @@ function update() {
                 console.log(`Atribuindo poder ${power} ao jogador ${lastPlayerTouched}`);
                 if (lastPlayerTouched === 'left') {
                     leftPower = power;
-                    leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : 'Inversão'}`;
+                    leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : 'Crescer'}`;
                     leftPowerDisplay.className = `power-display power-${power}`;
                 } else {
                     rightPower = power;
-                    rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : 'Inversão'}`;
+                    rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : 'Crescer'}`;
                     rightPowerDisplay.className = `power-display power-${power}`;
                 }
             }
@@ -411,29 +473,47 @@ function update() {
     if (leftShieldActive && Date.now() > leftShieldEndTime) {
         leftShieldActive = false;
         leftPower = null;
-        leftPowerDisplay.textContent = 'Poder: nenhum';
+        leftPowerDisplay.textContent = 'Poder: Nenhum';
         leftPowerDisplay.className = 'power-display';
     }
     if (rightShieldActive && Date.now() > rightShieldEndTime) {
         rightShieldActive = false;
         rightPower = null;
-        rightPowerDisplay.textContent = 'Poder: nenhum';
+        rightPowerDisplay.textContent = 'Poder: Nenhum';
         rightPowerDisplay.className = 'power-display';
     }
 
-    if (ballX <= 0) {
+    if (leftGrowActive && Date.now() > leftGrowEndTime) {
+        leftGrowActive = false;
+        leftPaddleHeight = PADDLE_HEIGHT;
+        leftPaddleY = Math.max(0, Math.min(canvas.height - leftPaddleHeight, leftPaddleY));
+        console.log('Crescer expirado para esquerda: Altura da raquete=', leftPaddleHeight);
+    }
+    if (rightGrowActive && Date.now() > rightGrowEndTime) {
+        rightGrowActive = false;
+        rightPaddleHeight = PADDLE_HEIGHT;
+        rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
+        console.log('Crescer expirado para direita: Altura da raquete=', rightPaddleHeight);
+    }
+
+    if (ballX <= BALL_SIZE / 2) {
         if (!leftShieldActive) {
             leftLives--;
-            if (singlePlayer) goals++;
         }
         updateLivesDisplay();
         updateScoreDisplay();
         resetBall();
-    } else if (ballX >= canvas.width) {
+    } else if (ballX >= canvas.width - BALL_SIZE / 2) {
         if (!rightShieldActive) {
             rightLives--;
+            if (singlePlayer) {
+                score += 10; // 10 pontos por gol no modo solo
+                goals++; // Contar gol feito pelo jogador
+                console.log(`Gol marcado pelo jogador! Pontos: ${score}, Gols: ${goals}`);
+            }
         }
         updateLivesDisplay();
+        updateScoreDisplay();
         resetBall();
     }
 
@@ -443,7 +523,7 @@ function update() {
         gameOverScreen.style.display = 'flex';
         if (singlePlayer) {
             gameOverMessage.textContent = 'Você perdeu todas as vidas!';
-            finalScoreDisplay.textContent = `Sua pontuação: ${score} pontos`;
+            finalScoreDisplay.textContent = `Sua pontuação: ${score} ponto${score !== 1 ? 's' : ''}`;
             finalScoreDisplay.style.display = 'block';
             rankingSection.style.display = 'flex';
             finalRanking.style.display = 'none';
@@ -491,16 +571,23 @@ function resetBall() {
     isBallPaused = false;
     pendingLightningLaunch = null;
     pauseStartTime = 0;
+    lastLeftPaddleCollision = false; // Reseta colisão ao reiniciar a bola
 }
 
 function resetGame() {
     console.log('Resetando estado do jogo');
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
     leftLives = 3;
     rightLives = 3;
     score = 0;
     goals = 0;
     leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
     rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
+    leftPaddleHeight = PADDLE_HEIGHT;
+    rightPaddleHeight = PADDLE_HEIGHT;
     ballX = canvas.width / 2;
     ballY = canvas.height / 2;
     ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
@@ -514,24 +601,30 @@ function resetGame() {
     rightShieldActive = false;
     leftShieldEndTime = 0;
     rightShieldEndTime = 0;
+    leftGrowActive = false;
+    rightGrowActive = false;
+    leftGrowEndTime = 0;
+    rightGrowEndTime = 0;
     lastBoxSpawnTime = 0;
     isBallPaused = false;
     pendingLightningLaunch = null;
     pauseStartTime = 0;
-    powerCounts = { shield: 0, lightning: 0, reverse: 0 };
-    leftPowerDisplay.textContent = 'Poder: none';
+    powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
+    lastLeftPaddleCollision = false; // Inicializa como false
+    leftPowerDisplay.textContent = 'Poder: Nenhum';
     leftPowerDisplay.className = 'power-display';
-    rightPowerDisplay.textContent = 'Poder: none';
+    rightPowerDisplay.textContent = 'Poder: Nenhum';
     rightPowerDisplay.className = 'power-display';
     updateLivesDisplay();
     updateScoreDisplay();
     gameStarted = true;
+    gameOver = false;
 }
 
 function gameLoop() {
     if (!gameOver) {
         update();
         draw();
-        requestAnimationFrame(gameLoop);
+        animationFrameId = requestAnimationFrame(gameLoop);
     }
 }
