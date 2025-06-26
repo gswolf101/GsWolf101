@@ -39,7 +39,7 @@ const MAX_BALL_SPEED = 840; // Pixels por segundo
 const AI_PADDLE_SPEED = 420; // Pixels por segundo
 const AI_TRACKING_MARGIN = 10;
 const TRAIL_LENGTH = 12;
-const TRAIL_SPACING = 10; // Distância mínima entre pontos do rastro
+const TRAIL_SPACING = 5; // Distância mínima entre pontos do rastro (reduzido)
 const MYSTERY_BOX_SIZE = 30;
 const MYSTERY_BOX_SPAWN_INTERVAL = 5000; // 5 segundos
 const SHIELD_DURATION = 2000; // 2 segundos
@@ -398,7 +398,7 @@ function update() {
         return; // Não atualiza rastro durante pausa
     }
 
-    // Adiciona ao rastro apenas se a bola se mover o suficiente
+    // Adiciona ao rastro com base na distância
     const distanceMoved = Math.sqrt((ballX - lastTrailPosition.x) ** 2 + (ballY - lastTrailPosition.y) ** 2);
     if (distanceMoved >= TRAIL_SPACING) {
         trail.push({ x: ballX, y: ballY });
@@ -406,6 +406,7 @@ function update() {
         if (trail.length > TRAIL_LENGTH) {
             trail.shift();
         }
+        console.log(`Adicionando ao rastro: x=${ballX.toFixed(2)}, y=${ballY.toFixed(2)}, distance=${distanceMoved.toFixed(2)}`);
     }
 
     // Movimento da bola
@@ -465,6 +466,7 @@ function update() {
             height: MYSTERY_BOX_SIZE,
         };
         if (collides(ball, box)) {
+            console.log(`Colisão com caixa: lastPlayerTouched=${lastPlayerTouched}`);
             if (lastPlayerTouched) {
                 const power = getRandomPower();
                 console.log(`Atribuindo poder ${power} ao jogador ${lastPlayerTouched}`);
@@ -483,9 +485,12 @@ function update() {
     }
 
     // Gerar caixa misteriosa
-    if (!mysteryBox && Date.now() - lastBoxSpawnTime > MYSTERY_BOX_SPAWN_INTERVAL && Math.random() < 0.1) {
-        spawnMysteryBox();
-        lastBoxSpawnTime = Date.now();
+    if (!mysteryBox && Date.now() - lastBoxSpawnTime > MYSTERY_BOX_SPAWN_INTERVAL) {
+        if (Math.random() < 0.5) { // Aumentado de 0.1 para 0.5
+            spawnMysteryBox();
+            lastBoxSpawnTime = Date.now();
+        }
+        console.log(`Verificando geração de caixa: lastBoxSpawnTime=${lastBoxSpawnTime}, currentTime=${Date.now()}`);
     }
 
     // Expirar poderes
