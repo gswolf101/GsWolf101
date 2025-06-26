@@ -15,34 +15,25 @@
 }
 
 #singlePlayerStartScreen {
-    display: flex; /* Garante que a tela seja exibida como flex quando ativa */
+    display: flex;
+    flex-direction: column; /* Garante alinhamento vertical */
+    align-items: center; /* Centraliza horizontalmente */
+    justify-content: center; /* Centraliza verticalmente */
+    gap: 20px; /* Espaçamento entre elementos */
 }
 
-button {
-    padding: 10px 20px;
-    margin: 10px;
-    font-size: 18px;
-    cursor: pointer;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-}
-
-button:hover {
-    background-color: #45a049;
-}
-
-#startSinglePlayerGameBtn, #backToMenuSinglePlayerBtn {
-    width: 200px; /* Largura fixa para consistência */
+#singlePlayerStartScreen h2 {
+    margin: 0;
+    font-size: 24px;
     text-align: center;
 }
 
 #initialRankingList {
     list-style: none;
     padding: 0;
-    margin: 20px 0;
+    margin: 0;
     text-align: center;
+    max-width: 300px; /* Limita a largura do ranking */
 }
 
 #initialRankingList li {
@@ -50,7 +41,28 @@ button:hover {
     font-size: 16px;
 }
 
-/* Outros estilos existentes (ex.: canvas, vidas, poderes) permanecem inalterados */
+button {
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    width: 200px; /* Largura fixa para consistência */
+    text-align: center;
+    margin: 10px 0; /* Margem vertical para evitar colisão */
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#startSinglePlayerGameBtn, #backToMenuSinglePlayerBtn {
+    display: block; /* Garante que botões sejam blocos */
+}
+
+/* Outros estilos existentes (canvas, vidas, poderes) */
 #pongCanvas {
     background: black;
     display: block;
