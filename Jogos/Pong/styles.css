@@ -22,11 +22,10 @@ body {
 }
 
 #singlePlayerStartScreen {
-    display: none; /* Inicialmente escondido, ativado via JS */
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 20px; /* Espaçamento vertical */
+    gap: 20px;
 }
 
 #singlePlayerStartScreen h2 {
@@ -96,11 +95,16 @@ button:hover {
     margin: 0 5px;
 }
 
-#scoreDisplay, #goalsDisplay {
+#scoreGoalsContainer {
     position: absolute;
     top: 10px;
     left: 50%;
     transform: translateX(-50%);
+    display: flex; /* Alinha pontuação e gols lado a lado */
+    gap: 20px; /* Espaçamento entre eles */
+}
+
+#scoreDisplay, #goalsDisplay {
     color: white;
     font-size: 20px;
 }
@@ -124,4 +128,3 @@ button:hover {
 .power-lightning { background-color: #ff0; }
 .power-reverse { background-color: #f00; }
 .power-grow { background-color: #ffa500; }
-
