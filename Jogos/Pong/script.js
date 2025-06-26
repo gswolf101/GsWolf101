@@ -33,7 +33,6 @@ const currentGoalsDisplay = document.getElementById('currentGoals');
 const leftPowerDisplay = document.getElementById('leftPower');
 const rightPowerDisplay = document.getElementById('rightPower');
 
-// Verificar elementos essenciais
 if (!startScreen || !singlePlayerStartScreen || !gameScreen) {
     console.error('Erro: Elementos DOM essenciais não encontrados', {
         startScreen: !!startScreen,
@@ -156,7 +155,7 @@ function startGame(isSinglePlayer) {
     if (gameScreen && rightLivesContainer && currentScoreDisplay) {
         gameScreen.style.display = 'flex';
         rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
-        currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
+        currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
         resetGame();
         lastTime = performance.now();
         gameLoop();
@@ -182,7 +181,7 @@ if (rematchBtn) {
         if (gameScreen && rightLivesContainer && currentScoreDisplay) {
             gameScreen.style.display = 'flex';
             rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
-            currentScoreDisplay.parentElement.style.display = singlePlayer ? 'block' : 'none';
+            currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
             rankingSection.style.display = 'none';
             finalRanking.style.display = 'none';
             finalScoreDisplay.style.display = 'none';
@@ -600,4 +599,86 @@ function collides(ball, obj) {
 
 function updateLivesDisplay() {
     if (document.getElementById('leftLife1')) document.getElementById('leftLife1').style.display = leftLives >= 1 ? 'inline-block' : 'none';
-    if (document.getElementById('leftLife2')) document.getElementById('
+    if (document.getElementById('leftLife2')) document.getElementById('leftLife2').style.display = leftLives >= 2 ? 'inline-block' : 'none';
+    if (document.getElementById('leftLife3')) document.getElementById('leftLife3').style.display = leftLives >= 3 ? 'inline-block' : 'none';
+    if (document.getElementById('rightLife1')) document.getElementById('rightLife1').style.display = rightLives >= 1 ? 'inline-block' : 'none';
+    if (document.getElementById('rightLife2')) document.getElementById('rightLife2').style.display = rightLives >= 2 ? 'inline-block' : 'none';
+    if (document.getElementById('rightLife3')) document.getElementById('rightLife3').style.display = rightLives >= 3 ? 'inline-block' : 'none';
+}
+
+function updateScoreDisplay() {
+    if (currentScoreDisplay) currentScoreDisplay.textContent = score;
+    if (currentGoalsDisplay) currentGoalsDisplay.textContent = goals;
+}
+
+function resetBall() {
+    ballX = canvas ? canvas.width / 2 : 400;
+    ballY = canvas ? canvas.height / 2 : 300;
+    ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
+    ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
+    trail = [];
+    lastPlayerTouched = null;
+    isBallPaused = false;
+    pendingLightningLaunch = null;
+    pauseStartTime = 0;
+    lastLeftPaddleCollision = false;
+    lastTrailPosition = { x: ballX, y: ballY };
+}
+
+function resetGame() {
+    console.log('Resetando estado do jogo');
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    leftLives = 3;
+    rightLives = 3;
+    score = 0;
+    goals = 0;
+    leftPaddleY = canvas ? canvas.height / 2 - PADDLE_HEIGHT / 2 : 240;
+    rightPaddleY = canvas ? canvas.height / 2 - PADDLE_HEIGHT / 2 : 240;
+    leftPaddleHeight = PADDLE_HEIGHT;
+    rightPaddleHeight = PADDLE_HEIGHT;
+    ballX = canvas ? canvas.width / 2 : 400;
+    ballY = canvas ? canvas.height / 2 : 300;
+    ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
+    ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
+    trail = [];
+    lastPlayerTouched = null;
+    mysteryBox = null;
+    leftPower = null;
+    rightPower = null;
+    leftShieldActive = false;
+    rightShieldActive = false;
+    leftShieldEndTime = 0;
+    rightShieldEndTime = 0;
+    leftGrowActive = false;
+    rightGrowActive = false;
+    leftGrowEndTime = 0;
+    rightGrowEndTime = 0;
+    lastBoxSpawnTime = 0;
+    isBallPaused = false;
+    pendingLightningLaunch = null;
+    pauseStartTime = 0;
+    powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
+    lastLeftPaddleCollision = false;
+    lastTrailPosition = { x: ballX, y: ballY };
+    if (leftPowerDisplay) leftPowerDisplay.textContent = 'Poder: Nenhum';
+    if (leftPowerDisplay) leftPowerDisplay.className = 'power-display';
+    if (rightPowerDisplay) rightPowerDisplay.textContent = 'Poder: Nenhum';
+    if (rightPowerDisplay) rightPowerDisplay.className = 'power-display';
+    updateLivesDisplay();
+    updateScoreDisplay();
+    gameStarted = true;
+    gameOver = false;
+}
+
+function gameLoop() {
+    if (!gameOver && ctx) {
+        update();
+        draw();
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+}
+
+showStartScreen();
