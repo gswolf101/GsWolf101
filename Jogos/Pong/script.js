@@ -105,7 +105,7 @@ let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
 
 document.addEventListener('keydown', (e) => {
     keys[e.key] = true;
-    console.log(`Tecla pressionada: ${e.key}`); // Log para depurar teclas
+    console.log(`Tecla pressionada: ${e.key}`);
     if (e.key === 'e' && leftPower && !gameOver && !isBallPaused) {
         activatePower('left');
     }
@@ -115,7 +115,7 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => {
     keys[e.key] = false;
-    console.log(`Tecla solta: ${e.key}`); // Log para depurar teclas
+    console.log(`Tecla solta: ${e.key}`);
 });
 
 function hideAllScreens() {
@@ -154,6 +154,11 @@ function showMultiplayerScreen() {
     hideAllScreens();
     if (multiplayerStartScreen) {
         multiplayerStartScreen.style.display = 'flex';
+        console.log('Elementos da tela de multiplayer:', {
+            title: multiplayerStartScreen.querySelector('h2')?.outerHTML,
+            startBtn: startMultiplayerGameBtn?.outerHTML,
+            backBtn: backToMenuMultiplayerBtn?.outerHTML
+        });
     } else {
         console.error('Erro: multiplayerStartScreen não encontrado');
     }
@@ -164,15 +169,15 @@ function startGame(isSinglePlayer) {
     singlePlayer = isSinglePlayer;
     hideAllScreens();
     if (gameScreen && rightLivesContainer && currentScoreDisplay) {
-        gameScreen.style.display = 'flex';
-        rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
+        gameScreen.style.display = 'block';
+        rightLivesContainer.style.display = singlePlayer ? 'none' : 'block';
         currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
         resetGame();
         lastTime = performance.now();
         gameStarted = true;
         gameOver = false;
         gameLoop();
-        console.log(`Estado inicial do multiplayer: rightLives=${rightLives}, rightLivesContainer.display=${rightLivesContainer.style.display}`);
+        console.log(`Estado inicial: singlePlayer=${singlePlayer}, rightLives=${rightLives}, rightLivesContainer.display=${rightLivesContainer.style.display}`);
     } else {
         console.error('Erro: Elementos do gameScreen não encontrados', {
             gameScreen: !!gameScreen,
@@ -182,12 +187,30 @@ function startGame(isSinglePlayer) {
     }
 }
 
-if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
-if (multiPlayerBtn) multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
-if (startSinglePlayerGameBtn) startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
-if (startMultiplayerGameBtn) startMultiplayerGameBtn.addEventListener('click', () => startGame(false));
-if (backToMenuSinglePlayerBtn) backToMenuSinglePlayerBtn.addEventListener('click', showStartScreen);
-if (backToMenuMultiplayerBtn) backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
+if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', () => {
+    console.log('Botão Single Player clicado');
+    showSinglePlayerScreen();
+});
+if (multiPlayerBtn) multiPlayerBtn.addEventListener('click', () => {
+    console.log('Botão Multiplayer clicado');
+    showMultiplayerScreen();
+});
+if (startSinglePlayerGameBtn) startSinglePlayerGameBtn.addEventListener('click', () => {
+    console.log('Botão Começar Single Player clicado');
+    startGame(true);
+});
+if (startMultiplayerGameBtn) startMultiplayerGameBtn.addEventListener('click', () => {
+    console.log('Botão Começar Multiplayer clicado');
+    startGame(false);
+});
+if (backToMenuSinglePlayerBtn) backToMenuSinglePlayerBtn.addEventListener('click', () => {
+    console.log('Botão Voltar (Single Player) clicado');
+    showStartScreen();
+});
+if (backToMenuMultiplayerBtn) backToMenuMultiplayerBtn.addEventListener('click', () => {
+    console.log('Botão Voltar (Multiplayer) clicado');
+    showStartScreen();
+});
 
 if (rematchBtn) {
     rematchBtn.addEventListener('click', () => {
@@ -198,8 +221,8 @@ if (rematchBtn) {
         }
         hideAllScreens();
         if (gameScreen && rightLivesContainer && currentScoreDisplay) {
-            gameScreen.style.display = 'flex';
-            rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
+            gameScreen.style.display = 'block';
+            rightLivesContainer.style.display = singlePlayer ? 'none' : 'block';
             currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
             rankingSection.style.display = 'none';
             finalRanking.style.display = 'none';
@@ -211,7 +234,7 @@ if (rematchBtn) {
             gameStarted = true;
             gameOver = false;
             gameLoop();
-            console.log(`Revanche no multiplayer: rightLives=${rightLives}, rightLivesContainer.display=${rightLivesContainer.style.display}`);
+            console.log(`Revanche: singlePlayer=${singlePlayer}, rightLives=${rightLives}, rightLivesContainer.display=${rightLivesContainer.style.display}`);
         }
     });
 }
@@ -409,12 +432,16 @@ function activatePower(player) {
 }
 
 function update() {
-    if (!gameStarted || gameOver || !ctx) return;
+    if (!gameStarted || gameOver || !ctx) {
+        console.log(`Update interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, ctx=${!!ctx}`);
+        return;
+    }
 
     const currentTime = performance.now();
     const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.033);
     lastTime = currentTime;
 
+    // Jogador 1 (esquerda)
     if (keys['w'] && leftPaddleY > 0) {
         leftPaddleY -= PADDLE_SPEED * deltaTime;
         console.log(`Jogador 1: Movendo raquete esquerda para y=${leftPaddleY.toFixed(2)}`);
@@ -424,6 +451,7 @@ function update() {
         console.log(`Jogador 1: Movendo raquete esquerda para y=${leftPaddleY.toFixed(2)}`);
     }
 
+    // Jogador 2 (direita) ou IA
     if (!singlePlayer) {
         if (keys['ArrowUp'] && rightPaddleY > 0) {
             rightPaddleY -= PADDLE_SPEED * deltaTime;
@@ -437,8 +465,10 @@ function update() {
         const paddleCenter = rightPaddleY + rightPaddleHeight / 2;
         if (paddleCenter < ballY - AI_TRACKING_MARGIN && !isBallPaused) {
             rightPaddleY += AI_PADDLE_SPEED * deltaTime;
+            console.log(`IA: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
         } else if (paddleCenter > ballY + AI_TRACKING_MARGIN && !isBallPaused) {
             rightPaddleY -= AI_PADDLE_SPEED * deltaTime;
+            console.log(`IA: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
         }
         rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
     }
@@ -510,7 +540,7 @@ function update() {
             score += 1;
             console.log(`Rebatida pelo jogador! Pontos: ${score}`);
         }
-        console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+        console.log(`Rebatida pela raquete esquerda: Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
         updateScoreDisplay();
     } else if (ballSpeedX >= 0) {
         lastLeftPaddleCollision = false;
@@ -611,6 +641,7 @@ function update() {
 
     if (leftLives <= 0 || (!singlePlayer && rightLives <= 0)) {
         gameOver = true;
+        gameStarted = false;
         hideAllScreens();
         if (gameOverScreen && gameOverMessage && finalScoreDisplay && rankingSection && finalRanking) {
             gameOverScreen.style.display = 'flex';
@@ -715,11 +746,13 @@ function resetGame() {
 }
 
 function gameLoop() {
-    if (!gameOver && ctx) {
-        update();
-        draw();
-        animationFrameId = requestAnimationFrame(gameLoop);
+    if (!gameStarted || gameOver || !ctx) {
+        console.log(`Game Loop interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, ctx=${!!ctx}`);
+        return;
     }
+    update();
+    draw();
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 showStartScreen();
