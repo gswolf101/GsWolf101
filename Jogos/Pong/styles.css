@@ -51,9 +51,9 @@ button {
     padding: 10px 20px;
     font-size: 18px;
     cursor: pointer;
-    background-color: black; /* Fundo preto */
-    color: white; /* Letras brancas */
-    border: 2px solid white; /* Borda branca */
+    background-color: black;
+    color: white;
+    border: 2px solid white;
     border-radius: 5px;
     width: 200px;
     text-align: center;
@@ -61,7 +61,7 @@ button {
 }
 
 button:hover {
-    background-color: #333; /* Cinza escuro no hover */
+    background-color: #333;
 }
 
 #startSinglePlayerGameBtn, #backToMenuSinglePlayerBtn {
@@ -128,4 +128,3 @@ button:hover {
 .power-lightning { background-color: #ff0; }
 .power-reverse { background-color: #f00; }
 .power-grow { background-color: #ffa500; }
-
