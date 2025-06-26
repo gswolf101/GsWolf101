@@ -24,6 +24,7 @@ const rightLivesContainer = document.getElementById('rightLives');
 const singlePlayerBtn = document.getElementById('singlePlayerBtn');
 const multiPlayerBtn = document.getElementById('multiPlayerBtn');
 const startSinglePlayerGameBtn = document.getElementById('startSinglePlayerGameBtn');
+const startMultiplayerGameBtn = document.getElementById('startMultiplayerGameBtn');
 const backToMenuSinglePlayerBtn = document.getElementById('backToMenuSinglePlayerBtn');
 const backToMenuMultiplayerBtn = document.getElementById('backToMenuMultiplayerBtn');
 const rematchBtn = document.getElementById('rematchBtn');
@@ -33,10 +34,11 @@ const currentGoalsDisplay = document.getElementById('currentGoals');
 const leftPowerDisplay = document.getElementById('leftPower');
 const rightPowerDisplay = document.getElementById('rightPower');
 
-if (!startScreen || !singlePlayerStartScreen || !gameScreen) {
+if (!startScreen || !singlePlayerStartScreen || !multiplayerStartScreen || !gameScreen) {
     console.error('Erro: Elementos DOM essenciais não encontrados', {
         startScreen: !!startScreen,
         singlePlayerStartScreen: !!singlePlayerStartScreen,
+        multiplayerStartScreen: !!multiplayerStartScreen,
         gameScreen: !!gameScreen
     });
 }
@@ -58,7 +60,7 @@ const MYSTERY_BOX_SPAWN_INTERVAL = 5000;
 const SHIELD_DURATION = 2000;
 const LIGHTNING_PAUSE_DURATION = 2000;
 const GROW_DURATION = 10000;
-const BORDER_THICKNESS = 5; // Espessura das bordas da arena
+const BORDER_THICKNESS = 5;
 
 let ballX = canvas ? canvas.width / 2 : 400;
 let ballY = canvas ? canvas.height / 2 : 300;
@@ -103,6 +105,7 @@ let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
 
 document.addEventListener('keydown', (e) => {
     keys[e.key] = true;
+    console.log(`Tecla pressionada: ${e.key}`); // Log para depurar teclas
     if (e.key === 'e' && leftPower && !gameOver && !isBallPaused) {
         activatePower('left');
     }
@@ -110,7 +113,10 @@ document.addEventListener('keydown', (e) => {
         activatePower('right');
     }
 });
-document.addEventListener('keyup', (e) => (keys[e.key] = false));
+document.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
+    console.log(`Tecla solta: ${e.key}`); // Log para depurar teclas
+});
 
 function hideAllScreens() {
     if (startScreen) startScreen.style.display = 'none';
@@ -146,7 +152,11 @@ function showSinglePlayerScreen() {
 function showMultiplayerScreen() {
     console.log('Exibindo tela de multiplayer');
     hideAllScreens();
-    if (multiplayerStartScreen) multiplayerStartScreen.style.display = 'flex';
+    if (multiplayerStartScreen) {
+        multiplayerStartScreen.style.display = 'flex';
+    } else {
+        console.error('Erro: multiplayerStartScreen não encontrado');
+    }
 }
 
 function startGame(isSinglePlayer) {
@@ -159,15 +169,23 @@ function startGame(isSinglePlayer) {
         currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
         resetGame();
         lastTime = performance.now();
+        gameStarted = true;
+        gameOver = false;
         gameLoop();
+        console.log(`Estado inicial do multiplayer: rightLives=${rightLives}, rightLivesContainer.display=${rightLivesContainer.style.display}`);
     } else {
-        console.error('Erro: Elementos do gameScreen não encontrados');
+        console.error('Erro: Elementos do gameScreen não encontrados', {
+            gameScreen: !!gameScreen,
+            rightLivesContainer: !!rightLivesContainer,
+            currentScoreDisplay: !!currentScoreDisplay
+        });
     }
 }
 
 if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
 if (multiPlayerBtn) multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
 if (startSinglePlayerGameBtn) startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
+if (startMultiplayerGameBtn) startMultiplayerGameBtn.addEventListener('click', () => startGame(false));
 if (backToMenuSinglePlayerBtn) backToMenuSinglePlayerBtn.addEventListener('click', showStartScreen);
 if (backToMenuMultiplayerBtn) backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
 
@@ -190,8 +208,10 @@ if (rematchBtn) {
             saveScoreBtn.disabled = false;
             resetGame();
             lastTime = performance.now();
+            gameStarted = true;
             gameOver = false;
             gameLoop();
+            console.log(`Revanche no multiplayer: rightLives=${rightLives}, rightLivesContainer.display=${rightLivesContainer.style.display}`);
         }
     });
 }
@@ -251,8 +271,8 @@ function draw() {
 
     // Desenhar bordas superior e inferior da arena
     ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, BORDER_THICKNESS); // Borda superior
-    ctx.fillRect(0, canvas.height - BORDER_THICKNESS, canvas.width, BORDER_THICKNESS); // Borda inferior
+    ctx.fillRect(0, 0, canvas.width, BORDER_THICKNESS);
+    ctx.fillRect(0, canvas.height - BORDER_THICKNESS, canvas.width, BORDER_THICKNESS);
 
     ctx.fillStyle = leftShieldActive ? '#00f' : 'white';
     ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, leftPaddleHeight);
@@ -395,12 +415,24 @@ function update() {
     const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.033);
     lastTime = currentTime;
 
-    if (keys['w'] && leftPaddleY > 0) leftPaddleY -= PADDLE_SPEED * deltaTime;
-    if (keys['s'] && leftPaddleY < canvas.height - leftPaddleHeight) leftPaddleY += PADDLE_SPEED * deltaTime;
+    if (keys['w'] && leftPaddleY > 0) {
+        leftPaddleY -= PADDLE_SPEED * deltaTime;
+        console.log(`Jogador 1: Movendo raquete esquerda para y=${leftPaddleY.toFixed(2)}`);
+    }
+    if (keys['s'] && leftPaddleY < canvas.height - leftPaddleHeight) {
+        leftPaddleY += PADDLE_SPEED * deltaTime;
+        console.log(`Jogador 1: Movendo raquete esquerda para y=${leftPaddleY.toFixed(2)}`);
+    }
 
     if (!singlePlayer) {
-        if (keys['ArrowUp'] && rightPaddleY > 0) rightPaddleY -= PADDLE_SPEED * deltaTime;
-        if (keys['ArrowDown'] && rightPaddleY < canvas.height - rightPaddleHeight) rightPaddleY += PADDLE_SPEED * deltaTime;
+        if (keys['ArrowUp'] && rightPaddleY > 0) {
+            rightPaddleY -= PADDLE_SPEED * deltaTime;
+            console.log(`Jogador 2: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
+        }
+        if (keys['ArrowDown'] && rightPaddleY < canvas.height - rightPaddleHeight) {
+            rightPaddleY += PADDLE_SPEED * deltaTime;
+            console.log(`Jogador 2: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
+        }
     } else {
         const paddleCenter = rightPaddleY + rightPaddleHeight / 2;
         if (paddleCenter < ballY - AI_TRACKING_MARGIN && !isBallPaused) {
@@ -490,7 +522,7 @@ function update() {
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = rightPaddle.x - BALL_SIZE / 2;
         lastPlayerTouched = 'right';
-        console.log(`Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+        console.log(`Rebatida pela raquete direita: Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
         updateScoreDisplay();
     }
 
@@ -557,6 +589,7 @@ function update() {
     if (ballX <= BALL_SIZE / 2) {
         if (!leftShieldActive) {
             leftLives--;
+            console.log(`Gol contra Jogador 1: leftLives=${leftLives}`);
         }
         updateLivesDisplay();
         updateScoreDisplay();
@@ -564,6 +597,7 @@ function update() {
     } else if (ballX >= canvas.width - BALL_SIZE / 2) {
         if (!rightShieldActive) {
             rightLives--;
+            console.log(`Gol contra Jogador 2: rightLives=${rightLives}`);
             if (singlePlayer) {
                 score += 10;
                 goals++;
@@ -589,6 +623,7 @@ function update() {
                 updateRankingDisplay();
             } else {
                 gameOverMessage.textContent = leftLives <= 0 ? 'Jogador 2 venceu!' : 'Jogador 1 venceu!';
+                console.log(`Fim de jogo: ${gameOverMessage.textContent}, leftLives=${leftLives}, rightLives=${rightLives}`);
             }
         }
     }
