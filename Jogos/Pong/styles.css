@@ -1,4 +1,11 @@
 /* styles.css */
+body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    overflow: hidden;
+}
+
 #startScreen, #singlePlayerStartScreen, #multiplayerStartScreen, #gameScreen, #gameOver {
     display: none;
     flex-direction: column;
@@ -15,11 +22,11 @@
 }
 
 #singlePlayerStartScreen {
-    display: flex;
-    flex-direction: column; /* Garante alinhamento vertical */
-    align-items: center; /* Centraliza horizontalmente */
-    justify-content: center; /* Centraliza verticalmente */
-    gap: 20px; /* Espaçamento entre elementos */
+    display: none; /* Inicialmente escondido, ativado via JS */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px; /* Espaçamento vertical */
 }
 
 #singlePlayerStartScreen h2 {
@@ -33,7 +40,7 @@
     padding: 0;
     margin: 0;
     text-align: center;
-    max-width: 300px; /* Limita a largura do ranking */
+    max-width: 300px;
 }
 
 #initialRankingList li {
@@ -49,9 +56,9 @@ button {
     color: white;
     border: none;
     border-radius: 5px;
-    width: 200px; /* Largura fixa para consistência */
+    width: 200px;
     text-align: center;
-    margin: 10px 0; /* Margem vertical para evitar colisão */
+    margin: 10px 0;
 }
 
 button:hover {
@@ -59,10 +66,9 @@ button:hover {
 }
 
 #startSinglePlayerGameBtn, #backToMenuSinglePlayerBtn {
-    display: block; /* Garante que botões sejam blocos */
+    display: block;
 }
 
-/* Outros estilos existentes (canvas, vidas, poderes) */
 #pongCanvas {
     background: black;
     display: block;
