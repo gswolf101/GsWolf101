@@ -58,6 +58,7 @@ const MYSTERY_BOX_SPAWN_INTERVAL = 5000;
 const SHIELD_DURATION = 2000;
 const LIGHTNING_PAUSE_DURATION = 2000;
 const GROW_DURATION = 10000;
+const BORDER_THICKNESS = 5; // Espessura das bordas da arena
 
 let ballX = canvas ? canvas.width / 2 : 400;
 let ballY = canvas ? canvas.height / 2 : 300;
@@ -247,6 +248,11 @@ function draw() {
     if (!ctx) return;
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Desenhar bordas superior e inferior da arena
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, BORDER_THICKNESS); // Borda superior
+    ctx.fillRect(0, canvas.height - BORDER_THICKNESS, canvas.width, BORDER_THICKNESS); // Borda inferior
 
     ctx.fillStyle = leftShieldActive ? '#00f' : 'white';
     ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, leftPaddleHeight);
