@@ -18,11 +18,10 @@ const rightLivesContainer = document.getElementById('rightLives');
 const singlePlayerBtn = document.getElementById('singlePlayerBtn');
 const multiPlayerBtn = document.getElementById('multiPlayerBtn');
 const startSinglePlayerGameBtn = document.getElementById('startSinglePlayerGameBtn');
-const startMultiplayerGameBtn = document.getElementById('startMultiplayerGameBtn');
-const rematchBtn = document.getElementById('rematchBtn');
-const backToMenuBtn = document.getElementById('backToMenuBtn');
 const backToMenuSinglePlayerBtn = document.getElementById('backToMenuSinglePlayerBtn');
 const backToMenuMultiplayerBtn = document.getElementById('backToMenuMultiplayerBtn');
+const rematchBtn = document.getElementById('rematchBtn');
+const backToMenuBtn = document.getElementById('backToMenuBtn');
 const currentScoreDisplay = document.getElementById('currentScore');
 const currentGoalsDisplay = document.getElementById('currentGoals');
 const leftPowerDisplay = document.getElementById('leftPower');
@@ -39,7 +38,7 @@ const MAX_BALL_SPEED = 840; // Pixels por segundo
 const AI_PADDLE_SPEED = 420; // Pixels por segundo
 const AI_TRACKING_MARGIN = 10;
 const TRAIL_LENGTH = 12;
-const TRAIL_SPACING = 5; // Distância mínima entre pontos do rastro (reduzido)
+const TRAIL_SPACING = 5; // Distância mínima entre pontos do rastro
 const MYSTERY_BOX_SIZE = 30;
 const MYSTERY_BOX_SPAWN_INTERVAL = 5000; // 5 segundos
 const SHIELD_DURATION = 2000; // 2 segundos
@@ -116,6 +115,11 @@ function showSinglePlayerScreen() {
     console.log('Exibindo tela de single-player');
     hideAllScreens();
     singlePlayerStartScreen.style.display = 'flex';
+    console.log('Botões da tela de single-player:', {
+        startBtn: document.getElementById('startSinglePlayerGameBtn')?.outerHTML,
+        backBtn: document.getElementById('backToMenuSinglePlayerBtn')?.outerHTML,
+        rankingList: document.getElementById('initialRankingList')?.outerHTML
+    });
     updateRankingDisplay();
 }
 
@@ -140,7 +144,6 @@ function startGame(isSinglePlayer) {
 singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
 multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
 startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
-startMultiplayerGameBtn.addEventListener('click', () => startGame(false));
 backToMenuSinglePlayerBtn.addEventListener('click', showStartScreen);
 backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
 
@@ -486,7 +489,7 @@ function update() {
 
     // Gerar caixa misteriosa
     if (!mysteryBox && Date.now() - lastBoxSpawnTime > MYSTERY_BOX_SPAWN_INTERVAL) {
-        if (Math.random() < 0.5) { // Aumentado de 0.1 para 0.5
+        if (Math.random() < 0.5) {
             spawnMysteryBox();
             lastBoxSpawnTime = Date.now();
         }
