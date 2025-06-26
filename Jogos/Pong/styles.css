@@ -1,107 +1,108 @@
-body {
-    display: flex;
+/* styles.css */
+#startScreen, #singlePlayerStartScreen, #multiplayerStartScreen, #gameScreen, #gameOver {
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #000;
-    color: #fff;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
     font-family: Arial, sans-serif;
 }
 
-#startScreen, #gameScreen, #gameOver {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+#singlePlayerStartScreen {
+    display: flex; /* Garante que a tela seja exibida como flex quando ativa */
+}
+
+button {
+    padding: 10px 20px;
+    margin: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#startSinglePlayerGameBtn, #backToMenuSinglePlayerBtn {
+    width: 200px; /* Largura fixa para consistência */
     text-align: center;
 }
 
-#startScreen h1 {
-    font-size: 4em;
-    margin-bottom: 30px;
+#initialRankingList {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    text-align: center;
 }
 
-#startScreen button, #rematchBtn, #backToMenuBtn {
-    font-size: 2em;
-    padding: 15px 30px;
-    min-width: 200px;
-    margin: 15px;
-    background-color: #fff;
-    color: #000;
-    border: none;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: background-color 0.3s;
+#initialRankingList li {
+    margin: 5px 0;
+    font-size: 16px;
 }
 
-#startScreen button:hover, #rematchBtn:hover, #backToMenuBtn:hover {
-    background-color: #ddd;
-}
-
+/* Outros estilos existentes (ex.: canvas, vidas, poderes) permanecem inalterados */
 #pongCanvas {
-    border: 2px solid #fff;
-}
-
-#lives {
-    display: flex;
-    justify-content: space-between;
-    width: 800px;
-    margin-top: 10px;
+    background: black;
+    display: block;
+    margin: 0 auto;
 }
 
 #leftLives, #rightLives {
-    display: flex;
-    gap: 10px;
+    position: absolute;
+    top: 10px;
+}
+
+#leftLives {
+    left: 10px;
+}
+
+#rightLives {
+    right: 10px;
 }
 
 .life {
     width: 20px;
     height: 20px;
-    background-color: red;
-    border-radius: 50%;
+    background: red;
     display: inline-block;
+    margin: 0 5px;
 }
 
-#scoreDisplay {
+#scoreDisplay, #goalsDisplay {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
     color: white;
-    font-size: 1.5em;
-    text-align: center;
-    margin-top: 10px;
+    font-size: 20px;
 }
 
-#gameOver h2 {
-    font-size: 2.5em;
+#leftPower, #rightPower {
+    position: absolute;
+    bottom: 10px;
+    color: white;
+    font-size: 16px;
 }
 
-#gameOver p {
-    font-size: 1.5em;
-    margin-bottom: 20px;
+#leftPower {
+    left: 10px;
 }
 
-#rankingSection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin: 10px 0;
+#rightPower {
+    right: 10px;
 }
 
-#rankingSection input, #rankingSection button {
-    width: 200px;
-    font-size: 1em;
-    padding: 10px;
-    border-radius: 5px;
-    border: none;
-}
-
-#rankingSection button {
-    background-color: #fff;
-    color: #000;
-    cursor: pointer;
-}
-
-#rankingSection button:hover {
-    background-color: #ddd;
-}
+.power-shield { background-color: #00f; }
+.power-lightning { background-color: #ff0; }
+.power-reverse { background-color: #f00; }
+.power-grow { background-color: #ffa500; }
