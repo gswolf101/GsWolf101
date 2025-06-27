@@ -145,8 +145,8 @@ button:hover {
     color: #00FF00; /* Verde para crescer */
 }
 
-.power-display.power-shrink {
-    color: #FFA500; /* Laranja para encolher */
+.power-display.power-growBall {
+    color: #FFA500; /* Laranja para aumentar bola */
 }
 
 @media (max-width: 600px) {
