@@ -7,18 +7,18 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="startScreen" style="display: flex;">
+    <div id="startScreen" class="screen">
         <h2>Ping Pong</h2>
         <button id="singlePlayerBtn">Single Player</button>
         <button id="multiPlayerBtn">Multiplayer</button>
     </div>
-    <div id="singlePlayerStartScreen" style="display: none;">
+    <div id="singlePlayerStartScreen" class="screen" style="display: none;">
         <h2>Single Player</h2>
         <ul id="initialRankingList"></ul>
         <button id="startSinglePlayerGameBtn">Começar</button>
         <button id="backToMenuSinglePlayerBtn">Voltar</button>
     </div>
-    <div id="multiplayerStartScreen" style="display: none;">
+    <div id="multiplayerStartScreen" class="screen" style="display: none;">
         <h2>Multiplayer</h2>
         <button id="startMultiplayerGameBtn">Começar</button>
         <button id="backToMenuMultiplayerBtn">Voltar</button>
@@ -42,7 +42,7 @@
         <div id="leftPower" class="power-display">Poder: Nenhum</div>
         <div id="rightPower" class="power-display">Poder: Nenhum</div>
     </div>
-    <div id="gameOver" style="display: none;">
+    <div id="gameOver" class="screen" style="display: none;">
         <h2 id="gameOverMessage"></h2>
         <div id="finalScore"></div>
         <div id="rankingSection">
