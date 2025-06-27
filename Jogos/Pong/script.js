@@ -39,8 +39,11 @@ const singlePlayerBtn = document.getElementById('singlePlayerBtn');
 const multiPlayerBtn = document.getElementById('multiPlayerBtn');
 const startSinglePlayerGameBtn = document.getElementById('startSinglePlayerGameBtn');
 const startMultiplayerGameBtn = document.getElementById('startMultiplayerGameBtn');
-const backToMenuSinglePlayerBtn = document.getElementById('backToMenuSinglePlayerBtn');
-const backToMenuMultiplayerBtn = document.getElementById('backToMenuMultiplayerBtn');
+const backToStartScreenSinglePlayerBtn = document.getElementById('backToStartScreenSinglePlayerBtn');
+const backToStartScreenMultiplayerBtn = document.getElementById('backToStartScreenMultiplayerBtn');
+const backToCentralBtn = document.getElementById('backToCentralBtn');
+const backToCentralBtnSingle = document.getElementById('backToCentralBtnSingle');
+const backToCentralBtnMulti = document.getElementById('backToCentralBtnMulti');
 const rematchBtn = document.getElementById('rematchBtn');
 const backToMenuBtn = document.getElementById('backToMenuBtn');
 const currentScoreDisplay = document.getElementById('currentScore');
@@ -77,7 +80,7 @@ const MYSTERY_BOX_DURATION = 10000;
 const SHIELD_DURATION = 2000;
 const LIGHTNING_PAUSE_DURATION = 2000;
 const GROW_DURATION = 10000;
-const GROWBALL_DURATION = 15000; // 15 segundos, igual ao shrink anterior
+const GROWBALL_DURATION = 15000; // 15 segundos
 const BORDER_THICKNESS = 5;
 
 let ballX = canvas ? canvas.width / 2 : 400;
@@ -194,7 +197,7 @@ function hideAllScreens() {
     if (singlePlayerStartScreen) singlePlayerStartScreen.style.display = 'none';
     if (multiplayerStartScreen) multiplayerStartScreen.style.display = 'none';
     if (gameScreen) gameScreen.style.display = 'none';
-    if (gameOverScreen) gameScreen.style.display = 'none';
+    if (gameOverScreen) gameOverScreen.style.display = 'none';
 }
 
 function showStartScreen() {
@@ -251,12 +254,31 @@ function startGame(isSinglePlayer) {
     gameLoop();
 }
 
+// Event listeners para botões
 if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
 if (multiPlayerBtn) multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
 if (startSinglePlayerGameBtn) startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
 if (startMultiplayerGameBtn) startMultiplayerGameBtn.addEventListener('click', () => startGame(false));
-if (backToMenuSinglePlayerBtn) backToMenuSinglePlayerBtn.addEventListener('click', showStartScreen);
-if (backToMenuMultiplayerBtn) backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
+if (backToStartScreenSinglePlayerBtn) backToStartScreenSinglePlayerBtn.addEventListener('click', showStartScreen);
+if (backToStartScreenMultiplayerBtn) backToStartScreenMultiplayerBtn.addEventListener('click', showStartScreen);
+if (backToCentralBtn) {
+    backToCentralBtn.addEventListener('click', () => {
+        console.log('Redirecionando para Central de Jogos');
+        window.location.href = 'https://gswolf101.github.io/GsWolf101/Jogos/CentralJogos.html';
+    });
+}
+if (backToCentralBtnSingle) {
+    backToCentralBtnSingle.addEventListener('click', () => {
+        console.log('Redirecionando para Central de Jogos (Single Player)');
+        window.location.href = 'https://gswolf101.github.io/GsWolf101/Jogos/CentralJogos.html';
+    });
+}
+if (backToCentralBtnMulti) {
+    backToCentralBtnMulti.addEventListener('click', () => {
+        console.log('Redirecionando para Central de Jogos (Multiplayer)');
+        window.location.href = 'https://gswolf101.github.io/GsWolf101/Jogos/CentralJogos.html';
+    });
+}
 
 if (rematchBtn) {
     rematchBtn.addEventListener('click', () => {
@@ -441,7 +463,7 @@ function spawnMysteryBox() {
 }
 
 function getRandomPower() {
-    const powers = ['shield', 'lightning', 'reverse', 'grow', 'growBall']; // Substituído 'shrink' por 'growBall'
+    const powers = ['shield', 'lightning', 'reverse', 'grow', 'growBall'];
     const randomIndex = Math.floor(Math.random() * powers.length);
     const selectedPower = powers[randomIndex];
     powerCounts[selectedPower]++;
@@ -474,7 +496,7 @@ function activatePower(player) {
         pauseStartTime = Date.now();
         pendingLightningLaunch = {
             player: player,
-            speedX: (player === 'left' ? 1 : -1) * currentMaxBallSpeed, // Usa velocidade máxima atual
+            speedX: (player === 'left' ? 1 : -1) * currentMaxBallSpeed,
             speedY: 0
         };
         lastPlayerTouched = player;
