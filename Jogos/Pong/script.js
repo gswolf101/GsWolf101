@@ -61,7 +61,7 @@ if (!startScreen || !singlePlayerStartScreen || !multiplayerStartScreen || !game
 const PADDLE_WIDTH = 15;
 const PADDLE_HEIGHT = 120;
 const PADDLE_GROW_HEIGHT = 200;
-const BALL_SIZE = 30; // Tamanho da bola dobrado (de 15 para 30)
+const BALL_SIZE = 40; // Tamanho da bola aumentado (de 30 para 40)
 const PADDLE_SPEED = 360;
 const INITIAL_BALL_SPEED = 240;
 const BALL_SPEED_INCREMENT = 24;
@@ -109,14 +109,14 @@ let leftGrowActive = false;
 let rightGrowActive = false;
 let leftGrowEndTime = 0;
 let rightGrowEndTime = 0;
-let shrinkActive = false; // Novo: Estado do poder "shrink"
-let shrinkEndTime = 0; // Novo: Tempo de expiração do poder "shrink"
-let currentBallSize = BALL_SIZE; // Novo: Tamanho atual da bola (normal ou reduzido)
+let shrinkActive = false;
+let shrinkEndTime = 0;
+let currentBallSize = BALL_SIZE; // Tamanho atual da bola (40 ou 20 com "shrink")
 let lastBoxSpawnTime = 0;
 let isBallPaused = false;
 let pauseStartTime = 0;
 let pendingLightningLaunch = null;
-let powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0, shrink: 0 }; // Novo: Contador para "shrink"
+let powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0, shrink: 0 };
 let animationFrameId = null;
 let lastLeftPaddleCollision = false;
 let lastTime = performance.now();
@@ -357,7 +357,7 @@ function draw() {
         ctx.beginPath();
         const opacity = (index + 1) / TRAIL_LENGTH;
         ctx.globalAlpha = opacity * 0.7;
-        ctx.arc(pos.x, pos.y, (currentBallSize / 2) * (0.6 + 0.4 * opacity), 0, Math.PI * 2); // Usar currentBallSize
+        ctx.arc(pos.x, pos.y, (currentBallSize / 2) * (0.6 + 0.4 * opacity), 0, Math.PI * 2);
         ctx.fillStyle = '#FF4500'; // Laranja forte
         ctx.fill();
         ctx.closePath();
@@ -366,10 +366,10 @@ function draw() {
 
     // Desenhar bola (imagem ou círculo de fallback)
     if (ballImageLoaded) {
-        ctx.drawImage(ballImage, ballX - currentBallSize / 2, ballY - currentBallSize / 2, currentBallSize, currentBallSize); // Usar currentBallSize
+        ctx.drawImage(ballImage, ballX - currentBallSize / 2, ballY - currentBallSize / 2, currentBallSize, currentBallSize);
     } else {
         ctx.beginPath();
-        ctx.arc(ballX, ballY, currentBallSize / 2, 0, Math.PI * 2); // Usar currentBallSize
+        ctx.arc(ballX, ballY, currentBallSize / 2, 0, Math.PI * 2);
         ctx.fillStyle = isBallPaused ? '#800080' : 'white';
         ctx.fill();
         ctx.closePath();
@@ -425,7 +425,7 @@ function spawnMysteryBox() {
 }
 
 function getRandomPower() {
-    const powers = ['shield', 'lightning', 'reverse', 'grow', 'shrink']; // Novo: Adicionado "shrink"
+    const powers = ['shield', 'lightning', 'reverse', 'grow', 'shrink'];
     const randomIndex = Math.floor(Math.random() * powers.length);
     const selectedPower = powers[randomIndex];
     powerCounts[selectedPower]++;
@@ -450,7 +450,7 @@ function activatePower(player) {
             rightShieldEndTime = Date.now() + SHIELD_DURATION;
         }
     } else if (power === 'lightning') {
-        ballX = player === 'left' ? PADDLE_WIDTH + currentBallSize / 2 : canvas.width - PADDLE_WIDTH - currentBallSize / 2; // Usar currentBallSize
+        ballX = player === 'left' ? PADDLE_WIDTH + currentBallSize / 2 : canvas.width - PADDLE_WIDTH - currentBallSize / 2;
         ballY = (player === 'left' ? leftPaddleY : rightPaddleY) + (player === 'left' ? leftPaddleHeight : rightPaddleHeight) / 2;
         ballSpeedX = 0;
         ballSpeedY = 0;
@@ -478,11 +478,11 @@ function activatePower(player) {
             rightPaddleHeight = PADDLE_GROW_HEIGHT;
             rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
         }
-    } else if (power === 'shrink') { // Novo: Lógica para o poder "shrink"
+    } else if (power === 'shrink') {
         shrinkActive = true;
         shrinkEndTime = Date.now() + SHRINK_DURATION;
-        currentBallSize = BALL_SIZE / 2; // Reduz a bola para metade do tamanho (15 pixels)
-        console.log('Poder shrink ativado: bola reduzida para 15 pixels');
+        currentBallSize = BALL_SIZE / 2; // Reduz para 20 pixels
+        console.log('Poder shrink ativado: bola reduzida para 20 pixels');
     }
 
     if (player === 'left') {
@@ -573,10 +573,10 @@ function update() {
     ballY += ballSpeedY * deltaTime;
 
     // Colisão com bordas
-    if (ballY <= currentBallSize / 2) { // Usar currentBallSize
+    if (ballY <= currentBallSize / 2) {
         ballY = currentBallSize / 2;
         ballSpeedY = Math.abs(ballSpeedY);
-    } else if (ballY >= canvas.height - currentBallSize / 2) { // Usar currentBallSize
+    } else if (ballY >= canvas.height - currentBallSize / 2) {
         ballY = canvas.height - currentBallSize / 2;
         ballSpeedY = -Math.abs(ballSpeedY);
     }
@@ -584,13 +584,13 @@ function update() {
     // Colisão com raquetes
     const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: leftPaddleHeight };
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: rightPaddleHeight };
-    const ball = { x: ballX, y: ballY, radius: currentBallSize / 2 }; // Usar currentBallSize
+    const ball = { x: ballX, y: ballY, radius: currentBallSize / 2 };
 
     if (ballSpeedX < 0 && !lastLeftPaddleCollision && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + leftPaddleHeight / 2)) / (leftPaddleHeight / 2);
         ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
-        ballX = leftPaddle.x + leftPaddle.width + currentBallSize / 2; // Usar currentBallSize
+        ballX = leftPaddle.x + leftPaddle.width + currentBallSize / 2;
         lastPlayerTouched = 'left';
         lastLeftPaddleCollision = true;
         if (singlePlayer) score += 1;
@@ -603,7 +603,7 @@ function update() {
         const hitPoint = (ballY - (rightPaddle.y + rightPaddleHeight / 2)) / (rightPaddleHeight / 2);
         ballSpeedX = -Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
-        ballX = rightPaddle.x - currentBallSize / 2; // Usar currentBallSize
+        ballX = rightPaddle.x - currentBallSize / 2;
         lastPlayerTouched = 'right';
         updateScoreDisplay();
     }
@@ -618,18 +618,25 @@ function update() {
         };
         if (collides(ball, box)) {
             const power = getRandomPower();
+            const powerEmojis = {
+                shield: '🛡️',
+                lightning: '⚡️',
+                reverse: '🔄',
+                grow: '📈',
+                shrink: '🔽'
+            }; // Novo: Mapa de emojis para cada poder
             if (lastPlayerTouched) {
                 if (lastPlayerTouched === 'left') {
                     leftPower = power;
                     if (leftPowerDisplay) {
-                        leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'}`;
+                        leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'} ${powerEmojis[power]}`; // Novo: Adiciona emoji
                         leftPowerDisplay.className = `power-display power-${power}`;
                     }
                     console.log(`Poder ${power} coletado pelo Jogador 1`);
                 } else {
                     rightPower = power;
                     if (rightPowerDisplay) {
-                        rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'}`;
+                        rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'} ${powerEmojis[power]}`; // Novo: Adiciona emoji
                         rightPowerDisplay.className = `power-display power-${power}`;
                     }
                     console.log(`Poder ${power} coletado pelo Jogador 2`);
@@ -672,21 +679,21 @@ function update() {
         rightPaddleHeight = PADDLE_HEIGHT;
         rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
     }
-    if (shrinkActive && Date.now() > shrinkEndTime) { // Novo: Expirar poder "shrink"
+    if (shrinkActive && Date.now() > shrinkEndTime) {
         shrinkActive = false;
         currentBallSize = BALL_SIZE;
-        console.log('Poder shrink expirou: bola voltou ao tamanho normal (30 pixels)');
+        console.log('Poder shrink expirou: bola voltou ao tamanho normal (40 pixels)');
     }
 
     // Verificar gol
-    if (ballX <= currentBallSize / 2) { // Usar currentBallSize
+    if (ballX <= currentBallSize / 2) {
         if (!leftShieldActive) {
             leftLives--;
         }
         updateLivesDisplay();
         updateScoreDisplay();
         resetBall();
-    } else if (ballX >= canvas.width - currentBallSize / 2) { // Usar currentBallSize
+    } else if (ballX >= canvas.width - currentBallSize / 2) {
         if (!rightShieldActive) {
             rightLives--;
             if (singlePlayer) {
@@ -789,5 +796,35 @@ function resetGame() {
     rightGrowActive = false;
     leftGrowEndTime = 0;
     rightGrowEndTime = 0;
-    shrinkActive = false; // Novo: Resetar poder "shrink"
-    shrinkEndTime = 0; // Novo: Reset
+    shrinkActive = false;
+    shrinkEndTime = 0;
+    currentBallSize = BALL_SIZE; // Resetar para 40 pixels
+    lastBoxSpawnTime = 0;
+    isBallPaused = false;
+    pendingLightningLaunch = null;
+    pauseStartTime = 0;
+    powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0, shrink: 0 };
+    lastLeftPaddleCollision = false;
+    lastTrailPosition = { x: ballX, y: ballY };
+    keys = {};
+    if (leftPowerDisplay) leftPowerDisplay.textContent = 'Poder: Nenhum';
+    if (leftPowerDisplay) leftPowerDisplay.className = 'power-display';
+    if (rightPowerDisplay) rightPowerDisplay.textContent = 'Poder: Nenhum';
+    if (rightPowerDisplay) rightPowerDisplay.className = 'power-display';
+    updateLivesDisplay();
+    updateScoreDisplay();
+}
+
+function gameLoop() {
+    if (!gameStarted || gameOver || paused || !ctx) {
+        console.log(`Game Loop interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, paused=${paused}, ctx=${!!ctx}`);
+        return;
+    }
+    console.log('Executando gameLoop');
+    update();
+    draw();
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+// Inicializar o jogo
+showStartScreen();
