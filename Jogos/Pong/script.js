@@ -2,7 +2,7 @@
 const canvas = document.getElementById('pongCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 if (!canvas || !ctx) {
-    console.error('Erro: Canvas ou contexto 2D não encontrado');
+    console.error('Erro: Canvas ou contexto 2D não encontrado', { canvas: !!canvas, ctx: !!ctx });
     alert('Erro ao carregar o jogo: Canvas não encontrado. Verifique o HTML.');
     throw new Error('Canvas não encontrado');
 }
@@ -61,7 +61,7 @@ if (!startScreen || !singlePlayerStartScreen || !multiplayerStartScreen || !game
 const PADDLE_WIDTH = 15;
 const PADDLE_HEIGHT = 120;
 const PADDLE_GROW_HEIGHT = 200;
-const BALL_SIZE = 40; // Tamanho da bola aumentado (de 30 para 40)
+const BALL_SIZE = 30; // Revertido para 30 pixels para estabilidade (reduz para 15 com "shrink")
 const PADDLE_SPEED = 360;
 const INITIAL_BALL_SPEED = 240;
 const BALL_SPEED_INCREMENT = 24;
@@ -76,7 +76,7 @@ const MYSTERY_BOX_DURATION = 10000;
 const SHIELD_DURATION = 2000;
 const LIGHTNING_PAUSE_DURATION = 2000;
 const GROW_DURATION = 10000;
-const SHRINK_DURATION = 15000; // 15 segundos para o poder "shrink"
+const SHRINK_DURATION = 15000;
 const BORDER_THICKNESS = 5;
 
 let ballX = canvas ? canvas.width / 2 : 400;
@@ -111,7 +111,7 @@ let leftGrowEndTime = 0;
 let rightGrowEndTime = 0;
 let shrinkActive = false;
 let shrinkEndTime = 0;
-let currentBallSize = BALL_SIZE; // Tamanho atual da bola (40 ou 20 com "shrink")
+let currentBallSize = BALL_SIZE; // Tamanho atual da bola (30 ou 15 com "shrink")
 let lastBoxSpawnTime = 0;
 let isBallPaused = false;
 let pauseStartTime = 0;
@@ -125,8 +125,21 @@ let lastTrailPosition = { x: ballX, y: ballY };
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
 
+// Função para inicializar o jogo
+function initGame() {
+    console.log('Inicializando o jogo...');
+    resizeCanvas();
+    resetGame();
+    if (ctx) {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        console.log('Canvas inicializado com fundo preto');
+    }
+}
+
 // Ajustar canvas para responsividade
 function resizeCanvas() {
+    if (!canvas) return;
     canvas.width = Math.min(window.innerWidth * 0.8, 800);
     canvas.height = Math.min(window.innerHeight * 0.8, 600);
     ballX = canvas.width / 2;
@@ -136,7 +149,6 @@ function resizeCanvas() {
     console.log(`Canvas redimensionado: ${canvas.width}x${canvas.height}`);
 }
 window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
 
 // Controles de toque
 canvas.addEventListener('touchmove', (e) => {
@@ -175,6 +187,7 @@ document.addEventListener('keyup', (e) => {
 });
 
 function hideAllScreens() {
+    console.log('Escondendo todas as telas');
     if (startScreen) startScreen.style.display = 'none';
     if (singlePlayerStartScreen) singlePlayerStartScreen.style.display = 'none';
     if (multiplayerStartScreen) multiplayerStartScreen.style.display = 'none';
@@ -213,27 +226,27 @@ function startGame(isSinglePlayer) {
     console.log(`Iniciando jogo: ${isSinglePlayer ? 'Single Player' : 'Multiplayer'}`);
     singlePlayer = isSinglePlayer;
     hideAllScreens();
-    if (gameScreen && rightLivesContainer && currentScoreDisplay) {
-        gameScreen.style.display = 'block';
-        rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
-        if (currentScoreDisplay.parentElement.parentElement) {
-            currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
-        }
-        resetGame();
-        lastTime = performance.now();
-        gameStarted = true;
-        gameOver = false;
-        paused = false;
-        console.log('Iniciando gameLoop');
-        gameLoop();
-    } else {
+    if (!gameScreen || !rightLivesContainer || !currentScoreDisplay) {
         console.error('Erro: Elementos do gameScreen não encontrados', {
             gameScreen: !!gameScreen,
             rightLivesContainer: !!rightLivesContainer,
             currentScoreDisplay: !!currentScoreDisplay
         });
         alert('Erro: Elementos do jogo não encontrados. Verifique o HTML.');
+        return;
     }
+    gameScreen.style.display = 'block';
+    rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
+    if (currentScoreDisplay.parentElement?.parentElement) {
+        currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
+    }
+    initGame(); // Inicialização explícita
+    lastTime = performance.now();
+    gameStarted = true;
+    gameOver = false;
+    paused = false;
+    console.log('Iniciando gameLoop');
+    gameLoop();
 }
 
 if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
@@ -254,7 +267,7 @@ if (rematchBtn) {
         if (gameScreen && rightLivesContainer && currentScoreDisplay) {
             gameScreen.style.display = 'block';
             rightLivesContainer.style.display = singlePlayer ? 'none' : 'flex';
-            if (currentScoreDisplay.parentElement.parentElement) {
+            if (currentScoreDisplay.parentElement?.parentElement) {
                 currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
             }
             rankingSection.style.display = 'none';
@@ -262,7 +275,7 @@ if (rematchBtn) {
             finalScoreDisplay.style.display = 'none';
             playerNameInput.value = '';
             saveScoreBtn.disabled = false;
-            resetGame();
+            initGame();
             lastTime = performance.now();
             gameStarted = true;
             gameOver = false;
@@ -358,7 +371,7 @@ function draw() {
         const opacity = (index + 1) / TRAIL_LENGTH;
         ctx.globalAlpha = opacity * 0.7;
         ctx.arc(pos.x, pos.y, (currentBallSize / 2) * (0.6 + 0.4 * opacity), 0, Math.PI * 2);
-        ctx.fillStyle = '#FF4500'; // Laranja forte
+        ctx.fillStyle = '#FF4500';
         ctx.fill();
         ctx.closePath();
     });
@@ -409,6 +422,7 @@ function draw() {
         ctx.fillText(`Ball: x=${ballX.toFixed(0)}, y=${ballY.toFixed(0)}, speedX=${ballSpeedX.toFixed(0)}, size=${currentBallSize}`, 10, 20);
         ctx.fillText(`Left Paddle: y=${leftPaddleY.toFixed(0)}`, 10, 40);
         ctx.fillText(`Right Paddle: y=${rightPaddleY.toFixed(0)}`, 10, 60);
+        ctx.fillText(`Game State: started=${gameStarted}, over=${gameOver}, paused=${paused}`, 10, 80);
     }
 }
 
@@ -481,8 +495,8 @@ function activatePower(player) {
     } else if (power === 'shrink') {
         shrinkActive = true;
         shrinkEndTime = Date.now() + SHRINK_DURATION;
-        currentBallSize = BALL_SIZE / 2; // Reduz para 20 pixels
-        console.log('Poder shrink ativado: bola reduzida para 20 pixels');
+        currentBallSize = BALL_SIZE / 2; // Reduz para 15 pixels
+        console.log('Poder shrink ativado: bola reduzida para 15 pixels');
     }
 
     if (player === 'left') {
@@ -497,6 +511,7 @@ function activatePower(player) {
 }
 
 function update() {
+    console.log('Atualizando estado do jogo');
     if (!gameStarted || gameOver || paused || !ctx) {
         console.log(`Update interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, paused=${paused}, ctx=${!!ctx}`);
         return;
@@ -624,19 +639,19 @@ function update() {
                 reverse: '🔄',
                 grow: '📈',
                 shrink: '🔽'
-            }; // Novo: Mapa de emojis para cada poder
+            };
             if (lastPlayerTouched) {
                 if (lastPlayerTouched === 'left') {
                     leftPower = power;
                     if (leftPowerDisplay) {
-                        leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'} ${powerEmojis[power]}`; // Novo: Adiciona emoji
+                        leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'} ${powerEmojis[power]}`;
                         leftPowerDisplay.className = `power-display power-${power}`;
                     }
                     console.log(`Poder ${power} coletado pelo Jogador 1`);
                 } else {
                     rightPower = power;
                     if (rightPowerDisplay) {
-                        rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'} ${powerEmojis[power]}`; // Novo: Adiciona emoji
+                        rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'} ${powerEmojis[power]}`;
                         rightPowerDisplay.className = `power-display power-${power}`;
                     }
                     console.log(`Poder ${power} coletado pelo Jogador 2`);
@@ -682,7 +697,7 @@ function update() {
     if (shrinkActive && Date.now() > shrinkEndTime) {
         shrinkActive = false;
         currentBallSize = BALL_SIZE;
-        console.log('Poder shrink expirou: bola voltou ao tamanho normal (40 pixels)');
+        console.log('Poder shrink expirou: bola voltou ao tamanho normal (30 pixels)');
     }
 
     // Verificar gol
@@ -798,7 +813,7 @@ function resetGame() {
     rightGrowEndTime = 0;
     shrinkActive = false;
     shrinkEndTime = 0;
-    currentBallSize = BALL_SIZE; // Resetar para 40 pixels
+    currentBallSize = BALL_SIZE;
     lastBoxSpawnTime = 0;
     isBallPaused = false;
     pendingLightningLaunch = null;
@@ -816,6 +831,7 @@ function resetGame() {
 }
 
 function gameLoop() {
+    console.log(`Verificando gameLoop: gameStarted=${gameStarted}, gameOver=${gameOver}, paused=${paused}, ctx=${!!ctx}`);
     if (!gameStarted || gameOver || paused || !ctx) {
         console.log(`Game Loop interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, paused=${paused}, ctx=${!!ctx}`);
         return;
@@ -826,5 +842,9 @@ function gameLoop() {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-// Inicializar o jogo
-showStartScreen();
+// Inicializar o jogo ao carregar
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM carregado, inicializando o jogo');
+    showStartScreen();
+    initGame();
+});
