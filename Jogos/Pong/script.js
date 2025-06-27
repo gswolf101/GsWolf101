@@ -61,11 +61,12 @@ if (!startScreen || !singlePlayerStartScreen || !multiplayerStartScreen || !game
 const PADDLE_WIDTH = 15;
 const PADDLE_HEIGHT = 120;
 const PADDLE_GROW_HEIGHT = 200;
-const BALL_SIZE = 30; // Revertido para 30 pixels para estabilidade (reduz para 15 com "shrink")
+const BALL_SIZE = 22; // 75% de 30 = 22.5, arredondado para 22
 const PADDLE_SPEED = 360;
 const INITIAL_BALL_SPEED = 240;
 const BALL_SPEED_INCREMENT = 24;
 const MAX_BALL_SPEED = 840;
+const MAX_BALL_SPEED_GROWBALL = 1050; // 840 + (840 * 0.25)
 const AI_PADDLE_SPEED = 420;
 const AI_TRACKING_MARGIN = 10;
 const TRAIL_LENGTH = 12;
@@ -76,7 +77,7 @@ const MYSTERY_BOX_DURATION = 10000;
 const SHIELD_DURATION = 2000;
 const LIGHTNING_PAUSE_DURATION = 2000;
 const GROW_DURATION = 10000;
-const SHRINK_DURATION = 15000;
+const GROWBALL_DURATION = 15000; // 15 segundos, igual ao shrink anterior
 const BORDER_THICKNESS = 5;
 
 let ballX = canvas ? canvas.width / 2 : 400;
@@ -109,14 +110,15 @@ let leftGrowActive = false;
 let rightGrowActive = false;
 let leftGrowEndTime = 0;
 let rightGrowEndTime = 0;
-let shrinkActive = false;
-let shrinkEndTime = 0;
-let currentBallSize = BALL_SIZE; // Tamanho atual da bola (30 ou 15 com "shrink")
+let growBallActive = false;
+let growBallEndTime = 0;
+let currentBallSize = BALL_SIZE; // 22 normal, 33 com growBall
+let currentMaxBallSpeed = MAX_BALL_SPEED; // 840 normal, 1050 com growBall
 let lastBoxSpawnTime = 0;
 let isBallPaused = false;
 let pauseStartTime = 0;
 let pendingLightningLaunch = null;
-let powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0, shrink: 0 };
+let powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0, growBall: 0 };
 let animationFrameId = null;
 let lastLeftPaddleCollision = false;
 let lastTime = performance.now();
@@ -192,7 +194,7 @@ function hideAllScreens() {
     if (singlePlayerStartScreen) singlePlayerStartScreen.style.display = 'none';
     if (multiplayerStartScreen) multiplayerStartScreen.style.display = 'none';
     if (gameScreen) gameScreen.style.display = 'none';
-    if (gameOverScreen) gameOverScreen.style.display = 'none';
+    if (gameOverScreen) gameScreen.style.display = 'none';
 }
 
 function showStartScreen() {
@@ -240,7 +242,7 @@ function startGame(isSinglePlayer) {
     if (currentScoreDisplay.parentElement?.parentElement) {
         currentScoreDisplay.parentElement.parentElement.style.display = singlePlayer ? 'flex' : 'none';
     }
-    initGame(); // Inicialização explícita
+    initGame();
     lastTime = performance.now();
     gameStarted = true;
     gameOver = false;
@@ -419,7 +421,7 @@ function draw() {
         ctx.font = '14px Arial';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'left';
-        ctx.fillText(`Ball: x=${ballX.toFixed(0)}, y=${ballY.toFixed(0)}, speedX=${ballSpeedX.toFixed(0)}, size=${currentBallSize}`, 10, 20);
+        ctx.fillText(`Ball: x=${ballX.toFixed(0)}, y=${ballY.toFixed(0)}, speedX=${ballSpeedX.toFixed(0)}, size=${currentBallSize}, maxSpeed=${currentMaxBallSpeed}`, 10, 20);
         ctx.fillText(`Left Paddle: y=${leftPaddleY.toFixed(0)}`, 10, 40);
         ctx.fillText(`Right Paddle: y=${rightPaddleY.toFixed(0)}`, 10, 60);
         ctx.fillText(`Game State: started=${gameStarted}, over=${gameOver}, paused=${paused}`, 10, 80);
@@ -439,7 +441,7 @@ function spawnMysteryBox() {
 }
 
 function getRandomPower() {
-    const powers = ['shield', 'lightning', 'reverse', 'grow', 'shrink'];
+    const powers = ['shield', 'lightning', 'reverse', 'grow', 'growBall']; // Substituído 'shrink' por 'growBall'
     const randomIndex = Math.floor(Math.random() * powers.length);
     const selectedPower = powers[randomIndex];
     powerCounts[selectedPower]++;
@@ -472,7 +474,7 @@ function activatePower(player) {
         pauseStartTime = Date.now();
         pendingLightningLaunch = {
             player: player,
-            speedX: (player === 'left' ? 1 : -1) * MAX_BALL_SPEED,
+            speedX: (player === 'left' ? 1 : -1) * currentMaxBallSpeed, // Usa velocidade máxima atual
             speedY: 0
         };
         lastPlayerTouched = player;
@@ -492,11 +494,12 @@ function activatePower(player) {
             rightPaddleHeight = PADDLE_GROW_HEIGHT;
             rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
         }
-    } else if (power === 'shrink') {
-        shrinkActive = true;
-        shrinkEndTime = Date.now() + SHRINK_DURATION;
-        currentBallSize = BALL_SIZE / 2; // Reduz para 15 pixels
-        console.log('Poder shrink ativado: bola reduzida para 15 pixels');
+    } else if (power === 'growBall') {
+        growBallActive = true;
+        growBallEndTime = Date.now() + GROWBALL_DURATION;
+        currentBallSize = BALL_SIZE * 1.5; // Aumenta 50% (22 -> 33 pixels)
+        currentMaxBallSpeed = MAX_BALL_SPEED_GROWBALL; // 1050 pixels/segundo
+        console.log('Poder growBall ativado: bola aumentada para 33 pixels, velocidade máxima 1050');
     }
 
     if (player === 'left') {
@@ -603,8 +606,8 @@ function update() {
 
     if (ballSpeedX < 0 && !lastLeftPaddleCollision && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + leftPaddleHeight / 2)) / (leftPaddleHeight / 2);
-        ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
-        ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
+        ballSpeedX = Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, currentMaxBallSpeed);
+        ballSpeedY = hitPoint * (currentMaxBallSpeed / 2);
         ballX = leftPaddle.x + leftPaddle.width + currentBallSize / 2;
         lastPlayerTouched = 'left';
         lastLeftPaddleCollision = true;
@@ -616,8 +619,8 @@ function update() {
 
     if (ballSpeedX > 0 && collides(ball, rightPaddle)) {
         const hitPoint = (ballY - (rightPaddle.y + rightPaddleHeight / 2)) / (rightPaddleHeight / 2);
-        ballSpeedX = -Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, MAX_BALL_SPEED);
-        ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
+        ballSpeedX = -Math.min(Math.abs(ballSpeedX) + BALL_SPEED_INCREMENT, currentMaxBallSpeed);
+        ballSpeedY = hitPoint * (currentMaxBallSpeed / 2);
         ballX = rightPaddle.x - currentBallSize / 2;
         lastPlayerTouched = 'right';
         updateScoreDisplay();
@@ -638,20 +641,20 @@ function update() {
                 lightning: '⚡️',
                 reverse: '🔄',
                 grow: '📈',
-                shrink: '🔽'
+                growBall: '📏'
             };
             if (lastPlayerTouched) {
                 if (lastPlayerTouched === 'left') {
                     leftPower = power;
                     if (leftPowerDisplay) {
-                        leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'} ${powerEmojis[power]}`;
+                        leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Aumentar Bola'} ${powerEmojis[power]}`;
                         leftPowerDisplay.className = `power-display power-${power}`;
                     }
                     console.log(`Poder ${power} coletado pelo Jogador 1`);
                 } else {
                     rightPower = power;
                     if (rightPowerDisplay) {
-                        rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Encolher'} ${powerEmojis[power]}`;
+                        rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : power === 'grow' ? 'Crescer' : 'Aumentar Bola'} ${powerEmojis[power]}`;
                         rightPowerDisplay.className = `power-display power-${power}`;
                     }
                     console.log(`Poder ${power} coletado pelo Jogador 2`);
@@ -694,10 +697,11 @@ function update() {
         rightPaddleHeight = PADDLE_HEIGHT;
         rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
     }
-    if (shrinkActive && Date.now() > shrinkEndTime) {
-        shrinkActive = false;
+    if (growBallActive && Date.now() > growBallEndTime) {
+        growBallActive = false;
         currentBallSize = BALL_SIZE;
-        console.log('Poder shrink expirou: bola voltou ao tamanho normal (30 pixels)');
+        currentMaxBallSpeed = MAX_BALL_SPEED;
+        console.log('Poder growBall expirou: bola voltou ao tamanho normal (22 pixels), velocidade máxima 840');
     }
 
     // Verificar gol
@@ -811,14 +815,15 @@ function resetGame() {
     rightGrowActive = false;
     leftGrowEndTime = 0;
     rightGrowEndTime = 0;
-    shrinkActive = false;
-    shrinkEndTime = 0;
-    currentBallSize = BALL_SIZE;
+    growBallActive = false;
+    growBallEndTime = 0;
+    currentBallSize = BALL_SIZE; // 22 pixels
+    currentMaxBallSpeed = MAX_BALL_SPEED; // 840 pixels/segundo
     lastBoxSpawnTime = 0;
     isBallPaused = false;
     pendingLightningLaunch = null;
     pauseStartTime = 0;
-    powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0, shrink: 0 };
+    powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0, growBall: 0 };
     lastLeftPaddleCollision = false;
     lastTrailPosition = { x: ballX, y: ballY };
     keys = {};
