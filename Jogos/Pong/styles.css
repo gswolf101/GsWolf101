@@ -106,7 +106,7 @@ button:hover {
     color: white;
     font-family: Arial, sans-serif;
     font-size: 18px;
-    z-index: 10; /* Garante que fique acima do canvas */
+    z-index: 10;
 }
 
 #scoreDisplay, #goalsDisplay {
@@ -115,7 +115,7 @@ button:hover {
 
 #leftPower, #rightPower {
     position: absolute;
-    top: 40px; /* Abaixo das vidas */
+    top: 40px;
     color: white;
     font-family: Arial, sans-serif;
     font-size: 16px;
@@ -143,6 +143,10 @@ button:hover {
 
 .power-display.power-grow {
     color: #00FF00; /* Verde para crescer */
+}
+
+.power-display.power-shrink {
+    color: #FFA500; /* Laranja para encolher */
 }
 
 @media (max-width: 600px) {
