@@ -6,6 +6,19 @@ if (!canvas || !ctx) {
     alert('Erro ao carregar o jogo: Canvas não encontrado. Verifique o HTML.');
 }
 
+// Carregar imagem da bola
+const ballImage = new Image();
+ballImage.src = 'imagens/Bola-de-fogo.png';
+let ballImageLoaded = false;
+ballImage.onload = () => {
+    ballImageLoaded = true;
+    console.log('Imagem da bola carregada com sucesso');
+};
+ballImage.onerror = () => {
+    console.error('Erro ao carregar a imagem da bola');
+    alert('Erro ao carregar a imagem da bola. Usando círculo padrão.');
+};
+
 const startScreen = document.getElementById('startScreen');
 const singlePlayerStartScreen = document.getElementById('singlePlayerStartScreen');
 const multiplayerStartScreen = document.getElementById('multiplayerStartScreen');
@@ -57,6 +70,7 @@ const TRAIL_LENGTH = 12;
 const TRAIL_SPACING = 5;
 const MYSTERY_BOX_SIZE = 30;
 const MYSTERY_BOX_SPAWN_INTERVAL = 5000;
+const MYSTERY_BOX_DURATION = 10000; // Novo: Tempo limite para caixa
 const SHIELD_DURATION = 2000;
 const LIGHTNING_PAUSE_DURATION = 2000;
 const GROW_DURATION = 10000;
@@ -75,11 +89,13 @@ let rightLives = 3;
 let singlePlayer = false;
 let gameStarted = false;
 let gameOver = false;
+let paused = false; // Novo: Estado de pausa
 let score = 0;
 let goals = 0;
 let trail = [];
 let lastPlayerTouched = null;
 let mysteryBox = null;
+let mysteryBoxEndTime = 0; // Novo: Tempo de expiração da caixa
 let leftPower = null;
 let rightPower = null;
 let leftShieldActive = false;
@@ -103,14 +119,48 @@ let lastTrailPosition = { x: ballX, y: ballY };
 let keys = {};
 let ranking = JSON.parse(localStorage.getItem('pongRanking')) || [];
 
+// Ajustar canvas para responsividade
+function resizeCanvas() {
+    canvas.width = Math.min(window.innerWidth * 0.8, 800);
+    canvas.height = Math.min(window.innerHeight * 0.8, 600);
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+    leftPaddleY = canvas.height / 2 - leftPaddleHeight / 2;
+    rightPaddleY = canvas.height / 2 - rightPaddleHeight / 2;
+    console.log(`Canvas redimensionado: ${canvas.width}x${canvas.height}`);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Controles de toque
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const touchY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+    if (touch.clientX < rect.width / 2) {
+        leftPaddleY = Math.max(0, Math.min(canvas.height - leftPaddleHeight, touchY - leftPaddleHeight / 2));
+        console.log(`Toque: Movendo raquete esquerda para y=${leftPaddleY.toFixed(2)}`);
+    } else if (!singlePlayer) {
+        rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, touchY - rightPaddleHeight / 2));
+        console.log(`Toque: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
+    }
+});
+
+// Controles de teclado
 document.addEventListener('keydown', (e) => {
     keys[e.key] = true;
     console.log(`Tecla pressionada: ${e.key}`);
-    if (e.key === 'e' && leftPower && !gameOver && !isBallPaused) {
+    if (e.key === 'e' && leftPower && !gameOver && !isBallPaused && !paused) {
         activatePower('left');
     }
-    if (e.key === 'Enter' && rightPower && !gameOver && !singlePlayer && !isBallPaused) {
+    if (e.key === 'Enter' && rightPower && !gameOver && !singlePlayer && !isBallPaused && !paused) {
         activatePower('right');
+    }
+    if (e.key === 'Escape' && gameStarted && !gameOver) { // Novo: Pausa com Escape
+        paused = !paused;
+        console.log(`Jogo ${paused ? 'pausado' : 'retomado'}`);
+        if (!paused) gameLoop();
     }
 });
 document.addEventListener('keyup', (e) => {
@@ -137,12 +187,6 @@ function showSinglePlayerScreen() {
     hideAllScreens();
     if (singlePlayerStartScreen) {
         singlePlayerStartScreen.style.display = 'flex';
-        console.log('Elementos da tela de single-player:', {
-            title: singlePlayerStartScreen.querySelector('h2')?.outerHTML,
-            rankingList: initialRankingList?.outerHTML,
-            startBtn: startSinglePlayerGameBtn?.outerHTML,
-            backBtn: backToMenuSinglePlayerBtn?.outerHTML
-        });
         updateRankingDisplay();
     } else {
         console.error('Erro: singlePlayerStartScreen não encontrado');
@@ -154,11 +198,6 @@ function showMultiplayerScreen() {
     hideAllScreens();
     if (multiplayerStartScreen) {
         multiplayerStartScreen.style.display = 'flex';
-        console.log('Elementos da tela de multiplayer:', {
-            title: multiplayerStartScreen.querySelector('h2')?.outerHTML,
-            startBtn: startMultiplayerGameBtn?.outerHTML,
-            backBtn: backToMenuMultiplayerBtn?.outerHTML
-        });
     } else {
         console.error('Erro: multiplayerStartScreen não encontrado');
     }
@@ -176,41 +215,19 @@ function startGame(isSinglePlayer) {
         lastTime = performance.now();
         gameStarted = true;
         gameOver = false;
+        paused = false;
         gameLoop();
-        console.log(`Estado inicial: singlePlayer=${singlePlayer}, rightLives=${rightLives}, rightLivesContainer.display=${rightLivesContainer.style.display}`);
     } else {
-        console.error('Erro: Elementos do gameScreen não encontrados', {
-            gameScreen: !!gameScreen,
-            rightLivesContainer: !!rightLivesContainer,
-            currentScoreDisplay: !!currentScoreDisplay
-        });
+        console.error('Erro: Elementos do gameScreen não encontrados');
     }
 }
 
-if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', () => {
-    console.log('Botão Single Player clicado');
-    showSinglePlayerScreen();
-});
-if (multiPlayerBtn) multiPlayerBtn.addEventListener('click', () => {
-    console.log('Botão Multiplayer clicado');
-    showMultiplayerScreen();
-});
-if (startSinglePlayerGameBtn) startSinglePlayerGameBtn.addEventListener('click', () => {
-    console.log('Botão Começar Single Player clicado');
-    startGame(true);
-});
-if (startMultiplayerGameBtn) startMultiplayerGameBtn.addEventListener('click', () => {
-    console.log('Botão Começar Multiplayer clicado');
-    startGame(false);
-});
-if (backToMenuSinglePlayerBtn) backToMenuSinglePlayerBtn.addEventListener('click', () => {
-    console.log('Botão Voltar (Single Player) clicado');
-    showStartScreen();
-});
-if (backToMenuMultiplayerBtn) backToMenuMultiplayerBtn.addEventListener('click', () => {
-    console.log('Botão Voltar (Multiplayer) clicado');
-    showStartScreen();
-});
+if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', showSinglePlayerScreen);
+if (multiPlayerBtn) multiPlayerBtn.addEventListener('click', showMultiplayerScreen);
+if (startSinglePlayerGameBtn) startSinglePlayerGameBtn.addEventListener('click', () => startGame(true));
+if (startMultiplayerGameBtn) startMultiplayerGameBtn.addEventListener('click', () => startGame(false));
+if (backToMenuSinglePlayerBtn) backToMenuSinglePlayerBtn.addEventListener('click', showStartScreen);
+if (backToMenuMultiplayerBtn) backToMenuMultiplayerBtn.addEventListener('click', showStartScreen);
 
 if (rematchBtn) {
     rematchBtn.addEventListener('click', () => {
@@ -233,8 +250,8 @@ if (rematchBtn) {
             lastTime = performance.now();
             gameStarted = true;
             gameOver = false;
+            paused = false;
             gameLoop();
-            console.log(`Revanche: singlePlayer=${singlePlayer}, rightLives=${rightLives}, rightLivesContainer.display=${rightLivesContainer.style.display}`);
         }
     });
 }
@@ -292,16 +309,18 @@ function draw() {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Desenhar bordas superior e inferior da arena
+    // Desenhar bordas
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, BORDER_THICKNESS);
     ctx.fillRect(0, canvas.height - BORDER_THICKNESS, canvas.width, BORDER_THICKNESS);
 
-    ctx.fillStyle = leftShieldActive ? '#00f' : 'white';
+    // Desenhar raquetes com animação de escudo
+    ctx.fillStyle = leftShieldActive ? `rgba(0, 0, 255, ${1 - Math.sin(Date.now() / 100) * 0.5})` : 'white';
     ctx.fillRect(0, leftPaddleY, PADDLE_WIDTH, leftPaddleHeight);
-    ctx.fillStyle = rightShieldActive ? '#00f' : 'white';
+    ctx.fillStyle = rightShieldActive ? `rgba(0, 0, 255, ${1 - Math.sin(Date.now() / 100) * 0.5})` : 'white';
     ctx.fillRect(canvas.width - PADDLE_WIDTH, rightPaddleY, PADDLE_WIDTH, rightPaddleHeight);
 
+    // Desenhar caixa misteriosa
     if (mysteryBox) {
         ctx.fillStyle = 'yellow';
         ctx.fillRect(mysteryBox.x, mysteryBox.y, MYSTERY_BOX_SIZE, MYSTERY_BOX_SIZE);
@@ -312,23 +331,30 @@ function draw() {
         ctx.fillText('?', mysteryBox.x + MYSTERY_BOX_SIZE / 2, mysteryBox.y + MYSTERY_BOX_SIZE / 2);
     }
 
+    // Desenhar rastro laranja
     trail.forEach((pos, index) => {
         ctx.beginPath();
         const opacity = (index + 1) / TRAIL_LENGTH;
         ctx.globalAlpha = opacity * 0.7;
         ctx.arc(pos.x, pos.y, (BALL_SIZE / 2) * (0.6 + 0.4 * opacity), 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#FF4500'; // Laranja forte
         ctx.fill();
         ctx.closePath();
     });
     ctx.globalAlpha = 1;
 
-    ctx.beginPath();
-    ctx.arc(ballX, ballY, BALL_SIZE / 2, 0, Math.PI * 2);
-    ctx.fillStyle = isBallPaused ? '#800080' : 'white';
-    ctx.fill();
-    ctx.closePath();
+    // Desenhar bola (imagem ou círculo de fallback)
+    if (ballImageLoaded) {
+        ctx.drawImage(ballImage, ballX - BALL_SIZE / 2, ballY - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE);
+    } else {
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, BALL_SIZE / 2, 0, Math.PI * 2);
+        ctx.fillStyle = isBallPaused ? '#800080' : 'white';
+        ctx.fill();
+        ctx.closePath();
+    }
 
+    // Linha central
     ctx.setLineDash([5, 15]);
     ctx.beginPath();
     ctx.moveTo(canvas.width / 2, 0);
@@ -337,12 +363,31 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // Indicador de pausa do raio
     if (isBallPaused && pauseStartTime > 0) {
         const timeLeft = Math.max(0, (LIGHTNING_PAUSE_DURATION - (Date.now() - pauseStartTime)) / 1000);
         ctx.font = '20px Arial';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.fillText(`Lançando em: ${Math.ceil(timeLeft)}s`, canvas.width / 2, 50);
+    }
+
+    // Indicador de pausa do jogo
+    if (paused) {
+        ctx.font = '30px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.fillText('PAUSADO', canvas.width / 2, canvas.height / 2);
+    }
+
+    // Modo de depuração
+    if (keys['d']) {
+        ctx.font = '14px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Ball: x=${ballX.toFixed(0)}, y=${ballY.toFixed(0)}, speedX=${ballSpeedX.toFixed(0)}`, 10, 20);
+        ctx.fillText(`Left Paddle: y=${leftPaddleY.toFixed(0)}`, 10, 40);
+        ctx.fillText(`Right Paddle: y=${rightPaddleY.toFixed(0)}`, 10, 60);
     }
 }
 
@@ -354,7 +399,8 @@ function spawnMysteryBox() {
         { x: (3 * canvas.width) / 4, y: (3 * canvas.height) / 4 },
     ];
     mysteryBox = possiblePositions[Math.floor(Math.random() * possiblePositions.length)];
-    console.log(`Caixa misteriosa gerada em x=${mysteryBox.x}, y=${mysteryBox.y}`);
+    mysteryBoxEndTime = Date.now() + MYSTERY_BOX_DURATION;
+    console.log(`Caixa misteriosa gerada em x=${mysteryBox.x}, y=${mysteryBox.y}, expira em ${mysteryBoxEndTime}`);
 }
 
 function getRandomPower() {
@@ -374,16 +420,13 @@ function activatePower(player) {
     }
 
     console.log(`${player} ativou poder: ${power}`);
-
     if (power === 'shield') {
         if (player === 'left') {
             leftShieldActive = true;
             leftShieldEndTime = Date.now() + SHIELD_DURATION;
-            console.log(`Escudo ativado para esquerda até ${leftShieldEndTime}`);
         } else {
             rightShieldActive = true;
             rightShieldEndTime = Date.now() + SHIELD_DURATION;
-            console.log(`Escudo ativado para direita até ${rightShieldEndTime}`);
         }
     } else if (power === 'lightning') {
         ballX = player === 'left' ? PADDLE_WIDTH + BALL_SIZE / 2 : canvas.width - PADDLE_WIDTH - BALL_SIZE / 2;
@@ -394,29 +437,25 @@ function activatePower(player) {
         pauseStartTime = Date.now();
         pendingLightningLaunch = {
             player: player,
-            speedX: (player === 'left' ? 1 : -1) * MAX_BALL_SPEED * 1.2,
+            speedX: (player === 'left' ? 1 : -1) * MAX_BALL_SPEED, // Reduzido de 1.2x para balanceamento
             speedY: 0
         };
         lastPlayerTouched = player;
         trail = [];
-        console.log(`Raio ativado para ${player}: Pausado em x=${ballX.toFixed(2)}, y=${ballY.toFixed(2)}`);
     } else if (power === 'reverse') {
         ballSpeedX = -ballSpeedX;
         ballSpeedY = -ballSpeedY;
-        console.log(`Inversão ativada: Velocidade X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
     } else if (power === 'grow') {
         if (player === 'left') {
             leftGrowActive = true;
             leftGrowEndTime = Date.now() + GROW_DURATION;
             leftPaddleHeight = PADDLE_GROW_HEIGHT;
             leftPaddleY = Math.max(0, Math.min(canvas.height - leftPaddleHeight, leftPaddleY));
-            console.log(`Crescer ativado para esquerda: Altura=${leftPaddleHeight}, até ${leftGrowEndTime}`);
         } else {
             rightGrowActive = true;
             rightGrowEndTime = Date.now() + GROW_DURATION;
             rightPaddleHeight = PADDLE_GROW_HEIGHT;
             rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
-            console.log(`Crescer ativado para direita: Altura=${rightPaddleHeight}, até ${rightGrowEndTime}`);
         }
     }
 
@@ -432,8 +471,8 @@ function activatePower(player) {
 }
 
 function update() {
-    if (!gameStarted || gameOver || !ctx) {
-        console.log(`Update interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, ctx=${!!ctx}`);
+    if (!gameStarted || gameOver || paused || !ctx) {
+        console.log(`Update interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, paused=${paused}, ctx=${!!ctx}`);
         return;
     }
 
@@ -441,41 +480,33 @@ function update() {
     const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.033);
     lastTime = currentTime;
 
-    // Jogador 1 (esquerda)
+    // Movimento das raquetes
     if (keys['w'] && leftPaddleY > 0) {
         leftPaddleY -= PADDLE_SPEED * deltaTime;
-        console.log(`Jogador 1: Movendo raquete esquerda para y=${leftPaddleY.toFixed(2)}`);
     }
     if (keys['s'] && leftPaddleY < canvas.height - leftPaddleHeight) {
         leftPaddleY += PADDLE_SPEED * deltaTime;
-        console.log(`Jogador 1: Movendo raquete esquerda para y=${leftPaddleY.toFixed(2)}`);
     }
 
-    // Jogador 2 (direita) ou IA
     if (!singlePlayer) {
         if (keys['ArrowUp'] && rightPaddleY > 0) {
             rightPaddleY -= PADDLE_SPEED * deltaTime;
-            console.log(`Jogador 2: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
         }
         if (keys['ArrowDown'] && rightPaddleY < canvas.height - rightPaddleHeight) {
             rightPaddleY += PADDLE_SPEED * deltaTime;
-            console.log(`Jogador 2: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
         }
     } else {
         const paddleCenter = rightPaddleY + rightPaddleHeight / 2;
         if (paddleCenter < ballY - AI_TRACKING_MARGIN && !isBallPaused) {
             rightPaddleY += AI_PADDLE_SPEED * deltaTime;
-            console.log(`IA: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
         } else if (paddleCenter > ballY + AI_TRACKING_MARGIN && !isBallPaused) {
             rightPaddleY -= AI_PADDLE_SPEED * deltaTime;
-            console.log(`IA: Movendo raquete direita para y=${rightPaddleY.toFixed(2)}`);
         }
         rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
     }
 
     if (isBallPaused) {
         if (!pendingLightningLaunch || !pauseStartTime) {
-            console.error('Erro: Estado inválido do Raio', { pendingLightningLaunch, pauseStartTime });
             isBallPaused = false;
             pendingLightningLaunch = null;
             pauseStartTime = 0;
@@ -484,7 +515,6 @@ function update() {
         }
 
         if (Date.now() - pauseStartTime >= LIGHTNING_PAUSE_DURATION) {
-            console.log(`Lançando bola: speedX=${pendingLightningLaunch.speedX.toFixed(2)}, speedY=${pendingLightningLaunch.speedY.toFixed(2)}`);
             ballSpeedX = pendingLightningLaunch.speedX;
             ballSpeedY = pendingLightningLaunch.speedY;
             isBallPaused = false;
@@ -502,6 +532,7 @@ function update() {
         return;
     }
 
+    // Atualizar rastro
     const distanceMoved = Math.sqrt((ballX - lastTrailPosition.x) ** 2 + (ballY - lastTrailPosition.y) ** 2);
     if (distanceMoved >= TRAIL_SPACING) {
         trail.push({ x: ballX, y: ballY });
@@ -509,25 +540,25 @@ function update() {
         if (trail.length > TRAIL_LENGTH) {
             trail.shift();
         }
-        console.log(`Adicionando ao rastro: x=${ballX.toFixed(2)}, y=${ballY.toFixed(2)}, distance=${distanceMoved.toFixed(2)}`);
     }
 
+    // Movimento da bola
     ballX += ballSpeedX * deltaTime;
     ballY += ballSpeedY * deltaTime;
 
+    // Colisão com bordas
     if (ballY <= BALL_SIZE / 2) {
         ballY = BALL_SIZE / 2;
         ballSpeedY = Math.abs(ballSpeedY);
-        console.log(`Colisão com borda superior: ballY=${ballY.toFixed(2)}, ballSpeedY=${ballSpeedY.toFixed(2)}`);
     } else if (ballY >= canvas.height - BALL_SIZE / 2) {
         ballY = canvas.height - BALL_SIZE / 2;
         ballSpeedY = -Math.abs(ballSpeedY);
-        console.log(`Colisão com borda inferior: ballY=${ballY.toFixed(2)}, ballSpeedY=${ballSpeedY.toFixed(2)}`);
     }
 
+    // Colisão com raquetes
     const leftPaddle = { x: 0, y: leftPaddleY, width: PADDLE_WIDTH, height: leftPaddleHeight };
     const rightPaddle = { x: canvas.width - PADDLE_WIDTH, y: rightPaddleY, width: PADDLE_WIDTH, height: rightPaddleHeight };
-    const ball = { x: ballX, y: ballY, width: BALL_SIZE, height: BALL_SIZE };
+    const ball = { x: ballX, y: ballY, radius: BALL_SIZE / 2 };
 
     if (ballSpeedX < 0 && !lastLeftPaddleCollision && collides(ball, leftPaddle)) {
         const hitPoint = (ballY - (leftPaddle.y + leftPaddleHeight / 2)) / (leftPaddleHeight / 2);
@@ -536,11 +567,7 @@ function update() {
         ballX = leftPaddle.x + leftPaddle.width + BALL_SIZE / 2;
         lastPlayerTouched = 'left';
         lastLeftPaddleCollision = true;
-        if (singlePlayer) {
-            score += 1;
-            console.log(`Rebatida pelo jogador! Pontos: ${score}`);
-        }
-        console.log(`Rebatida pela raquete esquerda: Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
+        if (singlePlayer) score += 1;
         updateScoreDisplay();
     } else if (ballSpeedX >= 0) {
         lastLeftPaddleCollision = false;
@@ -552,10 +579,10 @@ function update() {
         ballSpeedY = hitPoint * (MAX_BALL_SPEED / 2);
         ballX = rightPaddle.x - BALL_SIZE / 2;
         lastPlayerTouched = 'right';
-        console.log(`Rebatida pela raquete direita: Ball Speed: X=${ballSpeedX.toFixed(2)}, Y=${ballSpeedY.toFixed(2)}`);
         updateScoreDisplay();
     }
 
+    // Colisão com caixa misteriosa
     if (mysteryBox) {
         const box = {
             x: mysteryBox.x,
@@ -564,62 +591,62 @@ function update() {
             height: MYSTERY_BOX_SIZE,
         };
         if (collides(ball, box)) {
-            console.log(`Colisão com caixa: lastPlayerTouched=${lastPlayerTouched}`);
+            const power = getRandomPower();
             if (lastPlayerTouched) {
-                const power = getRandomPower();
-                console.log(`Atribuindo poder ${power} ao jogador ${lastPlayerTouched}`);
                 if (lastPlayerTouched === 'left') {
                     leftPower = power;
                     if (leftPowerDisplay) leftPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : 'Crescer'}`;
                     if (leftPowerDisplay) leftPowerDisplay.className = `power-display power-${power}`;
+                    alert(`Poder ${power} coletado pelo Jogador 1!`);
                 } else {
                     rightPower = power;
                     if (rightPowerDisplay) rightPowerDisplay.textContent = `Poder: ${power === 'shield' ? 'Escudo' : power === 'lightning' ? 'Raio' : power === 'reverse' ? 'Inversão' : 'Crescer'}`;
                     if (rightPowerDisplay) rightPowerDisplay.className = `power-display power-${power}`;
+                    alert(`Poder ${power} coletado pelo Jogador 2!`);
                 }
             }
             mysteryBox = null;
+            mysteryBoxEndTime = 0;
+        } else if (Date.now() > mysteryBoxEndTime) {
+            mysteryBox = null;
+            console.log('Caixa misteriosa expirou');
         }
     }
 
+    // Gerar caixa misteriosa
     if (!mysteryBox && Date.now() - lastBoxSpawnTime > MYSTERY_BOX_SPAWN_INTERVAL) {
         if (Math.random() < 0.5) {
             spawnMysteryBox();
             lastBoxSpawnTime = Date.now();
         }
-        console.log(`Verificando geração de caixa: lastBoxSpawnTime=${lastBoxSpawnTime}, currentTime=${Date.now()}`);
     }
 
+    // Expirar poderes
     if (leftShieldActive && Date.now() > leftShieldEndTime) {
         leftShieldActive = false;
-        console.log('Escudo expirado para esquerda');
         if (leftPowerDisplay) leftPowerDisplay.textContent = 'Poder: Nenhum';
         if (leftPowerDisplay) leftPowerDisplay.className = 'power-display';
     }
     if (rightShieldActive && Date.now() > rightShieldEndTime) {
         rightShieldActive = false;
-        console.log('Escudo expirado para direita');
         if (rightPowerDisplay) rightPowerDisplay.textContent = 'Poder: Nenhum';
         if (rightPowerDisplay) rightPowerDisplay.className = 'power-display';
     }
-
     if (leftGrowActive && Date.now() > leftGrowEndTime) {
         leftGrowActive = false;
         leftPaddleHeight = PADDLE_HEIGHT;
         leftPaddleY = Math.max(0, Math.min(canvas.height - leftPaddleHeight, leftPaddleY));
-        console.log('Crescer expirado para esquerda: Altura da raquete=', leftPaddleHeight);
     }
     if (rightGrowActive && Date.now() > rightGrowEndTime) {
         rightGrowActive = false;
         rightPaddleHeight = PADDLE_HEIGHT;
         rightPaddleY = Math.max(0, Math.min(canvas.height - rightPaddleHeight, rightPaddleY));
-        console.log('Crescer expirado para direita: Altura da raquete=', rightPaddleHeight);
     }
 
+    // Verificar gol
     if (ballX <= BALL_SIZE / 2) {
         if (!leftShieldActive) {
             leftLives--;
-            console.log(`Gol contra Jogador 1: leftLives=${leftLives}`);
         }
         updateLivesDisplay();
         updateScoreDisplay();
@@ -627,11 +654,9 @@ function update() {
     } else if (ballX >= canvas.width - BALL_SIZE / 2) {
         if (!rightShieldActive) {
             rightLives--;
-            console.log(`Gol contra Jogador 2: rightLives=${rightLives}`);
             if (singlePlayer) {
                 score += 10;
                 goals++;
-                console.log(`Gol marcado pelo jogador! Pontos: ${score}, Gols: ${goals}`);
             }
         }
         updateLivesDisplay();
@@ -639,6 +664,7 @@ function update() {
         resetBall();
     }
 
+    // Verificar fim de jogo
     if (leftLives <= 0 || (!singlePlayer && rightLives <= 0)) {
         gameOver = true;
         gameStarted = false;
@@ -654,19 +680,16 @@ function update() {
                 updateRankingDisplay();
             } else {
                 gameOverMessage.textContent = leftLives <= 0 ? 'Jogador 2 venceu!' : 'Jogador 1 venceu!';
-                console.log(`Fim de jogo: ${gameOverMessage.textContent}, leftLives=${leftLives}, rightLives=${rightLives}`);
             }
         }
     }
 }
 
 function collides(ball, obj) {
-    return (
-        ball.x - BALL_SIZE / 2 < obj.x + obj.width &&
-        ball.x + BALL_SIZE / 2 > obj.x &&
-        ball.y - BALL_SIZE / 2 < obj.y + obj.height &&
-        ball.y + BALL_SIZE / 2 > obj.y
-    );
+    const closestX = Math.max(obj.x, Math.min(ball.x, obj.x + obj.width));
+    const closestY = Math.max(obj.y, Math.min(ball.y, obj.y + obj.height));
+    const distance = Math.sqrt((ball.x - closestX) ** 2 + (ball.y - closestY) ** 2);
+    return distance < ball.radius;
 }
 
 function updateLivesDisplay() {
@@ -684,8 +707,8 @@ function updateScoreDisplay() {
 }
 
 function resetBall() {
-    ballX = canvas ? canvas.width / 2 : 400;
-    ballY = canvas ? canvas.height / 2 : 300;
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
     ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     trail = [];
@@ -707,17 +730,18 @@ function resetGame() {
     rightLives = 3;
     score = 0;
     goals = 0;
-    leftPaddleY = canvas ? canvas.height / 2 - PADDLE_HEIGHT / 2 : 240;
-    rightPaddleY = canvas ? canvas.height / 2 - PADDLE_HEIGHT / 2 : 240;
+    leftPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
+    rightPaddleY = canvas.height / 2 - PADDLE_HEIGHT / 2;
     leftPaddleHeight = PADDLE_HEIGHT;
     rightPaddleHeight = PADDLE_HEIGHT;
-    ballX = canvas ? canvas.width / 2 : 400;
-    ballY = canvas ? canvas.height / 2 : 300;
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
     ballSpeedX = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     ballSpeedY = INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1);
     trail = [];
     lastPlayerTouched = null;
     mysteryBox = null;
+    mysteryBoxEndTime = 0;
     leftPower = null;
     rightPower = null;
     leftShieldActive = false;
@@ -735,6 +759,7 @@ function resetGame() {
     powerCounts = { shield: 0, lightning: 0, reverse: 0, grow: 0 };
     lastLeftPaddleCollision = false;
     lastTrailPosition = { x: ballX, y: ballY };
+    keys = {}; // Novo: Limpar teclas
     if (leftPowerDisplay) leftPowerDisplay.textContent = 'Poder: Nenhum';
     if (leftPowerDisplay) leftPowerDisplay.className = 'power-display';
     if (rightPowerDisplay) rightPowerDisplay.textContent = 'Poder: Nenhum';
@@ -743,11 +768,12 @@ function resetGame() {
     updateScoreDisplay();
     gameStarted = true;
     gameOver = false;
+    paused = false;
 }
 
 function gameLoop() {
-    if (!gameStarted || gameOver || !ctx) {
-        console.log(`Game Loop interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, ctx=${!!ctx}`);
+    if (!gameStarted || gameOver || paused || !ctx) {
+        console.log(`Game Loop interrompido: gameStarted=${gameStarted}, gameOver=${gameOver}, paused=${paused}, ctx=${!!ctx}`);
         return;
     }
     update();
