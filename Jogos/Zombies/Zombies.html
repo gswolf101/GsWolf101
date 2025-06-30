@@ -285,19 +285,21 @@
 
         // Captura de teclas com depuração
         document.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            if (key in keys) {
-                keys[key] = true;
-                console.log(`Tecla pressionada: ${key}, keys:`, keys); // Depuração
+            const key = e.key;
+            const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
+            if (normalizedKey in keys) {
+                keys[normalizedKey] = true;
+                console.log(`Tecla pressionada: ${normalizedKey}, keys:`, keys); // Depuração
             }
-            if (key === 'r' && gameOver) resetGame();
+            if (normalizedKey === 'r' && gameOver) resetGame();
         });
 
         document.addEventListener('keyup', (e) => {
-            const key = e.key.toLowerCase();
-            if (key in keys) {
-                keys[key] = false;
-                console.log(`Tecla solta: ${key}, keys:`, keys); // Depuração
+            const key = e.key;
+            const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
+            if (normalizedKey in keys) {
+                keys[normalizedKey] = false;
+                console.log(`Tecla solta: ${normalizedKey}, keys:`, keys); // Depuração
             }
         });
 
@@ -596,6 +598,7 @@
             if (lightHands) baseDelay *= 0.8;
             if (goodHands) baseDelay *= 0.7;
             shootDelay = Math.max(50, baseDelay);
+            console.log(`shootDelay atualizado: ${shootDelay}ms`); // Depuração
         }
 
         function applyInitialUpgrade() {
@@ -629,9 +632,15 @@
         }
 
         function shoot() {
-            if (isPaused) return;
+            if (isPaused) {
+                console.log('Tiro bloqueado: jogo pausado');
+                return;
+            }
             const now = Date.now();
-            if (now - lastShot < shootDelay) return;
+            if (now - lastShot < shootDelay) {
+                console.log(`Tiro bloqueado: intervalo de ${shootDelay}ms não atingido (lastShot=${lastShot}, now=${now})`);
+                return;
+            }
             lastShot = now;
 
             let dx = 0, dy = 0;
@@ -655,6 +664,7 @@
                     electricTimer: null,
                     pierce: pierceCount
                 });
+                console.log(`Bala disparada: dx=${dx}, dy=${dy}, bullets:`, bullets); // Depuração
 
                 for (let i = 1; i <= diagonalShots; i++) {
                     const angle1 = Math.PI / 4;
@@ -679,6 +689,7 @@
                         electricTimer: null,
                         pierce: pierceCount
                     });
+                    console.log(`Balas diagonais disparadas: ${i} par(es)`); // Depuração
                 }
 
                 for (let i = 1; i <= frontShots; i++) {
@@ -693,7 +704,10 @@
                         electricTimer: null,
                         pierce: pierceCount
                     });
+                    console.log(`Bala frontal extra disparada: offset=${offset}`); // Depuração
                 }
+            } else {
+                console.log('Nenhuma direção de tiro detectada (dx=0, dy=0)'); // Depuração
             }
         }
 
@@ -794,7 +808,10 @@
                 }
             }
 
-            if (keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) shoot();
+            if (keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
+                console.log('Tecla de seta detectada, chamando shoot()'); // Depuração
+                shoot();
+            }
 
             bullets.forEach(bullet => {
                 if (bullet.homing) {
@@ -1040,6 +1057,7 @@
             isPaused = false;
             lastSpawn = 0;
             lastRegen = 0;
+            lastShot = 0; // Resetar lastShot para evitar bloqueio de tiro
             updateShootDelay();
             gameOverDisplay.style.display = 'none';
             rankingDisplay.style.display = 'none';
@@ -1053,7 +1071,7 @@
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             applyInitialUpgrade();
             canvas.focus();
-            console.log('Jogo resetado, canvas focado');
+            console.log('Jogo resetado, canvas focado, lastShot resetado');
         }
 
         function showRanking() {
