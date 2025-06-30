@@ -83,23 +83,7 @@
             color: white;
             font-size: 20px;
         }
-        #gameOver {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: red;
-            font-size: 40px;
-            text-align: center;
-        }
-        #gameOver button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        #ranking, #shop, #upgradeMenu {
+        #startScreen, #gameOver, #ranking, #shop, #upgradeMenu {
             display: none;
             position: absolute;
             top: 50%;
@@ -111,19 +95,28 @@
             border-radius: 10px;
             text-align: center;
         }
+        #startScreen {
+            display: block;
+        }
+        #gameOver button, #startScreen button, #ranking button, #shop button, #upgradeMenu button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 20px;
+            cursor: pointer;
+        }
         #ranking ul {
             list-style: none;
             padding: 0;
-        }
-        #shop button, #upgradeMenu button {
-            margin: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
+        <div id="startScreen">
+            <h2>Jogo de Sobrevivência a Zumbis</h2>
+            <button onclick="startGame()">Iniciar Jogo</button><br>
+            <button onclick="showRankingFromStart()">Ver Ranking</button>
+        </div>
         <div id="xpBar">
             <div id="xp"></div>
             <span id="xpText">Nível 1: 0/10 XP</span>
@@ -166,6 +159,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score');
+        const startScreen = document.getElementById('startScreen');
         const gameOverDisplay = document.getElementById('gameOver');
         const rankingDisplay = document.getElementById('ranking');
         const rankingList = document.getElementById('rankingList');
@@ -179,8 +173,10 @@
         const upgradeMenu = document.getElementById('upgradeMenu');
         const upgradeOptions = document.getElementById('upgradeOptions');
         const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
+        const buyGlockBtn = document.getElementById('buyGlockBtn');
+        const buyRifleBtn = document.getElementById('buyRifleBtn');
 
-        let player = { x: 400, y: 300, size: 20, speed: 5, health: 10, maxHealth: 10 };
+        let player = { x: 400, y: 300, size: 20, speed: 2.2, health: 10, maxHealth: 10 };
         let zombies = [];
         let bullets = [];
         let coins = [];
@@ -190,10 +186,10 @@
         let level = 1;
         let xpToNextLevel = 10;
         let gameOver = false;
-        let isPaused = false;
+        let isPaused = true; // Inicia pausado na tela inicial
         let lastShot = 0;
         let lastSpawn = 0;
-        let shootDelay = 2000; // 2 segundos entre disparos
+        let shootDelay = 2000; // Atraso inicial de tiro
         let fireRateCost = 200; // Custo inicial do upgrade de tiro rápido
         let spawnInterval = 4000; // Intervalo inicial de spawn
         let diagonalShots = 0; // Contador para +1 Diagonais
@@ -201,29 +197,45 @@
         let homingShot = false; // Estado de Teleguiada
         let electricShotChance = 0; // Chance de choque (0 a 1)
         let hasInitialUpgrade = false; // Estado do Upgrade Inicial
+        let healthUpgrades = 0; // Contador de compras de Vida Extra
+        let fireRateUpgrades = 0; // Contador de compras de Tiro Rápido
+        let hasGlock = false; // Estado de compra da Glock
+        let hasRifle = false; // Estado de compra do Rifle
+        let equippedWeapon = 'none'; // Arma equipada: 'none', 'glock', 'rifle'
 
         // Carregar dados do localStorage
         const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
-            maxHealth: 10,
-            shootDelay: 2000,
-            fireRateCost: 200,
+            healthUpgrades: 0,
+            fireRateUpgrades: 0,
+            hasGlock: false,
+            hasRifle: false,
+            equippedWeapon: 'none',
             hasInitialUpgrade: false,
             ranking: []
         };
         coinCount = savedData.coins;
-        player.maxHealth = savedData.maxHealth;
-        player.health = player.maxHealth;
-        shootDelay = savedData.shootDelay;
-        fireRateCost = savedData.fireRateCost || 200;
+        healthUpgrades = savedData.healthUpgrades || 0;
+        fireRateUpgrades = savedData.fireRateUpgrades || 0;
+        hasGlock = savedData.hasGlock || false;
+        hasRifle = savedData.hasRifle || false;
+        equippedWeapon = savedData.equippedWeapon || 'none';
         hasInitialUpgrade = savedData.hasInitialUpgrade || false;
-        fireRateCostDisplay.textContent = fireRateCost;
+        player.maxHealth = 10 + healthUpgrades * 50; // Calcula vida máxima
+        player.health = player.maxHealth;
+        fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades); // Calcula custo do Tiro Rápido
+        shootDelay = 2000 - fireRateUpgrades * 50; // Calcula atraso de tiro base
+        if (equippedWeapon === 'glock') shootDelay = 1200;
+        else if (equippedWeapon === 'rifle') shootDelay = 1000;
+        shootDelay = Math.max(50, shootDelay); // Garante mínimo de 50ms
+        fireRateCostDisplay.textContent = Math.round(fireRateCost);
         healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
         xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
         if (hasInitialUpgrade) {
             buyInitialUpgradeBtn.disabled = true;
             buyInitialUpgradeBtn.textContent = "Comprado";
         }
+        updateWeaponButtons();
 
         const keys = {
             w: false,
@@ -249,12 +261,52 @@
         function saveData() {
             localStorage.setItem('zombieGameData', JSON.stringify({
                 coins: coinCount,
-                maxHealth: player.maxHealth,
-                shootDelay: shootDelay,
-                fireRateCost: fireRateCost,
+                healthUpgrades: healthUpgrades,
+                fireRateUpgrades: fireRateUpgrades,
+                hasGlock: hasGlock,
+                hasRifle: hasRifle,
+                equippedWeapon: equippedWeapon,
                 hasInitialUpgrade: hasInitialUpgrade,
                 ranking: savedData.ranking
             }));
+        }
+
+        // Função para atualizar botões de armas na loja
+        function updateWeaponButtons() {
+            if (hasGlock) {
+                buyGlockBtn.textContent = equippedWeapon === 'glock' ? 'Equipado' : 'Equipar';
+                buyGlockBtn.disabled = equippedWeapon === 'glock';
+            } else {
+                buyGlockBtn.textContent = 'Comprar';
+                buyGlockBtn.disabled = false;
+            }
+            if (hasRifle) {
+                buyRifleBtn.textContent = equippedWeapon === 'rifle' ? 'Equipado' : 'Equipar';
+                buyRifleBtn.disabled = equippedWeapon === 'rifle';
+            } else {
+                buyRifleBtn.textContent = 'Comprar';
+                buyRifleBtn.disabled = false;
+            }
+        }
+
+        // Função para iniciar o jogo
+        function startGame() {
+            startScreen.style.display = 'none';
+            isPaused = false;
+            resetGame();
+        }
+
+        // Função para exibir o ranking a partir da tela inicial
+        function showRankingFromStart() {
+            rankingList.innerHTML = '';
+            savedData.ranking.sort((a, b) => b.score - a.score);
+            savedData.ranking.slice(0, 5).forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `Pontos: ${entry.score} - ${entry.date}`;
+                rankingList.appendChild(li);
+            });
+            startScreen.style.display = 'none';
+            rankingDisplay.style.display = 'block';
         }
 
         // Função para criar zumbis
@@ -273,7 +325,7 @@
                 spawnInterval = 4000;
             } else {
                 zombieCount = 3;
-                spawnInterval = 3000; // 3 segundos para 41+ pontos
+                spawnInterval = 3000;
             }
 
             for (let i = 0; i < zombieCount; i++) {
@@ -358,7 +410,7 @@
                 description: "Balas podem causar choque em zumbi próximo",
                 accumulable: true,
                 effect: () => {
-                    electricShotChance = Math.min(1, electricShotChance + 0.25); // Aumenta chance em 25%
+                    electricShotChance = Math.min(1, electricShotChance + 0.25);
                     alert("Upgrade Balas Elétricas aplicado! Chance de choque: " + (electricShotChance * 100) + "%");
                 }
             }
@@ -394,7 +446,15 @@
                 dy /= length;
 
                 // Bala principal
-                bullets.push({ x: player.x, y: player.y, dx: dx * 7, dy: dy * 7, homing: homingShot });
+                bullets.push({ 
+                    x: player.x, 
+                    y: player.y, 
+                    dx: dx * 7, 
+                    dy: dy * 7, 
+                    homing: homingShot,
+                    electric: electricShotChance > 0,
+                    electricTimer: null // Timer para balas elétricas
+                });
 
                 // Balas diagonais
                 for (let i = 1; i <= diagonalShots; i++) {
@@ -405,26 +465,32 @@
                         y: player.y,
                         dx: Math.cos(angle1) * 7,
                         dy: Math.sin(angle1) * 7,
-                        homing: homingShot
+                        homing: homingShot,
+                        electric: electricShotChance > 0,
+                        electricTimer: null
                     });
                     bullets.push({
                         x: player.x,
                         y: player.y,
                         dx: Math.cos(angle2) * 7,
                         dy: Math.sin(angle2) * 7,
-                        homing: homingShot
+                        homing: homingShot,
+                        electric: electricShotChance > 0,
+                        electricTimer: null
                     });
                 }
 
                 // Balas frontais extras
                 for (let i = 1; i <= frontShots; i++) {
-                    const offset = i * 10 * (i % 2 === 0 ? -1 : 1); // Alterna esquerda/direita
+                    const offset = i * 10 * (i % 2 === 0 ? -1 : 1);
                     bullets.push({
                         x: player.x + offset,
                         y: player.y,
                         dx: dx * 7,
                         dy: dy * 7,
-                        homing: homingShot
+                        homing: homingShot,
+                        electric: electricShotChance > 0,
+                        electricTimer: null
                     });
                 }
             }
@@ -436,12 +502,10 @@
             upgradeMenu.style.display = 'block';
             upgradeOptions.innerHTML = '';
 
-            // Filtra upgrades disponíveis (exclui Teleguiada se já escolhida)
             const validUpgrades = availableUpgrades.filter(upgrade => 
                 upgrade.accumulable || (!upgrade.accumulable && (upgrade.name !== "Teleguiada" || !homingShot))
             );
 
-            // Escolhe 3 upgrades aleatórios
             const shuffled = validUpgrades.sort(() => 0.5 - Math.random());
             const selected = shuffled.slice(0, Math.min(3, validUpgrades.length));
 
@@ -462,7 +526,7 @@
             if (xp >= xpToNextLevel) {
                 level++;
                 xp = 0;
-                xpToNextLevel = Math.round(xpToNextLevel * 1.1); // Aumenta XP necessário em 0.1x
+                xpToNextLevel = Math.round(xpToNextLevel * 1.1);
                 xpBar.style.width = '0%';
                 xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                 showUpgradeMenu();
@@ -496,6 +560,13 @@
                 }
                 bullet.x += bullet.dx;
                 bullet.y += bullet.dy;
+
+                // Verificar timer de balas elétricas
+                if (bullet.electric && bullet.electricTimer !== null) {
+                    if (Date.now() - bullet.electricTimer >= 500) {
+                        bullet.electric = false; // Desativa após 0,5s
+                    }
+                }
             });
             bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
 
@@ -516,6 +587,7 @@
                     if (player.health <= 0) {
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
+                        isPaused = true;
                     }
                 }
 
@@ -524,7 +596,11 @@
                     const bDistance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
                     if (bDistance < zombie.size) {
                         zombies = zombies.filter(z => z !== zombie);
-                        bullets.splice(bIndex, 1);
+                        if (bullet.electric && bullet.electricTimer === null) {
+                            bullet.electricTimer = Date.now(); // Inicia timer de 0,5s
+                        } else if (!bullet.electric) {
+                            bullets.splice(bIndex, 1); // Remove bala se não for elétrica ou após timer
+                        }
                         score += 1;
                         xp += 1;
                         xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
@@ -534,7 +610,7 @@
                         checkLevelUp();
 
                         // Efeito de Balas Elétricas
-                        if (electricShotChance > 0 && Math.random() < electricShotChance) {
+                        if (bullet.electric && Math.random() < electricShotChance) {
                             const nearbyZombie = findNearbyZombie(zombie, zombie);
                             if (nearbyZombie) {
                                 zombies = zombies.filter(z => z !== nearbyZombie);
@@ -604,7 +680,7 @@
 
         // Função para reiniciar o jogo
         function resetGame() {
-            player = { x: 400, y: 300, size: 20, speed: 5, health: player.maxHealth, maxHealth: player.maxHealth };
+            player = { x: 400, y: 300, size: 20, speed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth };
             zombies = [];
             bullets = [];
             coins = [];
@@ -628,7 +704,7 @@
             healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
             xpBar.style.width = '0%';
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-            applyInitialUpgrade(); // Aplica upgrade inicial se comprado
+            applyInitialUpgrade();
         }
 
         // Função para exibir o ranking
@@ -651,13 +727,18 @@
         // Função para fechar o ranking
         function closeRanking() {
             rankingDisplay.style.display = 'none';
-            gameOverDisplay.style.display = 'block';
+            if (gameOver) {
+                gameOverDisplay.style.display = 'block';
+            } else {
+                startScreen.style.display = 'block';
+            }
         }
 
         // Função para exibir a loja
         function showShop() {
             shopCoins.textContent = coinCount;
-            fireRateCostDisplay.textContent = fireRateCost;
+            fireRateCostDisplay.textContent = Math.round(fireRateCost);
+            updateWeaponButtons();
             gameOverDisplay.style.display = 'none';
             shopDisplay.style.display = 'block';
         }
@@ -672,7 +753,8 @@
         function buyHealth() {
             if (coinCount >= 50) {
                 coinCount -= 50;
-                player.maxHealth += 50;
+                healthUpgrades += 1;
+                player.maxHealth = 10 + healthUpgrades * 50;
                 player.health = player.maxHealth;
                 shopCoins.textContent = coinCount;
                 healthBar.style.width = '100%';
@@ -687,10 +769,12 @@
         function buyFireRate() {
             if (coinCount >= fireRateCost) {
                 coinCount -= fireRateCost;
-                shootDelay = Math.max(50, shootDelay - 50);
-                fireRateCost = Math.round(fireRateCost * 1.15); // Aumenta o custo em 0.15x
+                fireRateUpgrades += 1;
+                fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
+                shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
+                shootDelay = Math.max(50, shootDelay);
                 shopCoins.textContent = coinCount;
-                fireRateCostDisplay.textContent = fireRateCost;
+                fireRateCostDisplay.textContent = Math.round(fireRateCost);
                 saveData();
                 alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
             } else {
@@ -699,25 +783,47 @@
         }
 
         function buyGlock() {
-            if (coinCount >= 100) {
+            if (!hasGlock && coinCount >= 100) {
                 coinCount -= 100;
-                shootDelay = 1200; // 1.2 segundos
+                hasGlock = true;
+                equippedWeapon = 'glock';
+                shootDelay = 1200;
+                shootDelay = Math.max(50, shootDelay);
                 shopCoins.textContent = coinCount;
+                updateWeaponButtons();
                 saveData();
-                alert('Glock comprada! Atraso de tiro: 1200ms');
-            } else {
+                alert('Glock comprada e equipada! Atraso de tiro: 1200ms');
+            } else if (hasGlock && equippedWeapon !== 'glock') {
+                equippedWeapon = 'glock';
+                shootDelay = 1200;
+                shootDelay = Math.max(50, shootDelay);
+                updateWeaponButtons();
+                saveData();
+                alert('Glock equipada! Atraso de tiro: 1200ms');
+            } else if (!hasGlock) {
                 alert('Moedas insuficientes!');
             }
         }
 
         function buyRifle() {
-            if (coinCount >= 250) {
+            if (!hasRifle && coinCount >= 250) {
                 coinCount -= 250;
-                shootDelay = 1000; // 1 segundo
+                hasRifle = true;
+                equippedWeapon = 'rifle';
+                shootDelay = 1000;
+                shootDelay = Math.max(50, shootDelay);
                 shopCoins.textContent = coinCount;
+                updateWeaponButtons();
                 saveData();
-                alert('Rifle comprado! Atraso de tiro: 1000ms');
-            } else {
+                alert('Rifle comprado e equipado! Atraso de tiro: 1000ms');
+            } else if (hasRifle && equippedWeapon !== 'rifle') {
+                equippedWeapon = 'rifle';
+                shootDelay = 1000;
+                shootDelay = Math.max(50, shootDelay);
+                updateWeaponButtons();
+                saveData();
+                alert('Rifle equipado! Atraso de tiro: 1000ms');
+            } else if (!hasRifle) {
                 alert('Moedas insuficientes!');
             }
         }
