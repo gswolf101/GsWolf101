@@ -148,10 +148,11 @@
         <div id="shop">
             <h2>Loja</h2>
             <p>Moedas: <span id="shopCoins">0</span></p>
-            <p>Vida Extra (50 moedas): <button onclick="buyHealth()">Comprar</button></p>
-            <p>Tiro Rápido (<span id="fireRateCost">200</span> moedas): <button onclick="buyFireRate()">Comprar</button></p>
-            <p>Glock (100 moedas, 1.2s): <button onclick="buyGlock()">Comprar</button></p>
-            <p>Rifle (250 moedas, 1s): <button onclick="buyRifle()">Comprar</button></p>
+            <p>Vida Extra (50 moedas): <button id="buyHealthBtn" onclick="buyHealth()">Comprar</button></p>
+            <p>Tiro Rápido (<span id="fireRateCost">200</span> moedas): <button id="buyFireRateBtn" onclick="buyFireRate()">Comprar</button></p>
+            <p>Glock (100 moedas, 1.2s): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
+            <p>Rifle (250 moedas, 1s): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
+            <p>Upgrade Inicial (100 moedas): <button id="buyInitialUpgradeBtn" onclick="buyInitialUpgrade()">Comprar</button></p>
             <button onclick="closeShop()">Fechar</button>
         </div>
         <div id="upgradeMenu">
@@ -177,6 +178,7 @@
         const fireRateCostDisplay = document.getElementById('fireRateCost');
         const upgradeMenu = document.getElementById('upgradeMenu');
         const upgradeOptions = document.getElementById('upgradeOptions');
+        const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
 
         let player = { x: 400, y: 300, size: 20, speed: 5, health: 10, maxHealth: 10 };
         let zombies = [];
@@ -194,6 +196,11 @@
         let shootDelay = 2000; // 2 segundos entre disparos
         let fireRateCost = 200; // Custo inicial do upgrade de tiro rápido
         let spawnInterval = 4000; // Intervalo inicial de spawn
+        let diagonalShots = 0; // Contador para +1 Diagonais
+        let frontShots = 0; // Contador para +1 Frente
+        let homingShot = false; // Estado de Teleguiada
+        let electricShotChance = 0; // Chance de choque (0 a 1)
+        let hasInitialUpgrade = false; // Estado do Upgrade Inicial
 
         // Carregar dados do localStorage
         const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
@@ -201,6 +208,7 @@
             maxHealth: 10,
             shootDelay: 2000,
             fireRateCost: 200,
+            hasInitialUpgrade: false,
             ranking: []
         };
         coinCount = savedData.coins;
@@ -208,9 +216,14 @@
         player.health = player.maxHealth;
         shootDelay = savedData.shootDelay;
         fireRateCost = savedData.fireRateCost || 200;
+        hasInitialUpgrade = savedData.hasInitialUpgrade || false;
         fireRateCostDisplay.textContent = fireRateCost;
         healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
         xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+        if (hasInitialUpgrade) {
+            buyInitialUpgradeBtn.disabled = true;
+            buyInitialUpgradeBtn.textContent = "Comprado";
+        }
 
         const keys = {
             w: false,
@@ -239,6 +252,7 @@
                 maxHealth: player.maxHealth,
                 shootDelay: shootDelay,
                 fireRateCost: fireRateCost,
+                hasInitialUpgrade: hasInitialUpgrade,
                 ranking: savedData.ranking
             }));
         }
@@ -280,6 +294,87 @@
             }
         }
 
+        // Função para encontrar o zumbi mais próximo
+        function findClosestZombie(bullet) {
+            let closestZombie = null;
+            let minDistance = Infinity;
+            zombies.forEach(zombie => {
+                const distance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestZombie = zombie;
+                }
+            });
+            return closestZombie;
+        }
+
+        // Função para encontrar zumbi próximo para choque elétrico
+        function findNearbyZombie(zombie, exclude) {
+            let closestZombie = null;
+            let minDistance = 100; // Raio de 100px
+            zombies.forEach(z => {
+                if (z !== exclude) {
+                    const distance = Math.sqrt((zombie.x - z.x) ** 2 + (zombie.y - z.y) ** 2);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestZombie = z;
+                    }
+                }
+            });
+            return closestZombie;
+        }
+
+        // Upgrades disponíveis
+        const availableUpgrades = [
+            {
+                name: "+1 Diagonais",
+                description: "Adiciona uma bala diagonal para cada lado",
+                accumulable: true,
+                effect: () => {
+                    diagonalShots += 1;
+                    alert("Upgrade +1 Diagonais aplicado! Total de pares diagonais: " + diagonalShots);
+                }
+            },
+            {
+                name: "+1 Frente",
+                description: "Adiciona uma bala extra na direção frontal",
+                accumulable: true,
+                effect: () => {
+                    frontShots += 1;
+                    alert("Upgrade +1 Frente aplicado! Total de balas frontais extras: " + frontShots);
+                }
+            },
+            {
+                name: "Teleguiada",
+                description: "Balas seguem o zumbi mais próximo",
+                accumulable: false,
+                effect: () => {
+                    homingShot = true;
+                    alert("Upgrade Teleguiada aplicado! Balas agora seguem zumbis.");
+                }
+            },
+            {
+                name: "Balas Elétricas",
+                description: "Balas podem causar choque em zumbi próximo",
+                accumulable: true,
+                effect: () => {
+                    electricShotChance = Math.min(1, electricShotChance + 0.25); // Aumenta chance em 25%
+                    alert("Upgrade Balas Elétricas aplicado! Chance de choque: " + (electricShotChance * 100) + "%");
+                }
+            }
+        ];
+
+        // Função para aplicar upgrade inicial aleatório
+        function applyInitialUpgrade() {
+            if (!hasInitialUpgrade) return;
+            const validUpgrades = availableUpgrades.filter(upgrade => 
+                upgrade.accumulable || (!upgrade.accumulable && (upgrade.name !== "Teleguiada" || !homingShot))
+            );
+            if (validUpgrades.length === 0) return;
+            const randomUpgrade = validUpgrades[Math.floor(Math.random() * validUpgrades.length)];
+            randomUpgrade.effect();
+        }
+
         // Função para atirar
         function shoot() {
             if (isPaused) return;
@@ -297,29 +392,62 @@
                 const length = Math.sqrt(dx * dx + dy * dy);
                 dx /= length;
                 dy /= length;
-                bullets.push({ x: player.x, y: player.y, dx: dx * 7, dy: dy * 7 });
+
+                // Bala principal
+                bullets.push({ x: player.x, y: player.y, dx: dx * 7, dy: dy * 7, homing: homingShot });
+
+                // Balas diagonais
+                for (let i = 1; i <= diagonalShots; i++) {
+                    const angle1 = Math.PI / 4; // 45° à esquerda
+                    const angle2 = -Math.PI / 4; // 45° à direita
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        dx: Math.cos(angle1) * 7,
+                        dy: Math.sin(angle1) * 7,
+                        homing: homingShot
+                    });
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        dx: Math.cos(angle2) * 7,
+                        dy: Math.sin(angle2) * 7,
+                        homing: homingShot
+                    });
+                }
+
+                // Balas frontais extras
+                for (let i = 1; i <= frontShots; i++) {
+                    const offset = i * 10 * (i % 2 === 0 ? -1 : 1); // Alterna esquerda/direita
+                    bullets.push({
+                        x: player.x + offset,
+                        y: player.y,
+                        dx: dx * 7,
+                        dy: dy * 7,
+                        homing: homingShot
+                    });
+                }
             }
         }
 
-        // Função para escolher upgrades aleatórios (placeholders até definição)
-        const availableUpgrades = [
-            { name: "Placeholder 1", effect: () => alert("Upgrade 1 aplicado!") },
-            { name: "Placeholder 2", effect: () => alert("Upgrade 2 aplicado!") },
-            { name: "Placeholder 3", effect: () => alert("Upgrade 3 aplicado!") }
-        ];
-
+        // Função para escolher upgrades aleatórios
         function showUpgradeMenu() {
             isPaused = true;
             upgradeMenu.style.display = 'block';
             upgradeOptions.innerHTML = '';
 
-            // Escolher 3 upgrades aleatórios
-            const shuffled = availableUpgrades.sort(() => 0.5 - Math.random());
-            const selected = shuffled.slice(0, 3);
+            // Filtra upgrades disponíveis (exclui Teleguiada se já escolhida)
+            const validUpgrades = availableUpgrades.filter(upgrade => 
+                upgrade.accumulable || (!upgrade.accumulable && (upgrade.name !== "Teleguiada" || !homingShot))
+            );
+
+            // Escolhe 3 upgrades aleatórios
+            const shuffled = validUpgrades.sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, Math.min(3, validUpgrades.length));
 
             selected.forEach(upgrade => {
                 const button = document.createElement('button');
-                button.textContent = upgrade.name;
+                button.textContent = `${upgrade.name}: ${upgrade.description}`;
                 button.onclick = () => {
                     upgrade.effect();
                     upgradeMenu.style.display = 'none';
@@ -356,6 +484,16 @@
 
             // Atualizar balas
             bullets.forEach(bullet => {
+                if (bullet.homing) {
+                    const closestZombie = findClosestZombie(bullet);
+                    if (closestZombie) {
+                        const dx = closestZombie.x - bullet.x;
+                        const dy = closestZombie.y - bullet.y;
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        bullet.dx = (dx / length) * 7;
+                        bullet.dy = (dy / length) * 7;
+                    }
+                }
                 bullet.x += bullet.dx;
                 bullet.y += bullet.dy;
             });
@@ -388,12 +526,27 @@
                         zombies = zombies.filter(z => z !== zombie);
                         bullets.splice(bIndex, 1);
                         score += 1;
-                        xp += 1; // Ganha 1 XP por zumbi morto
+                        xp += 1;
                         xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                         xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                         scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
                         spawnCoin(zombie.x, zombie.y);
                         checkLevelUp();
+
+                        // Efeito de Balas Elétricas
+                        if (electricShotChance > 0 && Math.random() < electricShotChance) {
+                            const nearbyZombie = findNearbyZombie(zombie, zombie);
+                            if (nearbyZombie) {
+                                zombies = zombies.filter(z => z !== nearbyZombie);
+                                score += 1;
+                                xp += 1;
+                                xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                                xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                                scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                                spawnCoin(nearbyZombie.x, nearbyZombie.y);
+                                checkLevelUp();
+                            }
+                        }
                     }
                 });
             });
@@ -459,6 +612,10 @@
             xp = 0;
             level = 1;
             xpToNextLevel = 10;
+            diagonalShots = 0;
+            frontShots = 0;
+            homingShot = false;
+            electricShotChance = 0;
             gameOver = false;
             isPaused = false;
             lastSpawn = 0;
@@ -471,6 +628,7 @@
             healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
             xpBar.style.width = '0%';
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+            applyInitialUpgrade(); // Aplica upgrade inicial se comprado
         }
 
         // Função para exibir o ranking
@@ -559,6 +717,22 @@
                 shopCoins.textContent = coinCount;
                 saveData();
                 alert('Rifle comprado! Atraso de tiro: 1000ms');
+            } else {
+                alert('Moedas insuficientes!');
+            }
+        }
+
+        function buyInitialUpgrade() {
+            if (coinCount >= 100 && !hasInitialUpgrade) {
+                coinCount -= 100;
+                hasInitialUpgrade = true;
+                shopCoins.textContent = coinCount;
+                buyInitialUpgradeBtn.disabled = true;
+                buyInitialUpgradeBtn.textContent = "Comprado";
+                saveData();
+                alert('Upgrade Inicial comprado! Você receberá um upgrade aleatório no início de cada partida.');
+            } else if (hasInitialUpgrade) {
+                alert('Upgrade Inicial já comprado!');
             } else {
                 alert('Moedas insuficientes!');
             }
