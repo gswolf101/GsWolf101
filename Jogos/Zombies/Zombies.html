@@ -101,9 +101,9 @@
             <h2>Loja</h2>
             <p>Moedas: <span id="shopCoins">0</span></p>
             <p>Vida Extra (50 moedas): <button onclick="buyHealth()">Comprar</button></p>
-            <p>Tiro Rápido (200 moedas): <button onclick="buyFireRate()">Comprar</button></p>
+            <p>Tiro Rápido (<span id="fireRateCost">200</span> moedas): <button onclick="buyFireRate()">Comprar</button></p>
             <p>Glock (100 moedas, 1.2s): <button onclick="buyGlock()">Comprar</button></p>
-            <p>Rifle (300 moedas, 1s): <button onclick="buyRifle()">Comprar</button></p>
+            <p>Rifle (250 moedas, 1s): <button onclick="buyRifle()">Comprar</button></p>
             <button onclick="closeShop()">Fechar</button>
         </div>
     </div>
@@ -118,8 +118,9 @@
         const shopDisplay = document.getElementById('shop');
         const shopCoins = document.getElementById('shopCoins');
         const healthBar = document.getElementById('health');
+        const fireRateCostDisplay = document.getElementById('fireRateCost');
 
-        let player = { x: 400, y: 300, size: 20, speed: 5, health: 50, maxHealth: 50 };
+        let player = { x: 400, y: 300, size: 20, speed: 5, health: 10, maxHealth: 10 };
         let zombies = [];
         let bullets = [];
         let coins = [];
@@ -129,19 +130,23 @@
         let lastShot = 0;
         let lastSpawn = 0;
         let shootDelay = 2000; // 2 segundos entre disparos
+        let fireRateCost = 200; // Custo inicial do upgrade de tiro rápido
         const spawnInterval = 4000; // 4 segundos
 
         // Carregar dados do localStorage
         const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
-            maxHealth: 50,
+            maxHealth: 10,
             shootDelay: 2000,
+            fireRateCost: 200,
             ranking: []
         };
         coinCount = savedData.coins;
         player.maxHealth = savedData.maxHealth;
         player.health = player.maxHealth;
         shootDelay = savedData.shootDelay;
+        fireRateCost = savedData.fireRateCost || 200;
+        fireRateCostDisplay.textContent = fireRateCost;
 
         const keys = {
             w: false,
@@ -169,6 +174,7 @@
                 coins: coinCount,
                 maxHealth: player.maxHealth,
                 shootDelay: shootDelay,
+                fireRateCost: fireRateCost,
                 ranking: savedData.ranking
             }));
         }
@@ -179,8 +185,16 @@
             if (now - lastSpawn < spawnInterval) return;
             lastSpawn = now;
 
-            let zombieCount = 2;
-            if (score > 10) zombieCount = Math.min(5, 2 + Math.floor(score / 10));
+            let zombieCount;
+            if (score <= 10) {
+                zombieCount = 2;
+            } else if (score <= 20) {
+                zombieCount = 3;
+            } else if (score <= 30) {
+                zombieCount = 4;
+            } else {
+                zombieCount = 5;
+            }
 
             for (let i = 0; i < zombieCount; i++) {
                 const side = Math.floor(Math.random() * 4);
@@ -250,7 +264,7 @@
 
                 // Colisão com jogador
                 if (distance < player.size + zombie.size) {
-                    player.health -= 10;
+                    player.health -= 5; // Dano reduzido para 5
                     zombies = zombies.filter(z => z !== zombie);
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                     if (player.health <= 0) {
@@ -365,6 +379,7 @@
         // Função para exibir a loja
         function showShop() {
             shopCoins.textContent = coinCount;
+            fireRateCostDisplay.textContent = fireRateCost;
             gameOverDisplay.style.display = 'none';
             shopDisplay.style.display = 'block';
         }
@@ -391,10 +406,12 @@
         }
 
         function buyFireRate() {
-            if (coinCount >= 200) {
-                coinCount -= 200;
+            if (coinCount >= fireRateCost) {
+                coinCount -= fireRateCost;
                 shootDelay = Math.max(50, shootDelay - 50);
+                fireRateCost += 50; // Aumenta o custo em 50
                 shopCoins.textContent = coinCount;
+                fireRateCostDisplay.textContent = fireRateCost;
                 saveData();
                 alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
             } else {
@@ -415,8 +432,8 @@
         }
 
         function buyRifle() {
-            if (coinCount >= 300) {
-                coinCount -= 300;
+            if (coinCount >= 250) {
+                coinCount -= 250;
                 shootDelay = 1000; // 1 segundo
                 shopCoins.textContent = coinCount;
                 saveData();
