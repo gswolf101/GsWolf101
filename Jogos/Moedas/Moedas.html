@@ -1,44 +1,212 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survival Shooter</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Jogo de Sobrevivência a Zumbis</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background: #333;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+        }
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-family: Arial, sans-serif;
+            font-size: 40px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <div id="game-container">
-        <!-- Tela Inicial -->
-        <div id="start-screen" class="screen active">
-            <h1>Survival Shooter</h1>
-            <p>Sobreviva o maior tempo possível contra inimigos!</p>
-            <button onclick="startGame()">Iniciar Jogo</button>
-        </div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="score">Pontos: 0</div>
+    <div id="gameOver">Game Over!<br>Pressione R para reiniciar</div>
 
-        <!-- Tela do Jogo -->
-        <div id="game-screen" class="screen">
-            <h1>Score: <span id="score">0</span></h1>
-            <canvas id="gameCanvas" width="800" height="600"></canvas>
-        </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverDisplay = document.getElementById('gameOver');
 
-        <!-- Tela de Game Over -->
-        <div id="game-over-screen" class="screen">
-            <h1>Game Over</h1>
-            <p>Seu Score: <span id="final-score">0</span></p>
-            <p>Insira seu nome:</p>
-            <input type="text" id="player-name" maxlength="10">
-            <button onclick="saveScore()">Salvar Score</button>
-            <button onclick="showRanking()">Ver Ranking</button>
-            <button onclick="restartGame()">Jogar Novamente</button>
-        </div>
+        let player = { x: 400, y: 300, size: 20, speed: 5, health: 100 };
+        let zombies = [];
+        let bullets = [];
+        let score = 0;
+        let gameOver = false;
+        let lastShot = 0;
+        const shootDelay = 200; // 200ms entre disparos
 
-        <!-- Tela de Ranking -->
-        <div id="ranking-screen" class="screen">
-            <h1>Ranking</h1>
-            <ul id="ranking-list"></ul>
-            <button onclick="backToStart()">Voltar ao Início</button>
-        </div>
-    </div>
-    <script src="game.js"></script>
+        const keys = {
+            w: false,
+            a: false,
+            s: false,
+            d: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+
+        // Manipulação de teclas
+        document.addEventListener('keydown', (e) => {
+            if (e.key in keys) keys[e.key] = true;
+            if (e.key === 'r' && gameOver) resetGame();
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key in keys) keys[e.key] = false;
+        });
+
+        // Função para criar zumbis
+        function spawnZombie() {
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            if (side === 0) { x = Math.random() * canvas.width; y = -20; } // Topo
+            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; } // Baixo
+            else if (side === 2) { x = -20; y = Math.random() * canvas.height; } // Esquerda
+            else { x = canvas.width + 20; y = Math.random() * canvas.height; } // Direita
+            zombies.push({ x, y, size: 20, speed: 2 });
+        }
+
+        // Função para atirar
+        function shoot() {
+            const now = Date.now();
+            if (now - lastShot < shootDelay) return;
+            lastShot = now;
+
+            let dx = 0, dy = 0;
+            if (keys.ArrowUp) dy -= 1;
+            if (keys.ArrowDown) dy += 1;
+            if (keys.ArrowLeft) dx -= 1;
+            if (keys.ArrowRight) dx += 1;
+
+            // Normalizar direção para 8 direções
+            if (dx !== 0 || dy !== 0) {
+                const length = Math.sqrt(dx * dx + dy * dy);
+                dx /= length;
+                dy /= length;
+                bullets.push({ x: player.x, y: player.y, dx: dx * 7, dy: dy * 7 });
+            }
+        }
+
+        // Função de atualização do jogo
+        function update() {
+            if (gameOver) return;
+
+            // Movimento do jogador
+            if (keys.w && player.y > player.size) player.y -= player.speed;
+            if (keys.s && player.y < canvas.height - player.size) player.y += player.speed;
+            if (keys.a && player.x > player.size) player.x -= player.speed;
+            if (keys.d && player.x < canvas.width - player.size) player.x += player.speed;
+
+            // Atirar
+            if (keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) shoot();
+
+            // Atualizar balas
+            bullets.forEach(bullet => {
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+            });
+            bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
+
+            // Atualizar zumbis
+            zombies.forEach(zombie => {
+                const dx = player.x - zombie.x;
+                const dy = player.y - zombie.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                zombie.x += (dx / distance) * zombie.speed;
+                zombie.y += (dy / distance) * zombie.speed;
+
+                // Colisão com jogador
+                if (distance < player.size + zombie.size) {
+                    player.health -= 10;
+                    zombies = zombies.filter(z => z !== zombie);
+                    if (player.health <= 0) {
+                        gameOver = true;
+                        gameOverDisplay.style.display = 'block';
+                    }
+                }
+
+                // Colisão com balas
+                bullets.forEach((bullet, bIndex) => {
+                    const bDistance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
+                    if (bDistance < zombie.size) {
+                        zombies = zombies.filter(z => z !== zombie);
+                        bullets.splice(bIndex, 1);
+                        score += 10;
+                        scoreDisplay.textContent = `Pontos: ${score}`;
+                    }
+                });
+            });
+
+            // Gerar zumbis
+            if (Math.random() < 0.02) spawnZombie();
+        }
+
+        // Função de desenho
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar jogador
+            ctx.fillStyle = 'blue';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Desenhar zumbis
+            ctx.fillStyle = 'green';
+            zombies.forEach(zombie => {
+                ctx.beginPath();
+                ctx.arc(zombie.x, zombie.y, zombie.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Desenhar balas
+            ctx.fillStyle = 'red';
+            bullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Reiniciar jogo
+        function resetGame() {
+            player = { x: 400, y: 300, size: 20, speed: 5, health: 100 };
+            zombies = [];
+            bullets = [];
+            score = 0;
+            gameOver = false;
+            gameOverDisplay.style.display = 'none';
+            scoreDisplay.textContent = `Pontos: ${score}`;
+        }
+
+        // Loop principal
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
 </body>
 </html>
