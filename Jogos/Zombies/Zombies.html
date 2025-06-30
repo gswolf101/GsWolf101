@@ -243,7 +243,7 @@
         let vampirism = false;
         let lightHands = false;
         let goodHands = false;
-        let speedUpgrades = 0; // Novo: contador para upgrade "Pressa"
+        let speedUpgrades = 0;
         let healthUpgrades = 0;
         let fireRateUpgrades = 0;
         let hasGlock = false;
@@ -260,7 +260,7 @@
             hasRifle: false,
             equippedWeapon: 'none',
             hasInitialUpgrade: false,
-            speedUpgrades: 0, // Novo
+            speedUpgrades: 0,
             ranking: []
         };
         coinCount = savedData.coins;
@@ -270,10 +270,10 @@
         hasRifle = savedData.hasRifle || false;
         equippedWeapon = savedData.equippedWeapon || 'none';
         hasInitialUpgrade = savedData.hasInitialUpgrade || false;
-        speedUpgrades = savedData.speedUpgrades || 0; // Novo
+        speedUpgrades = savedData.speedUpgrades || 0;
         player.maxHealth = 10 + healthUpgrades * 50;
         player.health = player.maxHealth;
-        player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades); // Aplicar upgrades de velocidade
+        player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
         fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
         shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
         shootDelay = Math.max(50, shootDelay);
@@ -340,7 +340,7 @@
                 hasRifle: hasRifle,
                 equippedWeapon: equippedWeapon,
                 hasInitialUpgrade: hasInitialUpgrade,
-                speedUpgrades: speedUpgrades, // Novo
+                speedUpgrades: speedUpgrades,
                 ranking: savedData.ranking
             }));
         }
@@ -367,14 +367,14 @@
                 coinCount = 0;
                 healthUpgrades = 0;
                 fireRateUpgrades = 0;
-                speedUpgrades = 0; // Novo
+                speedUpgrades = 0;
                 hasGlock = false;
                 hasRifle = false;
                 equippedWeapon = 'none';
                 hasInitialUpgrade = false;
                 player.maxHealth = 10;
                 player.health = player.maxHealth;
-                player.speed = player.baseSpeed; // Resetar velocidade
+                player.speed = player.baseSpeed;
                 fireRateCost = 200;
                 shootDelay = 2000;
                 updateShootDelay();
@@ -438,7 +438,7 @@
                 else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
                 else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
                 else { x = canvas.width + 20; y = Math.random() * canvas.height; }
-                zombies.push({ x, y, size: 20, speed: 1.9 }); // Velocidade reduzida em 5%
+                zombies.push({ x, y, size: 20, speed: 1.9 });
             }
         }
 
@@ -449,7 +449,7 @@
             else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
             else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
             else { x = canvas.width + 40; y = Math.random() * canvas.height; }
-            boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0, chargeWarning: false };
+            boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0, chargeWarning: false, chargeDx: 0, chargeDy: 0 };
             bossSpawned = true;
             console.log('Boss gerado em x:', x, 'y:', y);
         }
@@ -941,15 +941,18 @@
 
             if (boss) {
                 const now = Date.now();
-                const dx = player.x - boss.x;
-                const dy = player.y - boss.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
 
                 // Aviso de investida (1 segundo antes)
                 if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
                     boss.chargeWarning = true;
                     bossChargeWarning = now;
-                    console.log('Aviso de investida iniciado');
+                    // Calcular direção fixa para a investida
+                    const dx = player.x - boss.x;
+                    const dy = player.y - boss.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    boss.chargeDx = dx / distance;
+                    boss.chargeDy = dy / distance;
+                    console.log('Aviso de investida iniciado, direção fixada: chargeDx=', boss.chargeDx, 'chargeDy=', boss.chargeDy);
                 }
 
                 // Investida rápida (a cada 5 segundos)
@@ -967,17 +970,31 @@
                 }
 
                 // Movimento do boss
-                boss.x += (dx / distance) * boss.speed;
-                boss.y += (dy / distance) * boss.speed;
+                if (boss.chargeTimer) {
+                    // Durante investida, mover na direção fixa
+                    boss.x += boss.chargeDx * boss.speed;
+                    boss.y += boss.chargeDy * boss.speed;
+                } else {
+                    // Fora da investida, seguir o jogador
+                    const dx = player.x - boss.x;
+                    const dy = player.y - boss.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    boss.x += (dx / distance) * boss.speed;
+                    boss.y += (dy / distance) * boss.speed;
+                }
 
                 // Ataque especial: Spawn de Zumbis (a cada 10 segundos)
                 if (now - lastBossSpawnZombies >= 10000) {
-                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9 }); // Velocidade reduzida
-                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9 }); // Velocidade reduzida
+                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9 });
+                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9 });
                     lastBossSpawnZombies = now;
                     console.log('Boss gerou 2 zumbis');
                 }
 
+                // Colisão com o jogador
+                const dx = player.x - boss.x;
+                const dy = player.y - boss.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
                 if (distance < player.size + boss.size) {
                     player.health -= 10;
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
@@ -1052,20 +1069,15 @@
             if (boss) {
                 // Desenhar aviso de investida
                 if (boss.chargeWarning && Date.now() - bossChargeWarning < 1000) {
-                    const dx = player.x - boss.x;
-                    const dy = player.y - boss.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    const normalizedDx = dx / distance;
-                    const normalizedDy = dy / distance;
                     const warningLength = 200;
                     const warningWidth = boss.size * 2;
 
                     ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
                     ctx.beginPath();
-                    ctx.moveTo(boss.x - normalizedDy * warningWidth / 2, boss.y + normalizedDx * warningWidth / 2);
-                    ctx.lineTo(boss.x + normalizedDx * warningLength - normalizedDy * warningWidth / 2, boss.y + normalizedDy * warningLength + normalizedDx * warningWidth / 2);
-                    ctx.lineTo(boss.x + normalizedDx * warningLength + normalizedDy * warningWidth / 2, boss.y + normalizedDy * warningLength - normalizedDx * warningWidth / 2);
-                    ctx.lineTo(boss.x + normalizedDy * warningWidth / 2, boss.y - normalizedDx * warningWidth / 2);
+                    ctx.moveTo(boss.x - boss.chargeDy * warningWidth / 2, boss.y + boss.chargeDx * warningWidth / 2);
+                    ctx.lineTo(boss.x + boss.chargeDx * warningLength - boss.chargeDy * warningWidth / 2, boss.y + boss.chargeDy * warningLength + boss.chargeDx * warningWidth / 2);
+                    ctx.lineTo(boss.x + boss.chargeDx * warningLength + boss.chargeDy * warningWidth / 2, boss.y + boss.chargeDy * warningLength - boss.chargeDx * warningWidth / 2);
+                    ctx.lineTo(boss.x + boss.chargeDy * warningWidth / 2, boss.y - boss.chargeDx * warningWidth / 2);
                     ctx.closePath();
                     ctx.fill();
                     console.log('Desenhando aviso de investida');
