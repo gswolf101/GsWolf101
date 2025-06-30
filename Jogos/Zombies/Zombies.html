@@ -221,6 +221,7 @@
         let bossSpawned = false;
         let lastBossCharge = 0;
         let lastBossSpawnZombies = 0;
+        let bossChargeWarning = 0; // Novo: controla o tempo de aviso da investida
         let shootDelay = 2000;
         let fireRateCost = 200;
         let spawnInterval = 4000;
@@ -432,8 +433,9 @@
             else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
             else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
             else { x = canvas.width + 40; y = Math.random() * canvas.height; }
-            boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0 };
+            boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0, chargeWarning: false };
             bossSpawned = true;
+            console.log('Boss gerado em x:', x, 'y:', y);
         }
 
         function spawnCoin(x, y) {
@@ -913,25 +915,38 @@
                 const dx = player.x - boss.x;
                 const dy = player.y - boss.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                boss.x += (dx / distance) * boss.speed;
-                boss.y += (dy / distance) * boss.speed;
 
-                // Ataque especial: Investida Rápida (a cada 5 segundos)
+                // Aviso de investida (1 segundo antes)
+                if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
+                    boss.chargeWarning = true;
+                    bossChargeWarning = now;
+                    console.log('Aviso de investida iniciado');
+                }
+
+                // Investida rápida (a cada 5 segundos)
                 if (now - lastBossCharge >= 5000) {
                     boss.speed = 4;
                     boss.chargeTimer = now;
                     lastBossCharge = now;
+                    boss.chargeWarning = false;
+                    console.log('Investida do boss iniciada');
                 }
                 if (boss.chargeTimer && now - boss.chargeTimer >= 1000) {
                     boss.speed = boss.baseSpeed;
                     boss.chargeTimer = 0;
+                    console.log('Investida do boss terminada');
                 }
+
+                // Movimento do boss
+                boss.x += (dx / distance) * boss.speed;
+                boss.y += (dy / distance) * boss.speed;
 
                 // Ataque especial: Spawn de Zumbis (a cada 10 segundos)
                 if (now - lastBossSpawnZombies >= 10000) {
                     zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 2 });
                     zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 2 });
                     lastBossSpawnZombies = now;
+                    console.log('Boss gerou 2 zumbis');
                 }
 
                 if (distance < player.size + boss.size) {
@@ -964,6 +979,7 @@
                             bossSpawned = false;
                             lastBossCharge = 0;
                             lastBossSpawnZombies = 0;
+                            bossChargeWarning = 0;
                             spawnCoin(boss.x, boss.y);
                             xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
@@ -1005,6 +1021,28 @@
             });
 
             if (boss) {
+                // Desenhar aviso de investida
+                if (boss.chargeWarning && Date.now() - bossChargeWarning < 1000) {
+                    const dx = player.x - boss.x;
+                    const dy = player.y - boss.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const normalizedDx = dx / distance;
+                    const normalizedDy = dy / distance;
+                    const warningLength = 200; // Comprimento da área de aviso
+                    const warningWidth = boss.size * 2; // Largura da área (2x o tamanho do boss)
+
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; // Vermelho translúcido
+                    ctx.beginPath();
+                    ctx.moveTo(boss.x - normalizedDy * warningWidth / 2, boss.y + normalizedDx * warningWidth / 2);
+                    ctx.lineTo(boss.x + normalizedDx * warningLength - normalizedDy * warningWidth / 2, boss.y + normalizedDy * warningLength + normalizedDx * warningWidth / 2);
+                    ctx.lineTo(boss.x + normalizedDx * warningLength + normalizedDy * warningWidth / 2, boss.y + normalizedDy * warningLength - normalizedDx * warningWidth / 2);
+                    ctx.lineTo(boss.x + normalizedDy * warningWidth / 2, boss.y - normalizedDx * warningWidth / 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    console.log('Desenhando aviso de investida');
+                }
+
+                // Desenhar boss
                 ctx.fillStyle = 'darkred';
                 ctx.beginPath();
                 ctx.arc(boss.x, boss.y, boss.size, 0, Math.PI * 2);
@@ -1044,6 +1082,7 @@
             bossSpawned = false;
             lastBossCharge = 0;
             lastBossSpawnZombies = 0;
+            bossChargeWarning = 0;
             diagonalShots = 0;
             frontShots = 0;
             homingShot = false;
@@ -1057,7 +1096,7 @@
             isPaused = false;
             lastSpawn = 0;
             lastRegen = 0;
-            lastShot = 0; // Resetar lastShot para evitar bloqueio de tiro
+            lastShot = 0;
             updateShootDelay();
             gameOverDisplay.style.display = 'none';
             rankingDisplay.style.display = 'none';
