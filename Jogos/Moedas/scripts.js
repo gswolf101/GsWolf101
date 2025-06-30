@@ -23,6 +23,8 @@ const player = {
 let coins = [];
 let score = 0;
 let gameState = 'start';
+let gameStartTime = null;
+const gameDuration = 30; // 30 segundos
 
 // Controles
 const keys = {
@@ -71,8 +73,8 @@ function checkCollision(player, coin) {
 function saveScore(score) {
     let ranking = JSON.parse(localStorage.getItem('ranking') || '[]');
     ranking.push(score);
-    ranking.sort((a, b) => b - a); // Ordena em ordem decrescente
-    ranking = ranking.slice(0, 5); // Mantém apenas as 5 melhores
+    ranking.sort((a, b) => b - a);
+    ranking = ranking.slice(0, 5);
     localStorage.setItem('ranking', JSON.stringify(ranking));
 }
 
@@ -102,13 +104,17 @@ function setGameState(state) {
 
     if (state === 'start') {
         startScreen.classList.add('active');
+        console.log('Tela inicial exibida');
     } else if (state === 'playing') {
         gameScreen.classList.add('active');
+        gameStartTime = Date.now();
+        console.log('Jogo iniciado');
     } else if (state === 'gameover') {
         gameoverScreen.classList.add('active');
         finalScoreElement.textContent = score;
         saveScore(score);
         displayRanking();
+        console.log('Tela de game over exibida');
     }
 }
 
@@ -125,8 +131,7 @@ function resetGame() {
 // Loop principal do jogo
 function gameLoop() {
     if (gameState !== 'playing') {
-        requestAnimationFrame(gameLoop);
-        return;
+        return; // Não executa o loop se não estiver jogando
     }
 
     // Limpa o canvas
@@ -159,15 +164,22 @@ function gameLoop() {
         if (checkCollision(player, coin)) {
             score += 10;
             scoreElement.textContent = score;
-            return false; // Remove a moeda
+            return false;
         }
         return true;
     });
 
-    // Finaliza o jogo após 30 segundos (exemplo)
-    if (score >= 50) { // Condição de fim de jogo (exemplo: 50 pontos)
+    // Verifica o tempo de jogo
+    const elapsedTime = (Date.now() - gameStartTime) / 1000;
+    if (elapsedTime >= gameDuration) {
         setGameState('gameover');
+        return;
     }
+
+    // Desenha o tempo restante
+    ctx.fillStyle = 'white';
+    ctx.font = '16px Arial';
+    ctx.fillText(`Tempo: ${Math.ceil(gameDuration - elapsedTime)}s`, 10, 20);
 
     // Chama o próximo frame
     requestAnimationFrame(gameLoop);
@@ -176,10 +188,12 @@ function gameLoop() {
 // Event listeners para botões
 startButton.addEventListener('click', () => {
     resetGame();
+    requestAnimationFrame(gameLoop); // Inicia o gameLoop
 });
 
 restartButton.addEventListener('click', () => {
     resetGame();
+    requestAnimationFrame(gameLoop); // Reinicia o gameLoop
 });
 
 resetRankingButton.addEventListener('click', () => {
@@ -187,12 +201,4 @@ resetRankingButton.addEventListener('click', () => {
 });
 
 backButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        window.location.href = '../Jogos/CentralJogos.html';
-    });
-});
-
-// Inicializa o ranking e o loop do jogo
-displayRanking();
-setGameState('start');
-gameLoop();
+    button.addEventListener
