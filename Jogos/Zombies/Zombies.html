@@ -270,8 +270,12 @@
         };
         coinCount = savedData.coins;
         healthUpgrades = savedData.healthUpgrades || 0;
-        fireRateUpgrades = savedData.fireRateUpgrades || ожалуй
-
+        fireRateUpgrades = savedData.fireRateUpgrades || 0;
+        hasGlock = savedData.hasGlock || false;
+        hasRifle = savedData.hasRifle || false;
+        equippedWeapon = savedData.equippedWeapon || 'none';
+        hasInitialUpgrade = savedData.hasInitialUpgrade || false;
+        speedUpgrades = savedData.speedUpgrades || 0;
         player.maxHealth = 10 + healthUpgrades * 50;
         player.health = player.maxHealth;
         player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
@@ -425,7 +429,7 @@
         }
 
         function spawnZombies() {
-            if (isPaused || boss || countdown > 0 || bossSpawned) return;
+            if (isPaused || countdown > 0) return;
             const now = Date.now();
             if (now - lastSpawn < spawnInterval) return;
             lastSpawn = now;
@@ -449,7 +453,7 @@
                 else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
                 else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
                 else { x = canvas.width + 20; y = Math.random() * canvas.height; }
-                zombies.push({ x, y, size: 20, speed: 1.9 });
+                zombies.push({ x, y, size: 20, speed: 1.9, isBossMinion: false });
             }
         }
 
@@ -879,7 +883,7 @@
             });
             bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
 
-            zombies.forEach(zombie => {
+            zombies.forEach((zombie, zIndex) => {
                 const dx = player.x - zombie.x;
                 const dy = player.y - zombie.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -888,7 +892,7 @@
 
                 if (distance < player.size + zombie.size) {
                     player.health -= 5;
-                    zombies = zombies.filter(z => z !== zombie);
+                    zombies.splice(zIndex, 1);
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                     healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                     startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
@@ -898,12 +902,13 @@
                         gameOverDisplay.style.display = 'block';
                         isPaused = true;
                     }
+                    return;
                 }
 
                 bullets.forEach((bullet, bIndex) => {
                     const bDistance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
                     if (bDistance < zombie.size) {
-                        zombies = zombies.filter(z => z !== zombie);
+                        zombies.splice(zIndex, 1);
                         bullet.pierce -= 1;
                         if (bullet.electric && bullet.electricTimer === null) {
                             bullet.electricTimer = Date.now();
@@ -911,53 +916,60 @@
                         if (bullet.pierce < 0 && !bullet.electric) {
                             bullets.splice(bIndex, 1);
                         }
-                        score += 1;
-                        xp += 1;
-                        if (score === 50 && !boss && !bossSpawned && countdown === 0) {
-                            zombies = [];
-                            countdown = 3;
-                            countdownStart = Date.now();
-                        }
-                        if (vampirism && Math.random() < 0.3) {
-                            player.health = Math.min(player.maxHealth, player.health + 1);
-                            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                            startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                            startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                        if (!zombie.isBossMinion) {
+                            score += 1;
+                            xp += 1;
+                            if (score >= 50 && !boss && !bossSpawned && countdown === 0) {
+                                zombies = [];
+                                countdown = 3;
+                                countdownStart = Date.now();
+                            }
+                            if (vampirism && Math.random() < 0.3) {
+                                player.health = Math.min(player.maxHealth, player.health + 1);
+                                healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                                healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                                startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                                startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                            }
+                            spawnCoin(zombie.x, zombie.y);
                         }
                         xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                         xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                         startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                         startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                         scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-                        spawnCoin(zombie.x, zombie.y);
                         checkLevelUp();
 
                         if (bullet.electric && Math.random() < 0.5) {
                             const nearbyZombie = findNearbyZombie(zombie, zombie);
                             if (nearbyZombie) {
-                                zombies = zombies.filter(z => z !== nearbyZombie);
-                                score += 1;
-                                xp += 1;
-                                if (score === 50 && !boss && !bossSpawned && countdown === 0) {
-                                    zombies = [];
-                                    countdown = 3;
-                                    countdownStart = Date.now();
+                                const nearbyIndex = zombies.indexOf(nearbyZombie);
+                                if (nearbyIndex !== -1) {
+                                    zombies.splice(nearbyIndex, 1);
+                                    if (!nearbyZombie.isBossMinion) {
+                                        score += 1;
+                                        xp += 1;
+                                        if (score >= 50 && !boss && !bossSpawned && countdown === 0) {
+                                            zombies = [];
+                                            countdown = 3;
+                                            countdownStart = Date.now();
+                                        }
+                                        if (vampirism && Math.random() < 0.3) {
+                                            player.health = Math.min(player.maxHealth, player.health + 1);
+                                            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                                            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                                            startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                                            startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                                        }
+                                        spawnCoin(nearbyZombie.x, nearbyZombie.y);
+                                    }
+                                    xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                                    xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                                    startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                                    startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                                    checkLevelUp();
                                 }
-                                if (vampirism && Math.random() < 0.3) {
-                                    player.health = Math.min(player.maxHealth, player.health + 1);
-                                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                                    startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                                    startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                                }
-                                xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-                                xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                                startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-                                startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                                scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-                                spawnCoin(nearbyZombie.x, nearbyZombie.y);
-                                checkLevelUp();
                             }
                         }
                     }
@@ -971,7 +983,6 @@
                 if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
                     boss.chargeWarning = true;
                     bossChargeWarning = now;
-                    // Calcular direção fixa para a investida
                     const dx = player.x - boss.x;
                     const dy = player.y - boss.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -996,11 +1007,9 @@
 
                 // Movimento do boss
                 if (boss.chargeTimer) {
-                    // Durante investida, mover na direção fixa
                     boss.x += boss.chargeDx * boss.speed;
                     boss.y += boss.chargeDy * boss.speed;
                 } else {
-                    // Fora da investida, seguir o jogador
                     const dx = player.x - boss.x;
                     const dy = player.y - boss.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1010,10 +1019,10 @@
 
                 // Ataque especial: Spawn de Zumbis (a cada 10 segundos)
                 if (now - lastBossSpawnZombies >= 10000) {
-                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9 });
-                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9 });
+                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9, isBossMinion: true });
+                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9, isBossMinion: true });
                     lastBossSpawnZombies = now;
-                    console.log('Boss gerou 2 zumbis');
+                    console.log('Boss gerou 2 zumbis (lacaios)');
                 }
 
                 // Colisão com o jogador
@@ -1033,6 +1042,8 @@
                     }
                 }
 
+                // Colisão com balas
+                let bossDefeated = false;
                 bullets.forEach((bullet, bIndex) => {
                     const bDistance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
                     if (bDistance < boss.size) {
@@ -1045,25 +1056,33 @@
                             bullets.splice(bIndex, 1);
                         }
                         if (boss.health <= 0) {
-                            score += 10;
-                            xp += 5;
-                            coinCount += 5;
-                            boss = null;
-                            bossSpawned = false;
-                            lastBossCharge = 0;
-                            lastBossSpawnZombies = 0;
-                            bossChargeWarning = 0;
-                            spawnCoin(boss.x, boss.y);
-                            xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-                            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                            startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-                            startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-                            checkLevelUp();
-                            saveData();
+                            bossDefeated = true;
                         }
                     }
                 });
+
+                if (bossDefeated) {
+                    console.log('Boss derrotado, iniciando recompensas');
+                    score += 10;
+                    coinCount += 5;
+                    level += 1;
+                    xp = 0;
+                    xpToNextLevel = Math.round(xpToNextLevel * 1.1);
+                    boss = null;
+                    bossSpawned = false;
+                    lastBossCharge = 0;
+                    lastBossSpawnZombies = 0;
+                    bossChargeWarning = 0;
+                    spawnCoin(boss.x, boss.y);
+                    xpBar.style.width = '0%';
+                    xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                    startXpBar.style.width = '0%';
+                    startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                    saveData();
+                    showUpgradeMenu();
+                    console.log('Recompensas aplicadas, boss removido');
+                }
             }
 
             coins = coins.filter(coin => {
@@ -1096,11 +1115,9 @@
             });
 
             if (boss) {
-                // Desenhar aviso de investida
                 if (boss.chargeWarning && Date.now() - bossChargeWarning < 1000) {
                     const warningLength = 200;
                     const warningWidth = boss.size * 2;
-
                     ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
                     ctx.beginPath();
                     ctx.moveTo(boss.x - boss.chargeDy * warningWidth / 2, boss.y + boss.chargeDx * warningWidth / 2);
@@ -1112,7 +1129,6 @@
                     console.log('Desenhando aviso de investida');
                 }
 
-                // Desenhar boss
                 ctx.fillStyle = 'darkred';
                 ctx.beginPath();
                 ctx.arc(boss.x, boss.y, boss.size, 0, Math.PI * 2);
