@@ -8,9 +8,30 @@
 </head>
 <body>
     <div id="game-container">
-        <h1>Jogo de Coleta de Moedas</h1>
-        <p>Pontuação: <span id="score">0</span></p>
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <!-- Tela inicial -->
+        <div id="start-screen" class="screen active">
+            <h1>Jogo de Coleta de Moedas</h1>
+            <p>Use AWSD ou setas para mover e coletar moedas!</p>
+            <button id="start-button">Começar</button>
+            <button id="back-button">Voltar</button>
+        </div>
+
+        <!-- Tela do jogo -->
+        <div id="game-screen" class="screen">
+            <p>Pontuação: <span id="score">0</span></p>
+            <canvas id="gameCanvas" width="800" height="400"></canvas>
+        </div>
+
+        <!-- Tela de game over -->
+        <div id="gameover-screen" class="screen">
+            <h1>Fim de Jogo!</h1>
+            <p>Sua pontuação: <span id="final-score">0</span></p>
+            <h2>Ranking</h2>
+            <ol id="ranking-list"></ol>
+            <button id="restart-button">Jogar Novamente</button>
+            <button id="reset-ranking">Zerar Ranking</button>
+            <button id="back-button-gameover">Voltar</button>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>
