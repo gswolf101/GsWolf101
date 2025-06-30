@@ -1,213 +1,219 @@
-// Elementos do DOM
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
 const finalScoreElement = document.getElementById('final-score');
+const playerNameInput = document.getElementById('player-name');
 const rankingList = document.getElementById('ranking-list');
-const startScreen = document.getElementById('start-screen');
-const gameScreen = document.getElementById('game-screen');
-const gameoverScreen = document.getElementById('gameover-screen');
-const startButton = document.getElementById('start-button');
-const restartButton = document.getElementById('restart-button');
-const resetRankingButton = document.getElementById('reset-ranking');
-const backButtons = document.querySelectorAll('#back-button, #back-button-gameover');
 
-// Objetos do jogo
-const player = {
+let score = 0;
+let gameLoop;
+let player, enemies, bullets;
+let keys = {};
+let lastShot = 0;
+let ranking = JSON.parse(localStorage.getItem('ranking')) || [];
+
+// Configurações do jogador
+player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    size: 20,
-    speed: 5
+    width: 20,
+    height: 20,
+    speed: 5,
+    health: 100
 };
 
-let coins = [];
-let score = 0;
-let gameState = 'start';
-let gameStartTime = null;
-const gameDuration = 30; // 30 segundos
+// Arrays para inimigos e balas
+enemies = [];
+bullets = [];
 
-// Controles
-const keys = {
-    ArrowUp: false,
-    ArrowDown: false,
-    ArrowLeft: false,
-    ArrowRight: false,
-    KeyW: false,
-    KeyS: false,
-    KeyA: false,
-    KeyD: false
-};
+// Controles do teclado
+document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 
-// Listeners para teclas
-document.addEventListener('keydown', (e) => {
-    if (e.code in keys) {
-        keys[e.code] = true;
-        console.log(`Tecla pressionada: ${e.code}`);
-    }
-});
+// Disparo com o mouse
+canvas.addEventListener('click', shoot);
 
-document.addEventListener('keyup', (e) => {
-    if (e.code in keys) {
-        keys[e.code] = false;
-    }
-});
-
-// Cria uma nova moeda
-function createCoin() {
-    const coin = {
-        x: Math.random() * (canvas.width - 10),
-        y: Math.random() * (canvas.height - 10),
-        size: 10
-    };
-    coins.push(coin);
+// Função para iniciar o jogo
+function startGame() {
+    document.getElementById('start-screen').classList.remove('active');
+    document.getElementById('game-screen').classList.add('active');
+    score = 0;
+    player.health = 100;
+    enemies = [];
+    bullets = [];
+    scoreElement.textContent = score;
+    gameLoop = setInterval(update, 1000 / 60);
+    spawnEnemy();
 }
 
-// Verifica colisão
-function checkCollision(player, coin) {
-    const dx = player.x - coin.x;
-    const dy = player.y - coin.y;
+// Função principal de atualização
+function update() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Movimento do jogador
+    if (keys['w'] && player.y > 0) player.y -= player.speed;
+    if (keys['s'] && player.y < canvas.height - player.height) player.y += player.speed;
+    if (keys['a'] && player.x > 0) player.x -= player.speed;
+    if (keys['d'] && player.x < canvas.width - player.width) player.x += player.speed;
+
+    // Desenhar jogador
+    ctx.fillStyle = '#0f0';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Atualizar e desenhar balas
+    bullets.forEach((bullet, index) => {
+        bullet.x += bullet.vx;
+        bullet.y += bullet.vy;
+        ctx.fillStyle = '#ff0';
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+
+        // Remover balas fora da tela
+        if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+            bullets.splice(index, 1);
+        }
+    });
+
+    // Atualizar e desenhar inimigos
+    enemies.forEach((enemy, eIndex) => {
+        // Movimento do inimigo em direção ao jogador
+        let dx = player.x - enemy.x;
+        let dy = player.y - enemy.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        enemy.x += (dx / distance) * enemy.speed;
+        enemy.y += (dy / distance) * enemy.speed;
+
+        ctx.fillStyle = '#f00';
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+        // Colisão com o jogador
+        if (collides(player, enemy)) {
+            player.health -= 10;
+            enemies.splice eIndex, 1);
+            if (player.health <= 0) {
+                gameOver();
+            }
+        }
+
+        // Colisão com balas
+        bullets.forEach((bullet, bIndex) => {
+            if (collides(bullet, enemy)) {
+                enemies.splice(eIndex, 1);
+                bullets.splice(bIndex, 1);
+                score += 10;
+                scoreElement.textContent = score;
+            }
+        });
+    });
+
+    // Gerar inimigos
+    if (Math.random() < 0.02) {
+        spawnEnemy();
+    }
+}
+
+// Função para atirar
+function shoot(e) {
+    const now = Date.now();
+    if (now - lastShot < 300) return; // Limite de disparos
+    lastShot = now;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const dx = mouseX - (player.x + player.width / 2);
+    const dy = mouseY - (player.y + player.height / 2);
     const distance = Math.sqrt(dx * dx + dy * dy);
-    return distance < player.size / 2 + coin.size / 2;
+    const speed = 10;
+
+    bullets.push({
+        x: player.x + player.width /  jus2,
+        y: player.y + player.height / 2,
+        vx: (dx / distance) * speed,
+        vy: (dy / distance) * speed,
+        width: 5,
+        height: 5
+    });
 }
 
-// Salva pontuação no ranking
-function saveScore(score) {
-    let ranking = JSON.parse(localStorage.getItem('ranking') || '[]');
-    ranking.push(score);
-    ranking.sort((a, b) => b - a);
-    ranking = ranking.slice(0, 5);
+// Função para gerar inimigos
+function spawnEnemy() {
+    const side = Math.floor(Math.random() * 4);
+    let x, y;
+    switch (side) {
+        case 0: // Topo
+            x = Math.random() * canvas.width;
+            y = -20;
+            break;
+        case 1: // Direita
+            x = canvas.width;
+            y = Math.random() * canvas.height;
+            break;
+        case 2: // Baixo
+            x = Math.random() * canvas.width;
+            y = canvas.height;
+            break;
+        case 3: // Esquerda
+            x = -20;
+            y = Math.random() * canvas.height;
+            break;
+    }
+    enemies.push({
+        x: x,
+        y: y,
+        width: 20,
+        height: 20,
+        speed: 2 + Math.random() * 2
+    });
+}
+
+// Função de colisão
+function collides(a, b) {
+    return a.x < b.x + b.width &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.height &&
+           a.y + a.height > b.y;
+}
+
+// Função de game over
+function gameOver() {
+    clearInterval(gameLoop);
+    document.getElementById('game-screen').classList.remove('active');
+    document.getElementById('game-over-screen').classList.add('active');
+    finalScoreElement.textContent = score;
+}
+
+// Função para salvar score
+function saveScore() {
+    const name = playerNameInput.value.trim() || 'Anônimo';
+    ranking.push({ name, score });
+    ranking.sort((a, b) => b.score - a.score);
+    ranking = ranking.slice(0, 5); // Mantém apenas os 5 melhores
     localStorage.setItem('ranking', JSON.stringify(ranking));
+    playerNameInput.value = '';
+    showRanking();
 }
 
-// Exibe o ranking
-function displayRanking() {
-    const ranking = JSON.parse(localStorage.getItem('ranking') || '[]');
+// Função para mostrar ranking
+function showRanking() {
+    document.getElementById('game-over-screen').classList.remove('active');
+    document.getElementById('ranking-screen').classList.add('active');
     rankingList.innerHTML = '';
-    ranking.forEach((score, index) => {
+    ranking.forEach((entry, index) => {
         const li = document.createElement('li');
-        li.textContent = `${index + 1}. ${score} pontos`;
+        li.textContent = `${index + 1}. ${entry.name}: ${entry.score}`;
         rankingList.appendChild(li);
     });
 }
 
-// Reseta o ranking
-function resetRanking() {
-    localStorage.setItem('ranking', '[]');
-    displayRanking();
+// Função para reiniciar o jogo
+function restartGame() {
+    document.getElementById('game-over-screen').classList.remove('active');
+    startGame();
 }
 
-// Muda o estado do jogo
-function setGameState(state) {
-    gameState = state;
-    startScreen.classList.toggle('active', state === 'start');
-    gameScreen.classList.toggle('active', state === 'playing');
-    gameoverScreen.classList.toggle('active', state === 'gameover');
-
-    if (state === 'start') {
-        console.log('Tela inicial exibida');
-    } else if (state === 'playing') {
-        gameStartTime = Date.now();
-        console.log('Jogo iniciado');
-    } else if (state === 'gameover') {
-        finalScoreElement.textContent = score;
-        saveScore(score);
-        displayRanking();
-        console.log('Tela de game over exibida');
-    }
+// Função para voltar ao início
+function backToStart() {
+    document.getElementById('ranking-screen').classList.remove('active');
+    document.getElementById('start-screen').classList.add('active');
 }
-
-// Reinicia o jogo
-function resetGame() {
-    player.x = canvas.width / 2;
-    player.y = canvas.height / 2;
-    coins = [];
-    score = 0;
-    scoreElement.textContent = score;
-    setGameState('playing');
-}
-
-// Loop principal do jogo
-function gameLoop() {
-    if (gameState !== 'playing') {
-        console.log('GameLoop parado: estado atual =', gameState);
-        return;
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Move o jogador
-    if ((keys.ArrowUp || keys.KeyW) && player.y - player.size / 2 > 0) player.y -= player.speed;
-    if ((keys.ArrowDown || keys.KeyS) && player.y + player.size / 2 < canvas.height) player.y += player.speed;
-    if ((keys.ArrowLeft || keys.KeyA) && player.x - player.size / 2 > 0) player.x -= player.speed;
-    if ((keys.ArrowRight || keys.KeyD) && player.x + player.size / 2 < canvas.width) player.x += player.speed;
-
-    // Desenha o jogador
-    ctx.fillStyle = 'blue';
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Cria moedas
-    if (Math.random() < 0.02) {
-        createCoin();
-    }
-
-    // Desenha e verifica colisões
-    coins = coins.filter(coin => {
-        ctx.fillStyle = 'gold';
-        ctx.beginPath();
-        ctx.arc(coin.x, coin.y, coin.size / 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (checkCollision(player, coin)) {
-            score += 10;
-            scoreElement.textContent = score;
-            return false;
-        }
-        return true;
-    });
-
-    // Verifica o tempo
-    const elapsedTime = (Date.now() - gameStartTime) / 1000;
-    if (elapsedTime >= gameDuration) {
-        setGameState('gameover');
-        return;
-    }
-
-    // Desenha o tempo restante
-    ctx.fillStyle = 'white';
-    ctx.font = '16px Arial';
-    ctx.fillText(`Tempo: ${Math.ceil(gameDuration - elapsedTime)}s`, 10, 20);
-
-    requestAnimationFrame(gameLoop);
-}
-
-// Listeners para botões
-startButton.addEventListener('click', () => {
-    console.log('Botão Começar clicado');
-    resetGame();
-    requestAnimationFrame(gameLoop);
-});
-
-restartButton.addEventListener('click', () => {
-    console.log('Botão Jogar Novamente clicado');
-    resetGame();
-    requestAnimationFrame(gameLoop);
-});
-
-resetRankingButton.addEventListener('click', () => {
-    console.log('Botão Zerar Ranking clicado');
-    resetRanking();
-});
-
-backButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        console.log('Botão Voltar clicado');
-        window.location.href = '../Jogos/CentralJogos.html';
-    });
-});
-
-// Inicializa
-console.log('Jogo inicializado');
-displayRanking();
-setGameState('start');
