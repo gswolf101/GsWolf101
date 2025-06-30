@@ -149,7 +149,7 @@
             <div id="health"></div>
             <span id="healthText">Vida: 10/10</span>
         </div>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas" width="800" height="600" tabindex="0"></canvas>
         <div id="score">Pontos: 0 | Moedas: 0</div>
         <div id="countdown">3</div>
         <div id="gameOver">
@@ -283,13 +283,37 @@
             ArrowRight: false
         };
 
+        // Captura de teclas com depuração
         document.addEventListener('keydown', (e) => {
-            if (e.key in keys) keys[e.key] = true;
-            if (e.key === 'r' && gameOver) resetGame();
+            const key = e.key.toLowerCase();
+            if (key in keys) {
+                keys[key] = true;
+                console.log(`Tecla pressionada: ${key}, keys:`, keys); // Depuração
+            }
+            if (key === 'r' && gameOver) resetGame();
         });
+
         document.addEventListener('keyup', (e) => {
-            if (e.key in keys) keys[e.key] = false;
+            const key = e.key.toLowerCase();
+            if (key in keys) {
+                keys[key] = false;
+                console.log(`Tecla solta: ${key}, keys:`, keys); // Depuração
+            }
         });
+
+        // Garantir foco no canvas
+        canvas.addEventListener('click', () => {
+            canvas.focus();
+            console.log('Canvas focado por clique');
+        });
+
+        // Restaurar foco após alertas/confirm
+        function restoreCanvasFocus() {
+            setTimeout(() => {
+                canvas.focus();
+                console.log('Foco restaurado no canvas após diálogo');
+            }, 100);
+        }
 
         function saveData() {
             localStorage.setItem('zombieGameData', JSON.stringify({
@@ -344,12 +368,17 @@
                 healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
                 saveData();
                 alert('Todas as características, moedas e compras foram resetadas!');
+                restoreCanvasFocus();
+            } else {
+                restoreCanvasFocus();
             }
         }
 
         function startGame() {
             startScreen.style.display = 'none';
             isPaused = false;
+            canvas.focus();
+            console.log('Jogo iniciado, canvas focado');
             resetGame();
         }
 
@@ -456,6 +485,7 @@
                 effect: () => {
                     diagonalShots += 1;
                     alert("Upgrade +1 Diagonais aplicado! Total de pares diagonais: " + diagonalShots);
+                    restoreCanvasFocus();
                 }
             },
             {
@@ -467,6 +497,7 @@
                 effect: () => {
                     frontShots += 1;
                     alert("Upgrade +1 Frente aplicado! Total de balas frontais extras: " + frontShots);
+                    restoreCanvasFocus();
                 }
             },
             {
@@ -478,6 +509,7 @@
                 effect: () => {
                     electricShot = true;
                     alert("Upgrade Balas Elétricas aplicado! Chance de choque: 50%");
+                    restoreCanvasFocus();
                 }
             },
             {
@@ -490,6 +522,7 @@
                 effect: () => {
                     pierceCount = Math.min(pierceCount + 1, 2);
                     alert("Upgrade Perfuração aplicado! Balas atravessam até " + (pierceCount + 1) + " zumbis");
+                    restoreCanvasFocus();
                 }
             },
             {
@@ -503,6 +536,7 @@
                     goodHands = false;
                     updateShootDelay();
                     alert("Upgrade Mãos Leves aplicado! Velocidade de disparo +20%");
+                    restoreCanvasFocus();
                 }
             },
             {
@@ -516,6 +550,7 @@
                     lightHands = false;
                     updateShootDelay();
                     alert("Upgrade Mãos Boas aplicado! Velocidade de disparo +30%");
+                    restoreCanvasFocus();
                 }
             },
             {
@@ -527,6 +562,7 @@
                 effect: () => {
                     homingShot = true;
                     alert("Upgrade Balas Teleguiadas aplicado! Balas agora seguem zumbis");
+                    restoreCanvasFocus();
                 }
             },
             {
@@ -538,6 +574,7 @@
                 effect: () => {
                     regen = true;
                     alert("Upgrade Regeneração aplicado! Recupera 0,5 vida por segundo");
+                    restoreCanvasFocus();
                 }
             },
             {
@@ -549,6 +586,7 @@
                 effect: () => {
                     vampirism = true;
                     alert("Upgrade Vampirismo aplicado! 30% de chance de recuperar 1 vida por morte");
+                    restoreCanvasFocus();
                 }
             }
         ];
@@ -584,7 +622,10 @@
                     break;
                 }
             }
-            if (selectedUpgrade) selectedUpgrade.effect();
+            if (selectedUpgrade) {
+                selectedUpgrade.effect();
+                restoreCanvasFocus();
+            }
         }
 
         function shoot() {
@@ -698,6 +739,8 @@
                     upgrade.effect();
                     upgradeMenu.style.display = 'none';
                     isPaused = false;
+                    canvas.focus();
+                    console.log('Menu de upgrade fechado, canvas focado');
                 };
                 upgradeOptions.appendChild(button);
             });
@@ -715,7 +758,10 @@
         }
 
         function update() {
-            if (gameOver || isPaused) return;
+            if (gameOver || isPaused) {
+                console.log(`Update bloqueado: gameOver=${gameOver}, isPaused=${isPaused}`);
+                return;
+            }
 
             if (countdown > 0) {
                 const now = Date.now();
@@ -731,6 +777,8 @@
                 return;
             }
 
+            // Movimento do jogador com depuração
+            console.log('Estado das teclas:', keys);
             if (keys.w && player.y > player.size) player.y -= player.speed;
             if (keys.s && player.y < canvas.height - player.size) player.y += player.speed;
             if (keys.a && player.x > player.size) player.x -= player.speed;
@@ -1004,6 +1052,8 @@
             xpBar.style.width = '0%';
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             applyInitialUpgrade();
+            canvas.focus();
+            console.log('Jogo resetado, canvas focado');
         }
 
         function showRanking() {
@@ -1029,6 +1079,8 @@
             } else {
                 startScreen.style.display = 'block';
             }
+            canvas.focus();
+            console.log('Ranking fechado, canvas focado');
         }
 
         function showShop() {
@@ -1042,6 +1094,8 @@
         function closeShop() {
             shopDisplay.style.display = 'none';
             gameOverDisplay.style.display = 'block';
+            canvas.focus();
+            console.log('Loja fechada, canvas focado');
         }
 
         function buyHealth() {
@@ -1055,8 +1109,10 @@
                 healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
                 saveData();
                 alert('Vida extra comprada! Vida máxima: ' + player.maxHealth);
+                restoreCanvasFocus();
             } else {
                 alert('Moedas insuficientes!');
+                restoreCanvasFocus();
             }
         }
 
@@ -1070,8 +1126,10 @@
                 fireRateCostDisplay.textContent = Math.round(fireRateCost);
                 saveData();
                 alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
+                restoreCanvasFocus();
             } else {
                 alert('Moedas insuficientes!');
+                restoreCanvasFocus();
             }
         }
 
@@ -1085,14 +1143,17 @@
                 updateWeaponButtons();
                 saveData();
                 alert('Glock comprada e equipada! Atraso de tiro: ' + shootDelay + 'ms');
+                restoreCanvasFocus();
             } else if (hasGlock && equippedWeapon !== 'glock') {
                 equippedWeapon = 'glock';
                 updateShootDelay();
                 updateWeaponButtons();
                 saveData();
                 alert('Glock equipada! Atraso de tiro: ' + shootDelay + 'ms');
+                restoreCanvasFocus();
             } else if (!hasGlock) {
                 alert('Moedas insuficientes!');
+                restoreCanvasFocus();
             }
         }
 
@@ -1106,14 +1167,17 @@
                 updateWeaponButtons();
                 saveData();
                 alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms');
+                restoreCanvasFocus();
             } else if (hasRifle && equippedWeapon !== 'rifle') {
                 equippedWeapon = 'rifle';
                 updateShootDelay();
                 updateWeaponButtons();
                 saveData();
                 alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms');
+                restoreCanvasFocus();
             } else if (!hasRifle) {
                 alert('Moedas insuficientes!');
+                restoreCanvasFocus();
             }
         }
 
@@ -1126,10 +1190,13 @@
                 buyInitialUpgradeBtn.textContent = "Comprado";
                 saveData();
                 alert('Upgrade Inicial comprado! Você receberá um upgrade aleatório no início de cada partida.');
+                restoreCanvasFocus();
             } else if (hasInitialUpgrade) {
                 alert('Upgrade Inicial já comprado!');
+                restoreCanvasFocus();
             } else {
                 alert('Moedas insuficientes!');
+                restoreCanvasFocus();
             }
         }
 
@@ -1139,6 +1206,9 @@
             requestAnimationFrame(gameLoop);
         }
 
+        // Foco inicial no canvas
+        canvas.focus();
+        console.log('Canvas focado ao carregar');
         gameLoop();
     </script>
 </body>
