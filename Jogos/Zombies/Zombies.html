@@ -9,10 +9,12 @@
             margin: 0;
             overflow: hidden;
             background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
         #gameCanvas {
-            display: block;
-            margin: 0 auto;
             background: #333;
         }
         #score {
@@ -38,7 +40,7 @@
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="score">Pontos: 0</div>
+    <div id="score">Pontos: 0 | Moedas: 0</div>
     <div id="gameOver">Game Over!<br>Pressione R para reiniciar</div>
 
     <script>
@@ -50,10 +52,14 @@
         let player = { x: 400, y: 300, size: 20, speed: 5, health: 100 };
         let zombies = [];
         let bullets = [];
+        let coins = [];
         let score = 0;
+        let coinCount = 0;
         let gameOver = false;
         let lastShot = 0;
+        let lastSpawn = 0;
         const shootDelay = 200; // 200ms entre disparos
+        const spawnInterval = 4000; // 4 segundos
 
         const keys = {
             w: false,
@@ -76,14 +82,30 @@
         });
 
         // Função para criar zumbis
-        function spawnZombie() {
-            const side = Math.floor(Math.random() * 4);
-            let x, y;
-            if (side === 0) { x = Math.random() * canvas.width; y = -20; } // Topo
-            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; } // Baixo
-            else if (side === 2) { x = -20; y = Math.random() * canvas.height; } // Esquerda
-            else { x = canvas.width + 20; y = Math.random() * canvas.height; } // Direita
-            zombies.push({ x, y, size: 20, speed: 2 });
+        function spawnZombies() {
+            const now = Date.now();
+            if (now - lastSpawn < spawnInterval) return;
+            lastSpawn = now;
+
+            let zombieCount = 2; // Base: 2 zumbis
+            if (score > 10) zombieCount = Math.min(5, 2 + Math.floor(score / 10)); // Aumenta moderadamente
+
+            for (let i = 0; i < zombieCount; i++) {
+                const side = Math.floor(Math.random() * 4);
+                let x, y;
+                if (side === 0) { x = Math.random() * canvas.width; y = -20; } // Topo
+                else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; } // Baixo
+                else if (side === 2) { x = -20; y = Math.random() * canvas.height; } // Esquerda
+                else { x = canvas.width + 20; y = Math.random() * canvas.height; } // Direita
+                zombies.push({ x, y, size: 20, speed: 2 });
+            }
+        }
+
+        // Função para criar moeda
+        function spawnCoin(x, y) {
+            if (Math.random() < 0.3) { // 30% de chance
+                coins.push({ x, y, size: 10 });
+            }
         }
 
         // Função para atirar
@@ -98,7 +120,6 @@
             if (keys.ArrowLeft) dx -= 1;
             if (keys.ArrowRight) dx += 1;
 
-            // Normalizar direção para 8 direções
             if (dx !== 0 || dy !== 0) {
                 const length = Math.sqrt(dx * dx + dy * dy);
                 dx /= length;
@@ -151,14 +172,26 @@
                     if (bDistance < zombie.size) {
                         zombies = zombies.filter(z => z !== zombie);
                         bullets.splice(bIndex, 1);
-                        score += 10;
-                        scoreDisplay.textContent = `Pontos: ${score}`;
+                        score += 1;
+                        spawnCoin(zombie.x, zombie.y);
+                        scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
                     }
                 });
             });
 
+            // Colisão com moedas
+            coins = coins.filter(coin => {
+                const distance = Math.sqrt((player.x - coin.x) ** 2 + (player.y - coin.y) ** 2);
+                if (distance < player.size + coin.size) {
+                    coinCount += 1;
+                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                    return false;
+                }
+                return true;
+            });
+
             // Gerar zumbis
-            if (Math.random() < 0.02) spawnZombie();
+            spawnZombies();
         }
 
         // Função de desenho
@@ -186,6 +219,14 @@
                 ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
                 ctx.fill();
             });
+
+            // Desenhar moedas
+            ctx.fillStyle = 'gold';
+            coins.forEach(coin => {
+                ctx.beginPath();
+                ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
         }
 
         // Reiniciar jogo
@@ -193,10 +234,13 @@
             player = { x: 400, y: 300, size: 20, speed: 5, health: 100 };
             zombies = [];
             bullets = [];
+            coins = [];
             score = 0;
+            coinCount = 0;
             gameOver = false;
+            lastSpawn = 0;
             gameOverDisplay.style.display = 'none';
-            scoreDisplay.textContent = `Pontos: ${score}`;
+            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
         }
 
         // Loop principal
