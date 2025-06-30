@@ -22,17 +22,19 @@ body {
 
 #gameCanvas {
     border: 2px solid #333;
-    background-color: #fff;
+    background-color: #000; /* Fundo preto para o canvas */
 }
 
 h1 {
     font-size: 24px;
     margin-bottom: 10px;
+    color: #000;
 }
 
 p {
     font-size: 18px;
     margin-bottom: 10px;
+    color: #000;
 }
 
 button {
@@ -40,19 +42,22 @@ button {
     margin: 5px;
     font-size: 16px;
     cursor: pointer;
-    background-color: #333;
-    color: #fff;
-    border: none;
+    background-color: #000; /* Fundo preto */
+    color: #fff; /* Letras brancas */
+    border: 2px solid #fff; /* Borda branca */
     border-radius: 5px;
+    transition: all 0.3s ease; /* Transição suave */
 }
 
 button:hover {
-    background-color: #555;
+    background-color: #fff; /* Fundo branco no hover */
+    color: #000; /* Letras pretas no hover */
+    border: 2px solid #000; /* Borda preta no hover */
 }
 
 #ranking-list {
     list-style-position: inside;
     margin: 20px 0;
     font-size: 16px;
+    color: #000;
 }
-
