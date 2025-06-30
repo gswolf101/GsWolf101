@@ -17,13 +17,22 @@
         }
         #gameContainer {
             position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         #gameCanvas {
             background: #333;
             display: block;
+            width: 1000px;
+            height: 750px;
+            max-width: 100%;
+            max-height: 100vh;
         }
         #healthBar {
-            width: 800px;
+            width: 1000px;
             height: 20px;
             background: #555;
             border: 2px solid #000;
@@ -50,7 +59,7 @@
             text-shadow: 1px 1px 1px #000;
         }
         #xpBar {
-            width: 800px;
+            width: 1000px;
             height: 20px;
             background: #555;
             border: 2px solid #000;
@@ -147,9 +156,9 @@
         </div>
         <div id="healthBar">
             <div id="health"></div>
-            <span id="healthText">Vida: 10/10</span>
+            <span id="healthText">Vida: 100%</span>
         </div>
-        <canvas id="gameCanvas" width="800" height="600" tabindex="0"></canvas>
+        <canvas id="gameCanvas" width="1000" height="750" tabindex="0"></canvas>
         <div id="score">Pontos: 0 | Moedas: 0</div>
         <div id="countdown">3</div>
         <div id="gameOver">
@@ -201,7 +210,7 @@
         const buyGlockBtn = document.getElementById('buyGlockBtn');
         const buyRifleBtn = document.getElementById('buyRifleBtn');
 
-        let player = { x: 400, y: 300, size: 20, speed: 2.2, health: 10, maxHealth: 10 };
+        let player = { x: 500, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
         let zombies = [];
         let bullets = [];
         let coins = [];
@@ -221,7 +230,7 @@
         let bossSpawned = false;
         let lastBossCharge = 0;
         let lastBossSpawnZombies = 0;
-        let bossChargeWarning = 0; // Novo: controla o tempo de aviso da investida
+        let bossChargeWarning = 0;
         let shootDelay = 2000;
         let fireRateCost = 200;
         let spawnInterval = 4000;
@@ -234,6 +243,7 @@
         let vampirism = false;
         let lightHands = false;
         let goodHands = false;
+        let speedUpgrades = 0; // Novo: contador para upgrade "Pressa"
         let healthUpgrades = 0;
         let fireRateUpgrades = 0;
         let hasGlock = false;
@@ -250,6 +260,7 @@
             hasRifle: false,
             equippedWeapon: 'none',
             hasInitialUpgrade: false,
+            speedUpgrades: 0, // Novo
             ranking: []
         };
         coinCount = savedData.coins;
@@ -259,13 +270,15 @@
         hasRifle = savedData.hasRifle || false;
         equippedWeapon = savedData.equippedWeapon || 'none';
         hasInitialUpgrade = savedData.hasInitialUpgrade || false;
+        speedUpgrades = savedData.speedUpgrades || 0; // Novo
         player.maxHealth = 10 + healthUpgrades * 50;
         player.health = player.maxHealth;
+        player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades); // Aplicar upgrades de velocidade
         fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
         shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
         shootDelay = Math.max(50, shootDelay);
         fireRateCostDisplay.textContent = Math.round(fireRateCost);
-        healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
+        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
         xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
         if (hasInitialUpgrade) {
             buyInitialUpgradeBtn.disabled = true;
@@ -290,7 +303,7 @@
             const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
             if (normalizedKey in keys) {
                 keys[normalizedKey] = true;
-                console.log(`Tecla pressionada: ${normalizedKey}, keys:`, keys); // Depuração
+                console.log(`Tecla pressionada: ${normalizedKey}, keys:`, keys);
             }
             if (normalizedKey === 'r' && gameOver) resetGame();
         });
@@ -300,7 +313,7 @@
             const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
             if (normalizedKey in keys) {
                 keys[normalizedKey] = false;
-                console.log(`Tecla solta: ${normalizedKey}, keys:`, keys); // Depuração
+                console.log(`Tecla solta: ${normalizedKey}, keys:`, keys);
             }
         });
 
@@ -327,6 +340,7 @@
                 hasRifle: hasRifle,
                 equippedWeapon: equippedWeapon,
                 hasInitialUpgrade: hasInitialUpgrade,
+                speedUpgrades: speedUpgrades, // Novo
                 ranking: savedData.ranking
             }));
         }
@@ -353,12 +367,14 @@
                 coinCount = 0;
                 healthUpgrades = 0;
                 fireRateUpgrades = 0;
+                speedUpgrades = 0; // Novo
                 hasGlock = false;
                 hasRifle = false;
                 equippedWeapon = 'none';
                 hasInitialUpgrade = false;
                 player.maxHealth = 10;
                 player.health = player.maxHealth;
+                player.speed = player.baseSpeed; // Resetar velocidade
                 fireRateCost = 200;
                 shootDelay = 2000;
                 updateShootDelay();
@@ -368,7 +384,7 @@
                 buyInitialUpgradeBtn.textContent = 'Comprar';
                 updateWeaponButtons();
                 healthBar.style.width = '100%';
-                healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
+                healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                 saveData();
                 alert('Todas as características, moedas e compras foram resetadas!');
                 restoreCanvasFocus();
@@ -422,7 +438,7 @@
                 else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
                 else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
                 else { x = canvas.width + 20; y = Math.random() * canvas.height; }
-                zombies.push({ x, y, size: 20, speed: 2 });
+                zombies.push({ x, y, size: 20, speed: 1.9 }); // Velocidade reduzida em 5%
             }
         }
 
@@ -501,6 +517,19 @@
                 effect: () => {
                     frontShots += 1;
                     alert("Upgrade +1 Frente aplicado! Total de balas frontais extras: " + frontShots);
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Pressa",
+                description: "Aumenta a velocidade de movimento em 5%",
+                rarity: "raro",
+                chance: 0.5,
+                accumulable: true,
+                effect: () => {
+                    speedUpgrades += 1;
+                    player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
+                    alert(`Upgrade Pressa aplicado! Velocidade: ${player.speed.toFixed(2)}`);
                     restoreCanvasFocus();
                 }
             },
@@ -600,7 +629,7 @@
             if (lightHands) baseDelay *= 0.8;
             if (goodHands) baseDelay *= 0.7;
             shootDelay = Math.max(50, baseDelay);
-            console.log(`shootDelay atualizado: ${shootDelay}ms`); // Depuração
+            console.log(`shootDelay atualizado: ${shootDelay}ms`);
         }
 
         function applyInitialUpgrade() {
@@ -666,7 +695,7 @@
                     electricTimer: null,
                     pierce: pierceCount
                 });
-                console.log(`Bala disparada: dx=${dx}, dy=${dy}, bullets:`, bullets); // Depuração
+                console.log(`Bala disparada: dx=${dx}, dy=${dy}, bullets:`, bullets);
 
                 for (let i = 1; i <= diagonalShots; i++) {
                     const angle1 = Math.PI / 4;
@@ -691,7 +720,7 @@
                         electricTimer: null,
                         pierce: pierceCount
                     });
-                    console.log(`Balas diagonais disparadas: ${i} par(es)`); // Depuração
+                    console.log(`Balas diagonais disparadas: ${i} par(es)`);
                 }
 
                 for (let i = 1; i <= frontShots; i++) {
@@ -706,10 +735,10 @@
                         electricTimer: null,
                         pierce: pierceCount
                     });
-                    console.log(`Bala frontal extra disparada: offset=${offset}`); // Depuração
+                    console.log(`Bala frontal extra disparada: offset=${offset}`);
                 }
             } else {
-                console.log('Nenhuma direção de tiro detectada (dx=0, dy=0)'); // Depuração
+                console.log('Nenhuma direção de tiro detectada (dx=0, dy=0)');
             }
         }
 
@@ -805,13 +834,13 @@
                 if (now - lastRegen >= 1000) {
                     player.health = Math.min(player.maxHealth, player.health + 0.5);
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                    healthText.textContent = `Vida: ${Math.max(0, player.health)}/${player.maxHealth}`;
+                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                     lastRegen = now;
                 }
             }
 
             if (keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
-                console.log('Tecla de seta detectada, chamando shoot()'); // Depuração
+                console.log('Tecla de seta detectada, chamando shoot()');
                 shoot();
             }
 
@@ -846,7 +875,7 @@
                     player.health -= 5;
                     zombies = zombies.filter(z => z !== zombie);
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                    healthText.textContent = `Vida: ${Math.max(0, player.health)}/${player.maxHealth}`;
+                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                     if (player.health <= 0) {
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
@@ -875,7 +904,7 @@
                         if (vampirism && Math.random() < 0.3) {
                             player.health = Math.min(player.maxHealth, player.health + 1);
                             healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                            healthText.textContent = `Vida: ${Math.max(0, player.health)}/${player.maxHealth}`;
+                            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                         }
                         xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                         xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
@@ -897,7 +926,7 @@
                                 if (vampirism && Math.random() < 0.3) {
                                     player.health = Math.min(player.maxHealth, player.health + 1);
                                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                                    healthText.textContent = `Vida: ${Math.max(0, player.health)}/${player.maxHealth}`;
+                                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                                 }
                                 xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                                 xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
@@ -943,8 +972,8 @@
 
                 // Ataque especial: Spawn de Zumbis (a cada 10 segundos)
                 if (now - lastBossSpawnZombies >= 10000) {
-                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 2 });
-                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 2 });
+                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9 }); // Velocidade reduzida
+                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9 }); // Velocidade reduzida
                     lastBossSpawnZombies = now;
                     console.log('Boss gerou 2 zumbis');
                 }
@@ -952,7 +981,7 @@
                 if (distance < player.size + boss.size) {
                     player.health -= 10;
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                    healthText.textContent = `Vida: ${Math.max(0, player.health)}/${player.maxHealth}`;
+                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                     if (player.health <= 0) {
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
@@ -1028,10 +1057,10 @@
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     const normalizedDx = dx / distance;
                     const normalizedDy = dy / distance;
-                    const warningLength = 200; // Comprimento da área de aviso
-                    const warningWidth = boss.size * 2; // Largura da área (2x o tamanho do boss)
+                    const warningLength = 200;
+                    const warningWidth = boss.size * 2;
 
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; // Vermelho translúcido
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
                     ctx.beginPath();
                     ctx.moveTo(boss.x - normalizedDy * warningWidth / 2, boss.y + normalizedDx * warningWidth / 2);
                     ctx.lineTo(boss.x + normalizedDx * warningLength - normalizedDy * warningWidth / 2, boss.y + normalizedDy * warningLength + normalizedDx * warningWidth / 2);
@@ -1068,7 +1097,7 @@
         }
 
         function resetGame() {
-            player = { x: 400, y: 300, size: 20, speed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth };
+            player = { x: 500, y: 375, size: 20, speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), baseSpeed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth };
             zombies = [];
             bullets = [];
             coins = [];
@@ -1105,7 +1134,7 @@
             countdownDisplay.style.display = 'none';
             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
             healthBar.style.width = '100%';
-            healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
+            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
             xpBar.style.width = '0%';
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             applyInitialUpgrade();
@@ -1163,7 +1192,7 @@
                 player.health = player.maxHealth;
                 shopCoins.textContent = coinCount;
                 healthBar.style.width = '100%';
-                healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
+                healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                 saveData();
                 alert('Vida extra comprada! Vida máxima: ' + player.maxHealth);
                 restoreCanvasFocus();
