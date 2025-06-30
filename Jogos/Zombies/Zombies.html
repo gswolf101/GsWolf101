@@ -15,12 +15,29 @@
             height: 100vh;
             font-family: Arial, sans-serif;
         }
+        #gameContainer {
+            position: relative;
+        }
         #gameCanvas {
             background: #333;
+            display: block;
+        }
+        #healthBar {
+            width: 800px;
+            height: 20px;
+            background: #555;
+            border: 2px solid #000;
+            position: absolute;
+            top: -30px;
+        }
+        #health {
+            height: 100%;
+            background: #f00;
+            width: 100%;
         }
         #score {
             position: absolute;
-            top: 10px;
+            top: -50px;
             left: 10px;
             color: white;
             font-size: 20px;
@@ -65,25 +82,30 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="score">Pontos: 0 | Moedas: 0</div>
-    <div id="gameOver">
-        Game Over!<br>
-        <button onclick="showRanking()">Adicionar ao Ranking</button><br>
-        <button onclick="resetGame()">Recomeçar</button><br>
-        <button onclick="showShop()">Loja</button>
-    </div>
-    <div id="ranking">
-        <h2>Ranking</h2>
-        <ul id="rankingList"></ul>
-        <button onclick="closeRanking()">Fechar</button>
-    </div>
-    <div id="shop">
-        <h2>Loja</h2>
-        <p>Moedas: <span id="shopCoins">0</span></p>
-        <p>Vida Extra (50 moedas): <button onclick="buyHealth()">Comprar</button></p>
-        <p>Tiro Rápido (30 moedas): <button onclick="buyFireRate()">Comprar</button></p>
-        <button onclick="closeShop()">Fechar</button>
+    <div id="gameContainer">
+        <div id="healthBar"><div id="health"></div></div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="score">Pontos: 0 | Moedas: 0</div>
+        <div id="gameOver">
+            Game Over!<br>
+            <button onclick="showRanking()">Adicionar ao Ranking</button><br>
+            <button onclick="resetGame()">Recomeçar</button><br>
+            <button onclick="showShop()">Loja</button>
+        </div>
+        <div id="ranking">
+            <h2>Ranking</h2>
+            <ul id="rankingList"></ul>
+            <button onclick="closeRanking()">Fechar</button>
+        </div>
+        <div id="shop">
+            <h2>Loja</h2>
+            <p>Moedas: <span id="shopCoins">0</span></p>
+            <p>Vida Extra (50 moedas): <button onclick="buyHealth()">Comprar</button></p>
+            <p>Tiro Rápido (200 moedas): <button onclick="buyFireRate()">Comprar</button></p>
+            <p>Glock (100 moedas, 1.2s): <button onclick="buyGlock()">Comprar</button></p>
+            <p>Rifle (300 moedas, 1s): <button onclick="buyRifle()">Comprar</button></p>
+            <button onclick="closeShop()">Fechar</button>
+        </div>
     </div>
 
     <script>
@@ -95,6 +117,7 @@
         const rankingList = document.getElementById('rankingList');
         const shopDisplay = document.getElementById('shop');
         const shopCoins = document.getElementById('shopCoins');
+        const healthBar = document.getElementById('health');
 
         let player = { x: 400, y: 300, size: 20, speed: 5, health: 100, maxHealth: 100 };
         let zombies = [];
@@ -105,14 +128,14 @@
         let gameOver = false;
         let lastShot = 0;
         let lastSpawn = 0;
-        let shootDelay = 200; // 200ms entre disparos
+        let shootDelay = 1500; // 1.5 segundos entre disparos
         const spawnInterval = 4000; // 4 segundos
 
         // Carregar dados do localStorage
         const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
             maxHealth: 100,
-            shootDelay: 200,
+            shootDelay: 1500,
             ranking: []
         };
         coinCount = savedData.coins;
@@ -229,6 +252,7 @@
                 if (distance < player.size + zombie.size) {
                     player.health -= 10;
                     zombies = zombies.filter(z => z !== zombie);
+                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                     if (player.health <= 0) {
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
@@ -312,13 +336,14 @@
             rankingDisplay.style.display = 'none';
             shopDisplay.style.display = 'none';
             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+            healthBar.style.width = '100%';
         }
 
         // Função para exibir o ranking
         function showRanking() {
             savedData.ranking.push({ score, date: new Date().toLocaleString() });
             savedData.ranking.sort((a, b) => b.score - a.score);
-            savedData.ranking = savedData.ranking.slice(0, 5); // Mantém apenas os 5 melhores
+            savedData.ranking = savedData.ranking.slice(0, 5);
             saveData();
 
             rankingList.innerHTML = '';
@@ -357,6 +382,7 @@
                 player.maxHealth += 50;
                 player.health = player.maxHealth;
                 shopCoins.textContent = coinCount;
+                healthBar.style.width = '100%';
                 saveData();
                 alert('Vida extra comprada! Vida máxima: ' + player.maxHealth);
             } else {
@@ -365,12 +391,36 @@
         }
 
         function buyFireRate() {
-            if (coinCount >= 30) {
-                coinCount -= 30;
-                shootDelay = Math.max(50, shootDelay - 50); // Reduz o atraso, mínimo 50ms
+            if (coinCount >= 200) {
+                coinCount -= 200;
+                shootDelay = Math.max(50, shootDelay - 50);
                 shopCoins.textContent = coinCount;
                 saveData();
                 alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
+            } else {
+                alert('Moedas insuficientes!');
+            }
+        }
+
+        function buyGlock() {
+            if (coinCount >= 100) {
+                coinCount -= 100;
+                shootDelay = 1200; // 1.2 segundos
+                shopCoins.textContent = coinCount;
+                saveData();
+                alert('Glock comprada! Atraso de tiro: 1200ms');
+            } else {
+                alert('Moedas insuficientes!');
+            }
+        }
+
+        function buyRifle() {
+            if (coinCount >= 300) {
+                coinCount -= 300;
+                shootDelay = 1000; // 1 segundo
+                shopCoins.textContent = coinCount;
+                saveData();
+                alert('Rifle comprado! Atraso de tiro: 1000ms');
             } else {
                 alert('Moedas insuficientes!');
             }
