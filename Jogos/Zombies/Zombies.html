@@ -29,11 +29,25 @@
             border: 2px solid #000;
             position: absolute;
             top: -30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #health {
             height: 100%;
             background: #f00;
             width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #healthText {
+            position: relative;
+            z-index: 2;
+            color: white;
+            font-size: 14px;
+            text-shadow: 1px 1px 1px #000;
         }
         #score {
             position: absolute;
@@ -83,7 +97,10 @@
 </head>
 <body>
     <div id="gameContainer">
-        <div id="healthBar"><div id="health"></div></div>
+        <div id="healthBar">
+            <div id="health"></div>
+            <span id="healthText">Vida: 10/10</span>
+        </div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div id="score">Pontos: 0 | Moedas: 0</div>
         <div id="gameOver">
@@ -118,6 +135,7 @@
         const shopDisplay = document.getElementById('shop');
         const shopCoins = document.getElementById('shopCoins');
         const healthBar = document.getElementById('health');
+        const healthText = document.getElementById('healthText');
         const fireRateCostDisplay = document.getElementById('fireRateCost');
 
         let player = { x: 400, y: 300, size: 20, speed: 5, health: 10, maxHealth: 10 };
@@ -147,6 +165,7 @@
         shootDelay = savedData.shootDelay;
         fireRateCost = savedData.fireRateCost || 200;
         fireRateCostDisplay.textContent = fireRateCost;
+        healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
 
         const keys = {
             w: false,
@@ -267,6 +286,7 @@
                     player.health -= 5;
                     zombies = zombies.filter(z => z !== zombie);
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    healthText.textContent = `Vida: ${Math.max(0, player.health)}/${player.maxHealth}`;
                     if (player.health <= 0) {
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
@@ -351,6 +371,7 @@
             shopDisplay.style.display = 'none';
             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
             healthBar.style.width = '100%';
+            healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
         }
 
         // Função para exibir o ranking
@@ -398,6 +419,7 @@
                 player.health = player.maxHealth;
                 shopCoins.textContent = coinCount;
                 healthBar.style.width = '100%';
+                healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
                 saveData();
                 alert('Vida extra comprada! Vida máxima: ' + player.maxHealth);
             } else {
