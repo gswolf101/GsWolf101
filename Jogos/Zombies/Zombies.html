@@ -83,6 +83,17 @@
             color: white;
             font-size: 20px;
         }
+        #countdown {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 48px;
+            text-shadow: 2px 2px 2px #000;
+            z-index: 10;
+        }
         #startScreen, #gameOver, #ranking, #shop, #upgradeMenu {
             display: none;
             position: absolute;
@@ -131,6 +142,7 @@
         </div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div id="score">Pontos: 0 | Moedas: 0</div>
+        <div id="countdown">3</div>
         <div id="gameOver">
             Game Over!<br>
             <button onclick="showRanking()">Adicionar ao Ranking</button><br>
@@ -148,8 +160,9 @@
             <p>Vida Extra (50 moedas): <button id="buyHealthBtn" onclick="buyHealth()">Comprar</button></p>
             <p>Tiro Rápido (<span id="fireRateCost">200</span> moedas): <button id="buyFireRateBtn" onclick="buyFireRate()">Comprar</button></p>
             <p>Glock (100 moedas, 1.2s): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
-            <p>Rifle (250 moedas, 1s): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
+            <p>Rifle Velho (250 moedas, 1s): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
             <p>Upgrade Inicial (100 moedas): <button id="buyInitialUpgradeBtn" onclick="buyInitialUpgrade()">Comprar</button></p>
+            <p><button onclick="resetAll()">Resetar Tudo</button></p>
             <button onclick="closeShop()">Fechar</button>
         </div>
         <div id="upgradeMenu">
@@ -176,6 +189,7 @@
         const fireRateCostDisplay = document.getElementById('fireRateCost');
         const upgradeMenu = document.getElementById('upgradeMenu');
         const upgradeOptions = document.getElementById('upgradeOptions');
+        const countdownDisplay = document.getElementById('countdown');
         const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
         const buyGlockBtn = document.getElementById('buyGlockBtn');
         const buyRifleBtn = document.getElementById('buyRifleBtn');
@@ -184,6 +198,7 @@
         let zombies = [];
         let bullets = [];
         let coins = [];
+        let boss = null;
         let score = 0;
         let coinCount = 0;
         let xp = 0;
@@ -194,6 +209,11 @@
         let lastShot = 0;
         let lastSpawn = 0;
         let lastRegen = 0;
+        let countdown = 0;
+        let countdownStart = 0;
+        let bossSpawned = false;
+        let lastBossCharge = 0;
+        let lastBossSpawnZombies = 0;
         let shootDelay = 2000;
         let fireRateCost = 200;
         let spawnInterval = 4000;
@@ -294,6 +314,32 @@
             }
         }
 
+        function resetAll() {
+            if (confirm('Tem certeza que deseja resetar todas as características, moedas e compras?')) {
+                coinCount = 0;
+                healthUpgrades = 0;
+                fireRateUpgrades = 0;
+                hasGlock = false;
+                hasRifle = false;
+                equippedWeapon = 'none';
+                hasInitialUpgrade = false;
+                player.maxHealth = 10;
+                player.health = player.maxHealth;
+                fireRateCost = 200;
+                shootDelay = 2000;
+                updateShootDelay();
+                shopCoins.textContent = coinCount;
+                fireRateCostDisplay.textContent = Math.round(fireRateCost);
+                buyInitialUpgradeBtn.disabled = false;
+                buyInitialUpgradeBtn.textContent = 'Comprar';
+                updateWeaponButtons();
+                healthBar.style.width = '100%';
+                healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
+                saveData();
+                alert('Todas as características, moedas e compras foram resetadas!');
+            }
+        }
+
         function startGame() {
             startScreen.style.display = 'none';
             isPaused = false;
@@ -313,7 +359,7 @@
         }
 
         function spawnZombies() {
-            if (isPaused) return;
+            if (isPaused || boss || countdown > 0 || bossSpawned) return;
             const now = Date.now();
             if (now - lastSpawn < spawnInterval) return;
             lastSpawn = now;
@@ -341,6 +387,17 @@
             }
         }
 
+        function spawnBoss() {
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            if (side === 0) { x = Math.random() * canvas.width; y = -40; }
+            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
+            else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
+            else { x = canvas.width + 40; y = Math.random() * canvas.height; }
+            boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0 };
+            bossSpawned = true;
+        }
+
         function spawnCoin(x, y) {
             if (Math.random() < 0.3) {
                 coins.push({ x, y, size: 10 });
@@ -357,6 +414,13 @@
                     closestZombie = zombie;
                 }
             });
+            if (boss) {
+                const distance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestZombie = boss;
+                }
+            }
             return closestZombie;
         }
 
@@ -646,6 +710,20 @@
         function update() {
             if (gameOver || isPaused) return;
 
+            if (countdown > 0) {
+                const now = Date.now();
+                const elapsed = now - countdownStart;
+                const remaining = Math.ceil((3000 - elapsed) / 1000);
+                countdownDisplay.textContent = remaining;
+                countdownDisplay.style.display = 'block';
+                if (elapsed >= 3000) {
+                    countdown = 0;
+                    countdownDisplay.style.display = 'none';
+                    spawnBoss();
+                }
+                return;
+            }
+
             if (keys.w && player.y > player.size) player.y -= player.speed;
             if (keys.s && player.y < canvas.height - player.size) player.y += player.speed;
             if (keys.a && player.x > player.size) player.x -= player.speed;
@@ -715,6 +793,11 @@
                         }
                         score += 1;
                         xp += 1;
+                        if (score === 50 && !boss && !bossSpawned && countdown === 0) {
+                            zombies = [];
+                            countdown = 3;
+                            countdownStart = Date.now();
+                        }
                         if (vampirism && Math.random() < 0.3) {
                             player.health = Math.min(player.maxHealth, player.health + 1);
                             healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
@@ -732,6 +815,11 @@
                                 zombies = zombies.filter(z => z !== nearbyZombie);
                                 score += 1;
                                 xp += 1;
+                                if (score === 50 && !boss && !bossSpawned && countdown === 0) {
+                                    zombies = [];
+                                    countdown = 3;
+                                    countdownStart = Date.now();
+                                }
                                 if (vampirism && Math.random() < 0.3) {
                                     player.health = Math.min(player.maxHealth, player.health + 1);
                                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
@@ -747,6 +835,73 @@
                     }
                 });
             });
+
+            if (boss) {
+                const now = Date.now();
+                const dx = player.x - boss.x;
+                const dy = player.y - boss.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                boss.x += (dx / distance) * boss.speed;
+                boss.y += (dy / distance) * boss.speed;
+
+                // Ataque especial: Investida Rápida (a cada 5 segundos)
+                if (now - lastBossCharge >= 5000) {
+                    boss.speed = 4;
+                    boss.chargeTimer = now;
+                    lastBossCharge = now;
+                }
+                if (boss.chargeTimer && now - boss.chargeTimer >= 1000) {
+                    boss.speed = boss.baseSpeed;
+                    boss.chargeTimer = 0;
+                }
+
+                // Ataque especial: Spawn de Zumbis (a cada 10 segundos)
+                if (now - lastBossSpawnZombies >= 10000) {
+                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 2 });
+                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 2 });
+                    lastBossSpawnZombies = now;
+                }
+
+                if (distance < player.size + boss.size) {
+                    player.health -= 10;
+                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    healthText.textContent = `Vida: ${Math.max(0, player.health)}/${player.maxHealth}`;
+                    if (player.health <= 0) {
+                        gameOver = true;
+                        gameOverDisplay.style.display = 'block';
+                        isPaused = true;
+                    }
+                }
+
+                bullets.forEach((bullet, bIndex) => {
+                    const bDistance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
+                    if (bDistance < boss.size) {
+                        boss.health -= 1;
+                        bullet.pierce -= 1;
+                        if (bullet.electric && bullet.electricTimer === null) {
+                            bullet.electricTimer = Date.now();
+                        }
+                        if (bullet.pierce < 0 && !bullet.electric) {
+                            bullets.splice(bIndex, 1);
+                        }
+                        if (boss.health <= 0) {
+                            score += 10;
+                            xp += 5;
+                            coinCount += 5;
+                            boss = null;
+                            bossSpawned = false;
+                            lastBossCharge = 0;
+                            lastBossSpawnZombies = 0;
+                            spawnCoin(boss.x, boss.y);
+                            xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                            checkLevelUp();
+                            saveData();
+                        }
+                    }
+                });
+            }
 
             coins = coins.filter(coin => {
                 const distance = Math.sqrt((player.x - coin.x) ** 2 + (player.y - coin.y) ** 2);
@@ -777,6 +932,16 @@
                 ctx.fill();
             });
 
+            if (boss) {
+                ctx.fillStyle = 'darkred';
+                ctx.beginPath();
+                ctx.arc(boss.x, boss.y, boss.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.fillText(`Vida: ${boss.health}`, boss.x - 20, boss.y - 50);
+            }
+
             ctx.fillStyle = 'red';
             bullets.forEach(bullet => {
                 ctx.beginPath();
@@ -797,10 +962,16 @@
             zombies = [];
             bullets = [];
             coins = [];
+            boss = null;
             score = 0;
             xp = 0;
             level = 1;
             xpToNextLevel = 10;
+            countdown = 0;
+            countdownStart = 0;
+            bossSpawned = false;
+            lastBossCharge = 0;
+            lastBossSpawnZombies = 0;
             diagonalShots = 0;
             frontShots = 0;
             homingShot = false;
@@ -819,6 +990,7 @@
             rankingDisplay.style.display = 'none';
             shopDisplay.style.display = 'none';
             upgradeMenu.style.display = 'none';
+            countdownDisplay.style.display = 'none';
             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
             healthBar.style.width = '100%';
             healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
@@ -926,13 +1098,13 @@
                 shopCoins.textContent = coinCount;
                 updateWeaponButtons();
                 saveData();
-                alert('Rifle comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms');
+                alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms');
             } else if (hasRifle && equippedWeapon !== 'rifle') {
                 equippedWeapon = 'rifle';
                 updateShootDelay();
                 updateWeaponButtons();
                 saveData();
-                alert('Rifle equipado! Atraso de tiro: ' + shootDelay + 'ms');
+                alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms');
             } else if (!hasRifle) {
                 alert('Moedas insuficientes!');
             }
