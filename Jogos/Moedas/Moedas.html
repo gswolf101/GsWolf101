@@ -3,38 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo de Coleta de Moedas</title>
+    <title>Survival Shooter</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <button id="backButton" onclick="window.location.href='../CentralJogos.html'">Voltar</button>
     <div id="game-container">
-        <!-- Tela inicial -->
+        <!-- Tela Inicial -->
         <div id="start-screen" class="screen active">
-            <h1>Jogo de Coleta de Moedas</h1>
-            <p>Use AWSD ou setas para mover e coletar moedas!</p>
-            <button id="start-button">Começar</button>
-            <button id="back-button">Voltar</button>
+            <h1>Survival Shooter</h1>
+            <p>Sobreviva o maior tempo possível contra inimigos!</p>
+            <button onclick="startGame()">Iniciar Jogo</button>
         </div>
 
-        <!-- Tela do jogo -->
+        <!-- Tela do Jogo -->
         <div id="game-screen" class="screen">
-            <p>Pontuação: <span id="score">0</span></p>
-            <canvas id="gameCanvas" width="800" height="400"></canvas>
+            <h1>Score: <span id="score">0</span></h1>
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
         </div>
 
-        <!-- Tela de game over -->
-        <div id="gameover-screen" class="screen">
-            <h1>Fim de Jogo!</h1>
-            <p>Sua pontuação: <span id="final-score">0</span></p>
-            <h2>Ranking</h2>
-            <ol id="ranking-list"></ol>
-            <button id="restart-button">Jogar Novamente</button>
-            <button id="reset-ranking">Zerar Ranking</button>
-            <button id="back-button-gameover">Voltar</button>
+        <!-- Tela de Game Over -->
+        <div id="game-over-screen" class="screen">
+            <h1>Game Over</h1>
+            <p>Seu Score: <span id="final-score">0</span></p>
+            <p>Insira seu nome:</p>
+            <input type="text" id="player-name" maxlength="10">
+            <button onclick="saveScore()">Salvar Score</button>
+            <button onclick="showRanking()">Ver Ranking</button>
+            <button onclick="restartGame()">Jogar Novamente</button>
+        </div>
+
+        <!-- Tela de Ranking -->
+        <div id="ranking-screen" class="screen">
+            <h1>Ranking</h1>
+            <ul id="ranking-list"></ul>
+            <button onclick="backToStart()">Voltar ao Início</button>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>
-
