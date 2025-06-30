@@ -49,9 +49,36 @@
             font-size: 14px;
             text-shadow: 1px 1px 1px #000;
         }
+        #xpBar {
+            width: 800px;
+            height: 20px;
+            background: #555;
+            border: 2px solid #000;
+            position: absolute;
+            top: -60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #xp {
+            height: 100%;
+            background: #0f0;
+            width: 0%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #xpText {
+            position: relative;
+            z-index: 2;
+            color: white;
+            font-size: 14px;
+            text-shadow: 1px 1px 1px #000;
+        }
         #score {
             position: absolute;
-            top: -50px;
+            top: -80px;
             left: 10px;
             color: white;
             font-size: 20px;
@@ -72,7 +99,7 @@
             font-size: 20px;
             cursor: pointer;
         }
-        #ranking, #shop {
+        #ranking, #shop, #upgradeMenu {
             display: none;
             position: absolute;
             top: 50%;
@@ -88,7 +115,7 @@
             list-style: none;
             padding: 0;
         }
-        #shop button {
+        #shop button, #upgradeMenu button {
             margin: 5px;
             padding: 5px 10px;
             cursor: pointer;
@@ -97,6 +124,10 @@
 </head>
 <body>
     <div id="gameContainer">
+        <div id="xpBar">
+            <div id="xp"></div>
+            <span id="xpText">Nível 1: 0/10 XP</span>
+        </div>
         <div id="healthBar">
             <div id="health"></div>
             <span id="healthText">Vida: 10/10</span>
@@ -123,6 +154,11 @@
             <p>Rifle (250 moedas, 1s): <button onclick="buyRifle()">Comprar</button></p>
             <button onclick="closeShop()">Fechar</button>
         </div>
+        <div id="upgradeMenu">
+            <h2>Subiu de Nível!</h2>
+            <p>Escolha um upgrade:</p>
+            <div id="upgradeOptions"></div>
+        </div>
     </div>
 
     <script>
@@ -136,7 +172,11 @@
         const shopCoins = document.getElementById('shopCoins');
         const healthBar = document.getElementById('health');
         const healthText = document.getElementById('healthText');
+        const xpBar = document.getElementById('xp');
+        const xpText = document.getElementById('xpText');
         const fireRateCostDisplay = document.getElementById('fireRateCost');
+        const upgradeMenu = document.getElementById('upgradeMenu');
+        const upgradeOptions = document.getElementById('upgradeOptions');
 
         let player = { x: 400, y: 300, size: 20, speed: 5, health: 10, maxHealth: 10 };
         let zombies = [];
@@ -144,12 +184,16 @@
         let coins = [];
         let score = 0;
         let coinCount = 0;
+        let xp = 0;
+        let level = 1;
+        let xpToNextLevel = 10;
         let gameOver = false;
+        let isPaused = false;
         let lastShot = 0;
         let lastSpawn = 0;
         let shootDelay = 2000; // 2 segundos entre disparos
         let fireRateCost = 200; // Custo inicial do upgrade de tiro rápido
-        const spawnInterval = 4000; // 4 segundos
+        let spawnInterval = 4000; // Intervalo inicial de spawn
 
         // Carregar dados do localStorage
         const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
@@ -166,6 +210,7 @@
         fireRateCost = savedData.fireRateCost || 200;
         fireRateCostDisplay.textContent = fireRateCost;
         healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
+        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
 
         const keys = {
             w: false,
@@ -200,19 +245,21 @@
 
         // Função para criar zumbis
         function spawnZombies() {
+            if (isPaused) return;
             const now = Date.now();
             if (now - lastSpawn < spawnInterval) return;
             lastSpawn = now;
 
             let zombieCount;
-            if (score <= 10) {
+            if (score <= 20) {
                 zombieCount = 2;
-            } else if (score <= 20) {
+                spawnInterval = 4000;
+            } else if (score <= 40) {
                 zombieCount = 3;
-            } else if (score <= 30) {
-                zombieCount = 4;
+                spawnInterval = 4000;
             } else {
-                zombieCount = 5;
+                zombieCount = 3;
+                spawnInterval = 3000; // 3 segundos para 41+ pontos
             }
 
             for (let i = 0; i < zombieCount; i++) {
@@ -235,6 +282,7 @@
 
         // Função para atirar
         function shoot() {
+            if (isPaused) return;
             const now = Date.now();
             if (now - lastShot < shootDelay) return;
             lastShot = now;
@@ -253,9 +301,49 @@
             }
         }
 
+        // Função para escolher upgrades aleatórios (placeholders até definição)
+        const availableUpgrades = [
+            { name: "Placeholder 1", effect: () => alert("Upgrade 1 aplicado!") },
+            { name: "Placeholder 2", effect: () => alert("Upgrade 2 aplicado!") },
+            { name: "Placeholder 3", effect: () => alert("Upgrade 3 aplicado!") }
+        ];
+
+        function showUpgradeMenu() {
+            isPaused = true;
+            upgradeMenu.style.display = 'block';
+            upgradeOptions.innerHTML = '';
+
+            // Escolher 3 upgrades aleatórios
+            const shuffled = availableUpgrades.sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 3);
+
+            selected.forEach(upgrade => {
+                const button = document.createElement('button');
+                button.textContent = upgrade.name;
+                button.onclick = () => {
+                    upgrade.effect();
+                    upgradeMenu.style.display = 'none';
+                    isPaused = false;
+                };
+                upgradeOptions.appendChild(button);
+            });
+        }
+
+        // Função para verificar nível
+        function checkLevelUp() {
+            if (xp >= xpToNextLevel) {
+                level++;
+                xp = 0;
+                xpToNextLevel = Math.round(xpToNextLevel * 1.1); // Aumenta XP necessário em 0.1x
+                xpBar.style.width = '0%';
+                xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                showUpgradeMenu();
+            }
+        }
+
         // Função de atualização do jogo
         function update() {
-            if (gameOver) return;
+            if (gameOver || isPaused) return;
 
             // Movimento do jogador
             if (keys.w && player.y > player.size) player.y -= player.speed;
@@ -300,8 +388,12 @@
                         zombies = zombies.filter(z => z !== zombie);
                         bullets.splice(bIndex, 1);
                         score += 1;
-                        spawnCoin(zombie.x, zombie.y);
+                        xp += 1; // Ganha 1 XP por zumbi morto
+                        xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                         scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                        spawnCoin(zombie.x, zombie.y);
+                        checkLevelUp();
                     }
                 });
             });
@@ -364,14 +456,21 @@
             bullets = [];
             coins = [];
             score = 0;
+            xp = 0;
+            level = 1;
+            xpToNextLevel = 10;
             gameOver = false;
+            isPaused = false;
             lastSpawn = 0;
             gameOverDisplay.style.display = 'none';
             rankingDisplay.style.display = 'none';
             shopDisplay.style.display = 'none';
+            upgradeMenu.style.display = 'none';
             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
             healthBar.style.width = '100%';
             healthText.textContent = `Vida: ${player.health}/${player.maxHealth}`;
+            xpBar.style.width = '0%';
+            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
         }
 
         // Função para exibir o ranking
