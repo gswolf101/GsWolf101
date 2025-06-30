@@ -115,6 +115,15 @@
             font-size: 20px;
             cursor: pointer;
         }
+        #shop button#resetAllBtn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #shop button#resetAllBtn:hover {
+            background-color: #cc0000;
+        }
         #ranking ul {
             list-style: none;
             padding: 0;
@@ -162,7 +171,7 @@
             <p>Glock (100 moedas, 1.2s): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
             <p>Rifle Velho (250 moedas, 1s): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
             <p>Upgrade Inicial (100 moedas): <button id="buyInitialUpgradeBtn" onclick="buyInitialUpgrade()">Comprar</button></p>
-            <p><button onclick="resetAll()">Resetar Tudo</button></p>
+            <p><button id="resetAllBtn" onclick="resetAll()">Resetar Tudo</button></p>
             <button onclick="closeShop()">Fechar</button>
         </div>
         <div id="upgradeMenu">
@@ -187,8 +196,6 @@
         const xpBar = document.getElementById('xp');
         const xpText = document.getElementById('xpText');
         const fireRateCostDisplay = document.getElementById('fireRateCost');
-        const upgradeMenu = document.getElementById('upgradeMenu');
-        const upgradeOptions = document.getElementById('upgradeOptions');
         const countdownDisplay = document.getElementById('countdown');
         const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
         const buyGlockBtn = document.getElementById('buyGlockBtn');
