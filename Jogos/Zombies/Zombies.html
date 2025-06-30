@@ -264,7 +264,7 @@
 
                 // Colisão com jogador
                 if (distance < player.size + zombie.size) {
-                    player.health -= 5; // Dano reduzido para 5
+                    player.health -= 5;
                     zombies = zombies.filter(z => z !== zombie);
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                     if (player.health <= 0) {
@@ -409,7 +409,7 @@
             if (coinCount >= fireRateCost) {
                 coinCount -= fireRateCost;
                 shootDelay = Math.max(50, shootDelay - 50);
-                fireRateCost += 50; // Aumenta o custo em 50
+                fireRateCost = Math.round(fireRateCost * 1.15); // Aumenta o custo em 0.15x
                 shopCoins.textContent = coinCount;
                 fireRateCostDisplay.textContent = fireRateCost;
                 saveData();
