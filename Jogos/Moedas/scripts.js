@@ -48,7 +48,9 @@ function startGame() {
 
 // Função principal de atualização
 function update() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Definir fundo preto
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Movimento do jogador
     if (keys['w'] && player.y > 0) player.y -= player.speed;
@@ -88,7 +90,7 @@ function update() {
         // Colisão com o jogador
         if (collides(player, enemy)) {
             player.health -= 10;
-            enemies.splice eIndex, 1);
+            enemies.splice(eIndex, 1);
             if (player.health <= 0) {
                 gameOver();
             }
@@ -127,7 +129,7 @@ function shoot(e) {
     const speed = 10;
 
     bullets.push({
-        x: player.x + player.width /  jus2,
+        x: player.x + player.width / 2, // Corrigido: jus2 -> 2
         y: player.y + player.height / 2,
         vx: (dx / distance) * speed,
         vy: (dy / distance) * speed,
