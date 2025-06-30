@@ -12,6 +12,14 @@ body {
     text-align: center;
 }
 
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
 #gameCanvas {
     border: 2px solid #333;
     background-color: #fff;
@@ -25,4 +33,25 @@ h1 {
 p {
     font-size: 18px;
     margin-bottom: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #555;
+}
+
+#ranking-list {
+    list-style-position: inside;
+    margin: 20px 0;
+    font-size: 16px;
 }
