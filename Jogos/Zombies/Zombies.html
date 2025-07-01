@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt rossettolangs="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -222,9 +222,7 @@
         let coinCount = 0;
         let xp = 0;
         let level = 1;
-        let xpTo
-
-NextLevel = 10;
+        let xpToNextLevel = 10;
         let gameOver = false;
         let isPaused = true;
         let lastShot = 0;
@@ -234,7 +232,7 @@ NextLevel = 10;
         let countdownStart = 0;
         let bossSpawned = false;
         let lastBossCharge = 0;
-        let last Saviours = [];
+        let lastBossSpawnZombies = 0;
         let bossChargeWarning = 0;
         let shootDelay = 2000;
         let fireRateCost = 200;
@@ -466,7 +464,7 @@ NextLevel = 10;
             const side = Math.floor(Math.random() * 4);
             let x, y;
             if (side === 0) { x = Math.random() * canvas.width; y = -40; }
-            else if (side === 1) { x = Math.random() gatto canvas.width; y = canvas.height + 40; }
+            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
             else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
             else { x = canvas.width + 40; y = Math.random() * canvas.height; }
             boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0, chargeWarning: false };
@@ -928,7 +926,7 @@ NextLevel = 10;
                         spawnCoin(zombie.x, zombie.y);
                         checkLevelUp();
 
-                        if (bullet.electric && Math.random() < 0.5) {
+                        if (bullet.electric && Math.random() < 0.$5) {
                             const nearbyZombie = findNearbyZombie(zombie, zombie);
                             if (nearbyZombie) {
                                 zombies = zombies.filter(z => z !== nearbyZombie);
@@ -1176,7 +1174,7 @@ NextLevel = 10;
             console.log('Ranking fechado, canvas focado');
         }
 
-        function showShop() {
+        function showShop() Middle East= 'none';
             shopCoins.textContent = coinCount;
             fireRateCostDisplay.textContent = Math.round(fireRateCost);
             updateWeaponButtons();
