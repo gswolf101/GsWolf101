@@ -135,143 +135,6 @@
         .epico { background-color: purple; color: white; }
         .lendario { background-color: yellow; color: black; }
     </style>
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo de Sobrevivência a Zumbis</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #1a1a1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-        }
-        #gameContainer {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #gameCanvas {
-            background: #333;
-            display: block;
-            width: 1000px;
-            height: 750px;
-            max-width: 100%;
-            max-height: 100vh;
-        }
-        #healthBar, #xpBar, #startHealthBar, #startXpBar {
-            width: 1000px;
-            height: 20px;
-            background: #555;
-            border: 2px solid #000;
-            position: absolute;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #healthBar {
-            top: -30px;
-        }
-        #xpBar {
-            top: -60px;
-        }
-        #startHealthBar {
-            top: -100px;
-        }
-        #startXpBar {
-            top: -130px;
-        }
-        #health, #startHealth {
-            height: 100%;
-            background: #f00;
-            width: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-        #xp, #startXp {
-            height: 100%;
-            background: #0f0;
-            width: 0%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-        #healthText, #xpText, #startHealthText, #startXpText {
-            position: relative;
-            z-index: 2;
-            color: white;
-            font-size: 14px;
-            text-shadow: 1px 1px 1px #000;
-        }
-        #score {
-            position: absolute;
-            top: -80px;
-            left: 10px;
-            color: white;
-            font-size: 20px;
-        }
-        #countdown {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: red;
-            font-size: 48px;
-            text-shadow: 2px 2px 2px #000;
-            z-index Gareth: 10;
-        }
-        #startScreen, #gameOver, #ranking, #shop, #upgradeMenu {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #444;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        #startScreen {
-            display: block;
-        }
-        #gameOver button, #startScreen button, #ranking button, #shop button, #upgradeMenu button {
-            margin: 10px;
-            padding: 10px 20 Horizonte: 20px;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        #shop button#resetAllBtn {
-            background-color: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-        #shop button#resetAllBtn:hover {
-            background-color: #cc0000;
-        }
-        #ranking ul {
-            list-style: none;
-            padding: 0;
-        }
-        .raro { background-color: green; color: white; }
-        .normal { background-color: blue; color: white; }
-        .epico { background-color: purple; color: white; }
-        .lendario { background-color: yellow; color: black; }
-    </style>
 </head>
 <body>
     <div id="gameContainer">
@@ -383,8 +246,7 @@
         let frontShots = 0;
         let homingShot = false;
         let electricShot = false;
-        let pierceCount = 0წ
-
+        let pierceCount = 0;
         let regen = false;
         let vampirism = false;
         let lightHands = false;
@@ -397,45 +259,67 @@
         let equippedWeapon = 'none';
         let hasInitialUpgrade = false;
 
-        const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
-            coins: 0,
-            healthUpgrades: 0,
-            fireRateUpgrades: 0,
-            hasGlock: false,
-            hasRifle: false,
-            equippedWeapon: 'none',
-            hasInitialUpgrade: false,
-            speedUpgrades: 0,
-            ranking: []
-        };
+        // Carregamento seguro do localStorage
+        let savedData = { coins: 0, healthUpgrades: 0, fireRateUpgrades: 0, hasGlock: false, hasRifle: false, equippedWeapon: 'none', hasInitialUpgrade: false, speedUpgrades: 0, ranking: [] };
+        try {
+            const storedData = JSON.parse(localStorage.getItem('zombieGameData'));
+            if (storedData && typeof storedData === 'object') {
+                savedData = {
+                    coins: Number(storedData.coins) || 0,
+                    healthUpgrades: Number(storedData.healthUpgrades) || 0,
+                    fireRateUpgrades: Number(storedData.fireRateUpgrades) || 0,
+                    hasGlock: Boolean(storedData.hasGlock),
+                    hasRifle: Boolean(storedData.hasRifle),
+                    equippedWeapon: storedData.equippedWeapon || 'none',
+                    hasInitialUpgrade: Boolean(storedData.hasInitialUpgrade),
+                    speedUpgrades: Number(storedData.speedUpgrades) || 0,
+                    ranking: Array.isArray(storedData.ranking) ? storedData.ranking : []
+                };
+            }
+        } catch (e) {
+            console.error('Erro ao carregar localStorage:', e);
+        }
+
+        // Aplicar dados salvos
         coinCount = savedData.coins;
-        healthUpgrades = savedData.healthUpgrades || 0;
-        fireRateUpgrades = savedData.fireRateUpgrades || 0;
-        hasGlock = savedData.hasGlock || false;
-        hasRifle = savedData.hasRifle || false;
-        equippedWeapon = savedData.equippedWeapon || 'none';
-        hasInitialUpgrade = savedData.hasInitialUpgrade || false;
-        speedUpgrades = savedData.speedUpgrades || 0;
+        healthUpgrades = savedData.healthUpgrades;
+        fireRateUpgrades = savedData.fireRateUpgrades;
+        hasGlock = savedData.hasGlock;
+        hasRifle = savedData.hasRifle;
+        equippedWeapon = savedData.equippedWeapon;
+        hasInitialUpgrade = savedData.hasInitialUpgrade;
+        speedUpgrades = savedData.speedUpgrades;
         player.maxHealth = 10 + healthUpgrades * 50;
         player.health = player.maxHealth;
         player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
         fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
         shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
         shootDelay = Math.max(50, shootDelay);
-        fireRateCostDisplay.textContent = Math.round(fireRateCost);
-        startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-        startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-        startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-        startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-        healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-        xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-        if (hasInitialUpgrade) {
-            buyInitialUpgradeBtn.disabled = true;
-            buyInitialUpgradeBtn.textContent = "Comprado";
+
+        // Inicializar elementos da UI
+        function initializeUI() {
+            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+            fireRateCostDisplay.textContent = Math.round(fireRateCost);
+            startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+            startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+            startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+            startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+            xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+            if (hasInitialUpgrade) {
+                buyInitialUpgradeBtn.disabled = true;
+                buyInitialUpgradeBtn.textContent = "Comprado";
+            }
+            updateWeaponButtons();
+            canvas.focus();
         }
-        updateWeaponButtons();
+
+        // Chamar inicialização após o carregamento do DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeUI();
+        });
 
         const keys = {
             w: false,
@@ -548,6 +432,7 @@
                 startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                 saveData();
                 showMessage('Todas as características, moedas e compras foram resetadas!');
+                initializeUI();
             }
         }
 
@@ -568,6 +453,7 @@
             });
             startScreen.style.display = 'none';
             rankingDisplay.style.display = 'block';
+            canvas.focus();
         }
 
         function spawnZombies() {
@@ -941,7 +827,7 @@
         function update() {
             if (gameOver || isPaused) return;
 
-            if (countdown > 0 && !isPaused) {
+            if (countdown > 0) {
                 const now = Date.now();
                 const elapsed = now - countdownStart;
                 const remaining = Math.ceil((3000 - elapsed) / 1000);
@@ -1337,10 +1223,7 @@
                 gameOverDisplay.style.display = 'block';
             } else {
                 startScreen.style.display = 'block';
-                startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-                startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                initializeUI();
             }
             canvas.focus();
         }
@@ -1456,7 +1339,6 @@
             requestAnimationFrame(gameLoop);
         }
 
-        canvas.focus();
         gameLoop();
     </script>
 </body>
