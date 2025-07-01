@@ -222,7 +222,9 @@
         let coinCount = 0;
         let xp = 0;
         let level = 1;
-        let xpToNextLevel = 10;
+        let xpTo
+
+NextLevel = 10;
         let gameOver = false;
         let isPaused = true;
         let lastShot = 0;
@@ -232,7 +234,7 @@
         let countdownStart = 0;
         let bossSpawned = false;
         let lastBossCharge = 0;
-        let lastBossSpawnZombies = 0;
+        let last Saviours = [];
         let bossChargeWarning = 0;
         let shootDelay = 2000;
         let fireRateCost = 200;
@@ -441,6 +443,9 @@
             } else if (score <= 40) {
                 zombieCount = 3;
                 spawnInterval = 4000;
+            } else if (score >= 52 && !bossSpawned) {
+                zombieCount = 4;
+                spawnInterval = 4000;
             } else {
                 zombieCount = 3;
                 spawnInterval = 3000;
@@ -461,7 +466,7 @@
             const side = Math.floor(Math.random() * 4);
             let x, y;
             if (side === 0) { x = Math.random() * canvas.width; y = -40; }
-            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
+            else if (side === 1) { x = Math.random() gatto canvas.width; y = canvas.height + 40; }
             else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
             else { x = canvas.width + 40; y = Math.random() * canvas.height; }
             boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0, chargeWarning: false };
@@ -1008,7 +1013,7 @@
                             bullets.splice(bIndex, 1);
                         }
                         if (boss.health <= 0) {
-                            score += 10;
+                            score = 52;
                             xp += 5;
                             coinCount += 5;
                             boss = null;
