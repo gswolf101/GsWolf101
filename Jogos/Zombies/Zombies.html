@@ -22,6 +22,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
         }
         #gameCanvas {
             background: #333;
@@ -37,7 +38,7 @@
             background: #555;
             border: 2px solid #000;
             position: absolute;
-            top: -30px;
+            top: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -64,7 +65,7 @@
             background: #555;
             border: 2px solid #000;
             position: absolute;
-            top: -60px;
+            top: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -87,7 +88,7 @@
         }
         #score {
             position: absolute;
-            top: -80px;
+            top: 70px;
             left: 10px;
             color: white;
             font-size: 20px;
@@ -145,11 +146,6 @@
 </head>
 <body>
     <div id="gameContainer">
-        <div id="startScreen">
-            <h2>Jogo de Sobrevivência a Zumbis</h2>
-            <button onclick="startGame()">Iniciar Jogo</button><br>
-            <button onclick="showRankingFromStart()">Ver Ranking</button>
-        </div>
         <div id="xpBar">
             <div id="xp"></div>
             <span id="xpText">Nível 1: 0/10 XP</span>
@@ -158,8 +154,13 @@
             <div id="health"></div>
             <span id="healthText">Vida: 100%</span>
         </div>
-        <canvas id="gameCanvas" width="1000" height="750" tabindex="0"></canvas>
         <div id="score">Pontos: 0 | Moedas: 0</div>
+        <div id="startScreen">
+            <h2>Jogo de Sobrevivência a Zumbis</h2>
+            <button onclick="startGame()">Iniciar Jogo</button><br>
+            <button onclick="showRankingFromStart()">Ver Ranking</button>
+        </div>
+        <canvas id="gameCanvas" width="1000" height="750" tabindex="0"></canvas>
         <div id="countdown">3</div>
         <div id="gameOver">
             Game Over!<br>
@@ -243,7 +244,7 @@
         let vampirism = false;
         let lightHands = false;
         let goodHands = false;
-        let speedUpgrades = 0; // Novo: contador para upgrade "Pressa"
+        let speedUpgrades = 0;
         let healthUpgrades = 0;
         let fireRateUpgrades = 0;
         let hasGlock = false;
@@ -251,7 +252,6 @@
         let equippedWeapon = 'none';
         let hasInitialUpgrade = false;
 
-        // Carregar dados do localStorage
         const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
             healthUpgrades: 0,
@@ -260,7 +260,7 @@
             hasRifle: false,
             equippedWeapon: 'none',
             hasInitialUpgrade: false,
-            speedUpgrades: 0, // Novo
+            speedUpgrades: 0,
             ranking: []
         };
         coinCount = savedData.coins;
@@ -270,10 +270,10 @@
         hasRifle = savedData.hasRifle || false;
         equippedWeapon = savedData.equippedWeapon || 'none';
         hasInitialUpgrade = savedData.hasInitialUpgrade || false;
-        speedUpgrades = savedData.speedUpgrades || 0; // Novo
+        speedUpgrades = savedData.speedUpgrades || 0;
         player.maxHealth = 10 + healthUpgrades * 50;
         player.health = player.maxHealth;
-        player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades); // Aplicar upgrades de velocidade
+        player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
         fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
         shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
         shootDelay = Math.max(50, shootDelay);
@@ -297,7 +297,6 @@
             ArrowRight: false
         };
 
-        // Captura de teclas com depuração
         document.addEventListener('keydown', (e) => {
             const key = e.key;
             const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
@@ -317,13 +316,11 @@
             }
         });
 
-        // Garantir foco no canvas
         canvas.addEventListener('click', () => {
             canvas.focus();
             console.log('Canvas focado por clique');
         });
 
-        // Restaurar foco após alertas/confirm
         function restoreCanvasFocus() {
             setTimeout(() => {
                 canvas.focus();
@@ -340,7 +337,7 @@
                 hasRifle: hasRifle,
                 equippedWeapon: equippedWeapon,
                 hasInitialUpgrade: hasInitialUpgrade,
-                speedUpgrades: speedUpgrades, // Novo
+                speedUpgrades: speedUpgrades,
                 ranking: savedData.ranking
             }));
         }
@@ -367,14 +364,14 @@
                 coinCount = 0;
                 healthUpgrades = 0;
                 fireRateUpgrades = 0;
-                speedUpgrades = 0; // Novo
+                speedUpgrades = 0;
                 hasGlock = false;
                 hasRifle = false;
                 equippedWeapon = 'none';
                 hasInitialUpgrade = false;
                 player.maxHealth = 10;
                 player.health = player.maxHealth;
-                player.speed = player.baseSpeed; // Resetar velocidade
+                player.speed = player.baseSpeed;
                 fireRateCost = 200;
                 shootDelay = 2000;
                 updateShootDelay();
@@ -414,7 +411,7 @@
         }
 
         function spawnZombies() {
-            if (isPaused || boss || countdown > 0 || bossSpawned) return;
+            if (isPaused || countdown > 0) return;
             const now = Date.now();
             if (now - lastSpawn < spawnInterval) return;
             lastSpawn = now;
@@ -438,7 +435,7 @@
                 else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
                 else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
                 else { x = canvas.width + 20; y = Math.random() * canvas.height; }
-                zombies.push({ x, y, size: 20, speed: 1.9 }); // Velocidade reduzida em 5%
+                zombies.push({ x, y, size: 20, speed: 1.9 });
             }
         }
 
@@ -822,7 +819,6 @@
                 return;
             }
 
-            // Movimento do jogador com depuração
             console.log('Estado das teclas:', keys);
             if (keys.w && player.y > player.size) player.y -= player.speed;
             if (keys.s && player.y < canvas.height - player.size) player.y += player.speed;
@@ -945,14 +941,12 @@
                 const dy = player.y - boss.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                // Aviso de investida (1 segundo antes)
                 if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
                     boss.chargeWarning = true;
                     bossChargeWarning = now;
                     console.log('Aviso de investida iniciado');
                 }
 
-                // Investida rápida (a cada 5 segundos)
                 if (now - lastBossCharge >= 5000) {
                     boss.speed = 4;
                     boss.chargeTimer = now;
@@ -966,14 +960,12 @@
                     console.log('Investida do boss terminada');
                 }
 
-                // Movimento do boss
                 boss.x += (dx / distance) * boss.speed;
                 boss.y += (dy / distance) * boss.speed;
 
-                // Ataque especial: Spawn de Zumbis (a cada 10 segundos)
                 if (now - lastBossSpawnZombies >= 10000) {
-                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9 }); // Velocidade reduzida
-                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9 }); // Velocidade reduzida
+                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9 });
+                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9 });
                     lastBossSpawnZombies = now;
                     console.log('Boss gerou 2 zumbis');
                 }
@@ -1005,10 +997,6 @@
                             xp += 5;
                             coinCount += 5;
                             boss = null;
-                            bossSpawned = false;
-                            lastBossCharge = 0;
-                            lastBossSpawnZombies = 0;
-                            bossChargeWarning = 0;
                             spawnCoin(boss.x, boss.y);
                             xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
@@ -1050,7 +1038,6 @@
             });
 
             if (boss) {
-                // Desenhar aviso de investida
                 if (boss.chargeWarning && Date.now() - bossChargeWarning < 1000) {
                     const dx = player.x - boss.x;
                     const dy = player.y - boss.y;
@@ -1071,7 +1058,6 @@
                     console.log('Desenhando aviso de investida');
                 }
 
-                // Desenhar boss
                 ctx.fillStyle = 'darkred';
                 ctx.beginPath();
                 ctx.arc(boss.x, boss.y, boss.size, 0, Math.PI * 2);
@@ -1292,7 +1278,6 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Foco inicial no canvas
         canvas.focus();
         console.log('Canvas focado ao carregar');
         gameLoop();
