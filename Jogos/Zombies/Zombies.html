@@ -142,6 +142,29 @@
         .normal { background-color: blue; color: white; }
         .epico { background-color: purple; color: white; }
         .lendario { background-color: yellow; color: black; }
+        .tab-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            background: #666;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background: #888;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -176,12 +199,20 @@
         <div id="shop">
             <h2>Loja</h2>
             <p>Moedas: <span id="shopCoins">0</span></p>
-            <p>Vida Extra (50 moedas): <button id="buyHealthBtn" onclick="buyHealth()">Comprar</button></p>
-            <p>Tiro Rápido (<span id="fireRateCost">200</span> moedas): <button id="buyFireRateBtn" onclick="buyFireRate()">Comprar</button></p>
-            <p>Glock (100 moedas, 1.2s): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
-            <p>Rifle Velho (250 moedas, 1s): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
-            <p>Upgrade Inicial (100 moedas): <button id="buyInitialUpgradeBtn" onclick="buyInitialUpgrade()">Comprar</button></p>
-            <p><button id="resetAllBtn" onclick="resetAll()">Resetar Tudo</button></p>
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="showTab('weapons')">Armas</button>
+                <button class="tab-button" onclick="showTab('upgrades')">Upgrades</button>
+            </div>
+            <div id="weapons" class="tab-content active">
+                <p>Glock (100 moedas, 1.2s): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
+                <p>Rifle Velho (250 moedas, 1s, +1 Perfuração): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
+            </div>
+            <div id="upgrades" class="tab-content">
+                <p>Vida Extra (<span id="healthCost">50</span> moedas): <button id="buyHealthBtn" onclick="buyHealth()">Comprar</button></p>
+                <p>Tiro Rápido (<span id="fireRateCost">200</span> moedas): <button id="buyFireRateBtn" onclick="buyFireRate()">Comprar</button></p>
+                <p>Upgrade Inicial (100 moedas): <button id="buyInitialUpgradeBtn" onclick="buyInitialUpgrade()">Comprar</button></p>
+                <p><button id="resetAllBtn" onclick="resetAll()">Resetar Tudo</button></p>
+            </div>
             <button onclick="closeShop()">Fechar</button>
         </div>
         <div id="upgradeMenu">
@@ -206,6 +237,7 @@
         const xpBar = document.getElementById('xp');
         const xpText = document.getElementById('xpText');
         const fireRateCostDisplay = document.getElementById('fireRateCost');
+        const healthCostDisplay = document.getElementById('healthCost');
         const countdownDisplay = document.getElementById('countdown');
         const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
         const buyGlockBtn = document.getElementById('buyGlockBtn');
@@ -236,6 +268,7 @@
         let bossChargeWarning = 0;
         let shootDelay = 2000;
         let fireRateCost = 200;
+        let healthCost = 50;
         let spawnInterval = 4000;
         let diagonalShots = 0;
         let frontShots = 0;
@@ -270,6 +303,7 @@
             equippedWeapon: 'none',
             hasInitialUpgrade: false,
             speedUpgrades: 0,
+            healthCost: 50,
             ranking: []
         };
         coinCount = savedDataLocal.coins;
@@ -280,13 +314,15 @@
         equippedWeapon = savedDataLocal.equippedWeapon || 'none';
         hasInitialUpgrade = savedDataLocal.hasInitialUpgrade || false;
         speedUpgrades = savedDataLocal.speedUpgrades || 0;
-        player.maxHealth = 10 + healthUpgrades * 50;
+        healthCost = savedDataLocal.healthCost || 50;
+        player.maxHealth = 10 * Math.pow(1.2, healthUpgrades);
         player.health = player.maxHealth;
         player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
         fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
         shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
         shootDelay = Math.max(50, shootDelay);
         fireRateCostDisplay.textContent = Math.round(fireRateCost);
+        healthCostDisplay.textContent = Math.round(healthCost);
         healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
         xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
         if (hasInitialUpgrade) {
@@ -343,6 +379,13 @@
             }, 100);
         }
 
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
+        }
+
         function saveData() {
             localStorage.setItem('zombieGameData', JSON.stringify({
                 coins: coinCount,
@@ -353,6 +396,7 @@
                 equippedWeapon: equippedWeapon,
                 hasInitialUpgrade: hasInitialUpgrade,
                 speedUpgrades: speedUpgrades,
+                healthCost: healthCost,
                 ranking: savedDataLocal.ranking
             }));
         }
@@ -384,14 +428,17 @@
                 hasRifle = false;
                 equippedWeapon = 'none';
                 hasInitialUpgrade = false;
+                healthCost = 50;
                 player.maxHealth = 10;
                 player.health = player.maxHealth;
                 player.speed = player.baseSpeed;
                 fireRateCost = 200;
                 shootDelay = 2000;
+                pierceCount = 0;
                 updateShootDelay();
                 shopCoins.textContent = coinCount;
                 fireRateCostDisplay.textContent = Math.round(fireRateCost);
+                healthCostDisplay.textContent = Math.round(healthCost);
                 buyInitialUpgradeBtn.disabled = false;
                 buyInitialUpgradeBtn.textContent = 'Comprar';
                 updateWeaponButtons();
@@ -905,7 +952,7 @@
                         if (bullet.electric && bullet.electricTimer === null) {
                             bullet.electricTimer = Date.now();
                         }
-                        if (bullet.pierce < 0 && !bullet.electric) {
+                        if ((bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0))) {
                             bullets.splice(bIndex, 1);
                         }
                         score += 1;
@@ -1007,7 +1054,7 @@
                         if (bullet.electric && bullet.electricTimer === null) {
                             bullet.electricTimer = Date.now();
                         }
-                        if (bullet.pierce < 0 && !bullet.electric) {
+                        if ((bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0))) {
                             bullets.splice(bIndex, 1);
                         }
                         if (boss.health <= 0) {
@@ -1121,7 +1168,7 @@
             frontShots = 0;
             homingShot = false;
             electricShot = false;
-            pierceCount = 0;
+            pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
             regen = false;
             vampirism = false;
             lightHands = false;
@@ -1177,7 +1224,9 @@
         function showShop() {
             shopCoins.textContent = coinCount;
             fireRateCostDisplay.textContent = Math.round(fireRateCost);
+            healthCostDisplay.textContent = Math.round(healthCost);
             updateWeaponButtons();
+            showTab('weapons');
             gameOverDisplay.style.display = 'none';
             shopDisplay.style.display = 'block';
         }
@@ -1190,16 +1239,18 @@
         }
 
         function buyHealth() {
-            if (coinCount >= 50) {
-                coinCount -= 50;
+            if (coinCount >= healthCost) {
+                coinCount -= healthCost;
                 healthUpgrades += 1;
-                player.maxHealth = 10 + healthUpgrades * 50;
+                player.maxHealth *= 1.2;
                 player.health = player.maxHealth;
+                healthCost *= 1.2;
                 shopCoins.textContent = coinCount;
+                healthCostDisplay.textContent = Math.round(healthCost);
                 healthBar.style.width = '100%';
                 healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                 saveData();
-                alert('Vida extra comprada! Vida máxima: ' + player.maxHealth);
+                alert('Vida extra comprada! Vida máxima: ' + Math.round(player.maxHealth));
                 restoreCanvasFocus();
             } else {
                 alert('Moedas insuficientes!');
@@ -1237,6 +1288,7 @@
                 restoreCanvasFocus();
             } else if (hasGlock && equippedWeapon !== 'glock') {
                 equippedWeapon = 'glock';
+                pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
                 updateShootDelay();
                 updateWeaponButtons();
                 saveData();
@@ -1253,18 +1305,20 @@
                 coinCount -= 250;
                 hasRifle = true;
                 equippedWeapon = 'rifle';
+                pierceCount = 1;
                 updateShootDelay();
                 shopCoins.textContent = coinCount;
                 updateWeaponButtons();
                 saveData();
-                alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms');
+                alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
                 restoreCanvasFocus();
             } else if (hasRifle && equippedWeapon !== 'rifle') {
                 equippedWeapon = 'rifle';
+                pierceCount = 1;
                 updateShootDelay();
                 updateWeaponButtons();
                 saveData();
-                alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms');
+                alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
                 restoreCanvasFocus();
             } else if (!hasRifle) {
                 alert('Moedas insuficientes!');
