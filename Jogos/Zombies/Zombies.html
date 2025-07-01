@@ -37,10 +37,9 @@
             background: #555;
             border: 2px solid #000;
             position: absolute;
-            display: flex;
+            display: none; /* Ocultar por padrão na tela inicial */
             align-items: center;
             justify-content: center;
-            display: none; /* Ocultar por padrão na tela inicial */
         }
         #healthBar {
             top: -30px;
@@ -105,7 +104,7 @@
             text-align: center;
         }
         #startScreen {
-            display: block;
+            display: block; /* Tela inicial visível por padrão */
         }
         #gameOver button, #startScreen button, #ranking button, #shop button, #upgradeMenu button {
             margin: 10px;
@@ -284,6 +283,7 @@
 
         // Inicializar elementos da UI
         function initializeUI() {
+            console.log('Inicializando UI...');
             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
             fireRateCostDisplay.textContent = Math.round(fireRateCost);
             healthBar.style.display = 'none';
@@ -303,6 +303,7 @@
 
         // Chamar inicialização após o carregamento do DOM
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM carregado, chamando initializeUI');
             initializeUI();
         });
 
@@ -335,6 +336,7 @@
         });
 
         canvas.addEventListener('click', () => {
+            console.log('Canvas clicado, definindo foco');
             canvas.focus();
         });
 
@@ -420,16 +422,19 @@
         }
 
         function startGame() {
+            console.log('startGame chamado');
             startScreen.style.display = 'none';
             healthBar.style.display = 'flex';
             xpBar.style.display = 'flex';
             scoreDisplay.style.display = 'block';
             isPaused = false;
-            canvas.focus();
             resetGame();
+            canvas.focus();
+            console.log('Jogo iniciado, isPaused:', isPaused);
         }
 
         function showRankingFromStart() {
+            console.log('showRankingFromStart chamado');
             rankingList.innerHTML = '';
             savedData.ranking.sort((a, b) => b.score - a.score);
             savedData.ranking.slice(0, 5).forEach(entry => {
@@ -1127,6 +1132,7 @@
         }
 
         function resetGame() {
+            console.log('resetGame chamado');
             player = { x: 500, y: 375, size: 20, speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), baseSpeed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth };
             zombies = [];
             bullets = [];
@@ -1172,9 +1178,11 @@
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             applyInitialUpgrade();
             canvas.focus();
+            console.log('Jogo resetado, isPaused:', isPaused);
         }
 
         function showRanking() {
+            console.log('showRanking chamado');
             savedData.ranking.push({ score, date: new Date().toLocaleString() });
             savedData.ranking.sort((a, b) => b.score - a.score);
             savedData.ranking = savedData.ranking.slice(0, 5);
@@ -1191,6 +1199,7 @@
         }
 
         function closeRanking() {
+            console.log('closeRanking chamado');
             rankingDisplay.style.display = 'none';
             if (gameOver) {
                 gameOverDisplay.style.display = 'block';
@@ -1204,6 +1213,7 @@
         }
 
         function showShop() {
+            console.log('showShop chamado');
             shopCoins.textContent = coinCount;
             fireRateCostDisplay.textContent = Math.round(fireRateCost);
             updateWeaponButtons();
@@ -1212,6 +1222,7 @@
         }
 
         function closeShop() {
+            console.log('closeShop chamado');
             shopDisplay.style.display = 'none';
             gameOverDisplay.style.display = 'block';
             canvas.focus();
