@@ -31,7 +31,7 @@
             max-width: 100%;
             max-height: 100vh;
         }
-        #healthBar, #xpBar, #startHealthBar, #startXpBar {
+        #healthBar, #xpBar {
             width: 1000px;
             height: 20px;
             background: #555;
@@ -40,6 +40,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            display: none; /* Ocultar por padrão na tela inicial */
         }
         #healthBar {
             top: -30px;
@@ -47,13 +48,7 @@
         #xpBar {
             top: -60px;
         }
-        #startHealthBar {
-            top: -100px;
-        }
-        #startXpBar {
-            top: -130px;
-        }
-        #health, #startHealth {
+        #health {
             height: 100%;
             background: #f00;
             width: 100%;
@@ -62,7 +57,7 @@
             left: 0;
             z-index: 1;
         }
-        #xp, #startXp {
+        #xp {
             height: 100%;
             background: #0f0;
             width: 0%;
@@ -71,7 +66,7 @@
             left: 0;
             z-index: 1;
         }
-        #healthText, #xpText, #startHealthText, #startXpText {
+        #healthText, #xpText {
             position: relative;
             z-index: 2;
             color: white;
@@ -84,6 +79,7 @@
             left: 10px;
             color: white;
             font-size: 20px;
+            display: none; /* Ocultar na tela inicial */
         }
         #countdown {
             display: none;
@@ -139,14 +135,6 @@
 <body>
     <div id="gameContainer">
         <div id="startScreen">
-            <div id="startXpBar">
-                <div id="startXp"></div>
-                <span id="startXpText">Nível 1: 0/10 XP</span>
-            </div>
-            <div id="startHealthBar">
-                <div id="startHealth"></div>
-                <span id="startHealthText">Vida: 100%</span>
-            </div>
             <h2>Jogo de Sobrevivência a Zumbis</h2>
             <button onclick="startGame()">Iniciar Jogo</button><br>
             <button onclick="showRankingFromStart()">Ver Ranking</button>
@@ -201,14 +189,12 @@
         const rankingList = document.getElementById('rankingList');
         const shopDisplay = document.getElementById('shop');
         const shopCoins = document.getElementById('shopCoins');
-        const healthBar = document.getElementById('health');
+        const healthBar = document.getElementById('healthBar');
+        const health = document.getElementById('health');
         const healthText = document.getElementById('healthText');
-        const xpBar = document.getElementById('xp');
+        const xpBar = document.getElementById('xpBar');
+        const xp = document.getElementById('xp');
         const xpText = document.getElementById('xpText');
-        const startHealthBar = document.getElementById('startHealth');
-        const startHealthText = document.getElementById('startHealthText');
-        const startXpBar = document.getElementById('startXp');
-        const startXpText = document.getElementById('startXpText');
         const fireRateCostDisplay = document.getElementById('fireRateCost');
         const countdownDisplay = document.getElementById('countdown');
         const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
@@ -300,13 +286,12 @@
         function initializeUI() {
             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
             fireRateCostDisplay.textContent = Math.round(fireRateCost);
-            startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-            startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-            startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+            healthBar.style.display = 'none';
+            xpBar.style.display = 'none';
+            scoreDisplay.style.display = 'none';
+            health.style.width = `${(player.health / player.maxHealth) * 100}%`;
             healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+            xp.style.width = `${(xp / xpToNextLevel) * 100}%`;
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             if (hasInitialUpgrade) {
                 buyInitialUpgradeBtn.disabled = true;
@@ -424,12 +409,10 @@
                 buyInitialUpgradeBtn.disabled = false;
                 buyInitialUpgradeBtn.textContent = 'Comprar';
                 updateWeaponButtons();
-                healthBar.style.width = '100%';
+                health.style.width = '100%';
                 healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                startHealthBar.style.width = '100%';
-                startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                startXpBar.style.width = '0%';
-                startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                xp.style.width = '0%';
+                xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                 saveData();
                 showMessage('Todas as características, moedas e compras foram resetadas!');
                 initializeUI();
@@ -438,6 +421,9 @@
 
         function startGame() {
             startScreen.style.display = 'none';
+            healthBar.style.display = 'flex';
+            xpBar.style.display = 'flex';
+            scoreDisplay.style.display = 'block';
             isPaused = false;
             canvas.focus();
             resetGame();
@@ -816,10 +802,8 @@
                 level++;
                 xp = 0;
                 xpToNextLevel = Math.round(xpToNextLevel * 1.1);
-                xpBar.style.width = '0%';
+                xp.style.width = '0%';
                 xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                startXpBar.style.width = '0%';
-                startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                 showUpgradeMenu();
             }
         }
@@ -850,10 +834,8 @@
                 const now = Date.now();
                 if (now - lastRegen >= 1000) {
                     player.health = Math.min(player.maxHealth, player.health + 0.5);
-                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    health.style.width = `${(player.health / player.maxHealth) * 100}%`;
                     healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                    startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                    startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                     lastRegen = now;
                 }
             }
@@ -900,14 +882,15 @@
                 if (distance < player.size + zombie.size) {
                     player.health -= 5;
                     zombiesToRemove.push(zIndex);
-                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    health.style.width = `${(player.health / player.maxHealth) * 100}%`;
                     healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                    startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                    startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                     if (player.health <= 0) {
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
                         isPaused = true;
+                        healthBar.style.display = 'none';
+                        xpBar.style.display = 'none';
+                        scoreDisplay.style.display = 'none';
                     }
                     return;
                 }
@@ -933,17 +916,13 @@
                             }
                             if (vampirism && Math.random() < 0.3) {
                                 player.health = Math.min(player.maxHealth, player.health + 1);
-                                healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                                health.style.width = `${(player.health / player.maxHealth) * 100}%`;
                                 healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                                startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                                startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                             }
                             spawnCoin(zombie.x, zombie.y);
                         }
-                        xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                        xp.style.width = `${(xp / xpToNextLevel) * 100}%`;
                         xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                        startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-                        startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                         scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
                         checkLevelUp();
 
@@ -963,17 +942,13 @@
                                         }
                                         if (vampirism && Math.random() < 0.3) {
                                             player.health = Math.min(player.maxHealth, player.health + 1);
-                                            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                                            health.style.width = `${(player.health / player.maxHealth) * 100}%`;
                                             healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                                            startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                                            startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                                         }
                                         spawnCoin(nearbyZombie.x, nearbyZombie.y);
                                     }
-                                    xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                                    xp.style.width = `${(xp / xpToNextLevel) * 100}%`;
                                     xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                                    startXpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-                                    startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                                     scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
                                     checkLevelUp();
                                 }
@@ -1034,14 +1009,15 @@
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 if (distance < player.size + boss.size) {
                     player.health -= 10;
-                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    health.style.width = `${(player.health / player.maxHealth) * 100}%`;
                     healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                    startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                    startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                     if (player.health <= 0) {
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
                         isPaused = true;
+                        healthBar.style.display = 'none';
+                        xpBar.style.display = 'none';
+                        scoreDisplay.style.display = 'none';
                     }
                 }
 
@@ -1075,10 +1051,8 @@
                     lastBossSpawnZombies = 0;
                     bossChargeWarning = 0;
                     spawnCoin(boss.x, boss.y);
-                    xpBar.style.width = '0%';
+                    xp.style.width = '0%';
                     xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                    startXpBar.style.width = '0%';
-                    startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                     scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
                     saveData();
                     showUpgradeMenu();
@@ -1188,15 +1162,14 @@
             shopDisplay.style.display = 'none';
             upgradeMenu.style.display = 'none';
             countdownDisplay.style.display = 'none';
+            healthBar.style.display = 'flex';
+            xpBar.style.display = 'flex';
+            scoreDisplay.style.display = 'block';
             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-            healthBar.style.width = '100%';
+            health.style.width = '100%';
             healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            startHealthBar.style.width = '100%';
-            startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            xpBar.style.width = '0%';
+            xp.style.width = '0%';
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-            startXpBar.style.width = '0%';
-            startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             applyInitialUpgrade();
             canvas.focus();
         }
@@ -1223,7 +1196,9 @@
                 gameOverDisplay.style.display = 'block';
             } else {
                 startScreen.style.display = 'block';
-                initializeUI();
+                healthBar.style.display = 'none';
+                xpBar.style.display = 'none';
+                scoreDisplay.style.display = 'none';
             }
             canvas.focus();
         }
@@ -1249,10 +1224,8 @@
                 player.maxHealth = 10 + healthUpgrades * 50;
                 player.health = player.maxHealth;
                 shopCoins.textContent = coinCount;
-                healthBar.style.width = '100%';
+                health.style.width = '100%';
                 healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                startHealthBar.style.width = '100%';
-                startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                 saveData();
                 showMessage('Vida extra comprada! Vida máxima: ' + player.maxHealth);
             } else {
