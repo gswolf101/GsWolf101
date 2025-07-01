@@ -140,6 +140,55 @@
         .raro { background-color: green; color: white; }
         .normal { background-color: blue; color: white; }
         .epico { background-color: purple; color: white; }
+        .lendario { background-color: yellow; color: black; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="startScreen">
+            <h2>Jogo de Sobrevivência a Zumbis</h2>
+            <button onclick="startGame()">Iniciar Jogo</button><br>
+            <button onclick="showRankingFromStart()">Ver Ranking</button>
+        </div>
+        <div id="xpBar">
+            <div id="xp"></div>
+            <span id="xpText">Nível 1: 0/10 XP</span>
+        </div>
+        <div id="healthBar">
+            <div id="health"></div>
+            <span id="healthText">Vida: 100%</span>
+        </div>
+        <canvas id="gameCanvas" width="1000" height="750" tabindex="0"></canvas>
+        <div id="score">Pontos: 0 | Moedas: 0</div>
+        <div id="countdown">3</div>
+        <div id="gameOver">
+            Game Over!<br>
+            <button onclick="showRanking()">Adicionar ao Ranking</button><br>
+            <button onclick="resetGame()">Recomeçar</button><br>
+            <button onclick="showShop()">Loja</button>
+        </div>
+        <div id="ranking">
+            <h2>Ranking</h2>
+            <ul id="rankingList"></ul>
+            <button onclick="closeRanking()">Fechar</button>
+        </div>
+        <div id="shop">
+            <h2>Loja</h2>
+            <p>Moedas: <span id="shopCoins">0</span></p>
+            <p>Vida Extra (50 moedas): <button id="buyHealthBtn" onclick="buyHealth()">Comprar</button></p>
+            <p>Tiro Rápido (<span id="fireRateCost">200</span> moedas): <button id="buyFireRateBtn" onclick="buyFireRate()">Comprar</button></p>
+            <p>Glock (100 moedas, 1.2s): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
+            <p>Rifle Velho (250 moedas, 1s): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
+            <p>Upgrade Inicial (100 moedas): <button id="buyInitialUpgradeBtn" onclick="buyInitialUpgrade()">Comprar</button></p>
+            <p><button id="resetAllBtn" onclick="resetAll()">Resetar Tudo</button></p>
+            <button onclick="closeShop()">Fechar</button>
+        </div>
+        <div id="upgradeMenu">
+            <h2>Subiu de Nível!</h2>
+            <p>Escolha um upgrade:</p>
+            <div id="upgradeOptions"></div>
+        </div>
+    </div>
                 shopCoins.textContent = coinCount;
                 updateWeaponButtons();
                 saveData();
