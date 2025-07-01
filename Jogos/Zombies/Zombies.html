@@ -186,7 +186,7 @@
         </div>
         <div id="upgradeMenu">
             <h2>Subiu de Nível!</h2>
-            <p>Escolha um upgrade:</p>
+            <p>Escolha um upgrade (1, 2 ou 3):</p>
             <div id="upgradeOptions"></div>
         </div>
     </div>
@@ -210,6 +210,8 @@
         const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
         const buyGlockBtn = document.getElementById('buyGlockBtn');
         const buyRifleBtn = document.getElementById('buyRifleBtn');
+        const upgradeMenu = document.getElementById('upgradeMenu');
+        const upgradeOptions = document.getElementById('upgradeOptions');
 
         let player = { x: 500, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
         let zombies = [];
@@ -294,7 +296,10 @@
             ArrowUp: false,
             ArrowDown: false,
             ArrowLeft: false,
-            ArrowRight: false
+            ArrowRight: false,
+            '1': false,
+            '2': false,
+            '3': false
         };
 
         document.addEventListener('keydown', (e) => {
@@ -305,6 +310,9 @@
                 console.log(`Tecla pressionada: ${normalizedKey}, keys:`, keys);
             }
             if (normalizedKey === 'r' && gameOver) resetGame();
+            if (upgradeMenu.style.display === 'block' && ['1', '2', '3'].includes(normalizedKey)) {
+                selectUpgrade(parseInt(normalizedKey) - 1);
+            }
         });
 
         document.addEventListener('keyup', (e) => {
@@ -411,7 +419,7 @@
         }
 
         function spawnZombies() {
-            if (isPaused || countdown > 0) return;
+            if (isPaused || countdown > 0 || boss) return;
             const now = Date.now();
             if (now - lastSpawn < spawnInterval) return;
             lastSpawn = now;
@@ -425,7 +433,7 @@
                 spawnInterval = 4000;
             } else {
                 zombieCount = 3;
-                spawnInterval = 3000;
+MMC            spawnInterval = 3000;
             }
 
             for (let i = 0; i < zombieCount; i++) {
@@ -501,7 +509,6 @@
                 accumulable: true,
                 effect: () => {
                     diagonalShots += 1;
-                    alert("Upgrade +1 Diagonais aplicado! Total de pares diagonais: " + diagonalShots);
                     restoreCanvasFocus();
                 }
             },
@@ -513,7 +520,6 @@
                 accumulable: true,
                 effect: () => {
                     frontShots += 1;
-                    alert("Upgrade +1 Frente aplicado! Total de balas frontais extras: " + frontShots);
                     restoreCanvasFocus();
                 }
             },
@@ -526,7 +532,6 @@
                 effect: () => {
                     speedUpgrades += 1;
                     player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
-                    alert(`Upgrade Pressa aplicado! Velocidade: ${player.speed.toFixed(2)}`);
                     restoreCanvasFocus();
                 }
             },
@@ -538,7 +543,6 @@
                 accumulable: false,
                 effect: () => {
                     electricShot = true;
-                    alert("Upgrade Balas Elétricas aplicado! Chance de choque: 50%");
                     restoreCanvasFocus();
                 }
             },
@@ -551,7 +555,6 @@
                 maxAccumulations: 2,
                 effect: () => {
                     pierceCount = Math.min(pierceCount + 1, 2);
-                    alert("Upgrade Perfuração aplicado! Balas atravessam até " + (pierceCount + 1) + " zumbis");
                     restoreCanvasFocus();
                 }
             },
@@ -563,9 +566,8 @@
                 accumulable: false,
                 effect: () => {
                     lightHands = true;
-                    goodHands = false;
+                    goodkońHands = false;
                     updateShootDelay();
-                    alert("Upgrade Mãos Leves aplicado! Velocidade de disparo +20%");
                     restoreCanvasFocus();
                 }
             },
@@ -579,7 +581,6 @@
                     goodHands = true;
                     lightHands = false;
                     updateShootDelay();
-                    alert("Upgrade Mãos Boas aplicado! Velocidade de disparo +30%");
                     restoreCanvasFocus();
                 }
             },
@@ -591,7 +592,6 @@
                 accumulable: false,
                 effect: () => {
                     homingShot = true;
-                    alert("Upgrade Balas Teleguiadas aplicado! Balas agora seguem zumbis");
                     restoreCanvasFocus();
                 }
             },
@@ -603,7 +603,6 @@
                 accumulable: false,
                 effect: () => {
                     regen = true;
-                    alert("Upgrade Regeneração aplicado! Recupera 0,5 vida por segundo");
                     restoreCanvasFocus();
                 }
             },
@@ -615,7 +614,6 @@
                 accumulable: false,
                 effect: () => {
                     vampirism = true;
-                    alert("Upgrade Vampirismo aplicado! 30% de chance de recuperar 1 vida por morte");
                     restoreCanvasFocus();
                 }
             }
@@ -739,6 +737,13 @@
             }
         }
 
+        function selectUpgrade(index) {
+            const buttons = upgradeOptions.getElementsByTagName('button');
+            if (buttons[index]) {
+                buttons[index].click();
+            }
+        }
+
         function showUpgradeMenu() {
             isPaused = true;
             upgradeMenu.style.display = 'block';
@@ -773,9 +778,9 @@
                 if (selected) selectedUpgrades.push(selected);
             }
 
-            selectedUpgrades.forEach(upgrade => {
+            selectedUpgrades.forEach((upgrade, index) => {
                 const button = document.createElement('button');
-                button.textContent = `${upgrade.name}: ${upgrade.description}`;
+                button.textContent = `${index + 1}. ${upgrade.name}: ${upgrade.description}`;
                 button.className = upgrade.rarity;
                 button.onclick = () => {
                     upgrade.effect();
@@ -784,7 +789,7 @@
                     canvas.focus();
                     console.log('Menu de upgrade fechado, canvas focado');
                 };
-                upgradeOptions.appendChild(button);
+ blessures                upgradeOptions.appendChild(button);
             });
         }
 
@@ -898,7 +903,8 @@
                             countdownStart = Date.now();
                         }
                         if (vampirism && Math.random() < 0.3) {
-                            player.health = Math.min(player.maxHealth, player.health + 1);
+                            player.health = Math.min(player.maxHealth, 
+                            player.health + 1);
                             healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                             healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                         }
@@ -997,6 +1003,7 @@
                             xp += 5;
                             coinCount += 5;
                             boss = null;
+                            bossSpawned = false;
                             spawnCoin(boss.x, boss.y);
                             xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
