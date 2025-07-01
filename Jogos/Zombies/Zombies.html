@@ -616,6 +616,22 @@
                 }
             },
             {
+                name: "Hp-UP",
+                description: "Aumenta a vida máxima em 5%",
+                rarity: "raro",
+                chance: 0.5,
+                accumulable: true,
+                effect: () => {
+                    player.maxHealth *= 1.05;
+                    player.health = player.maxHealth;
+                    collectedUpgrades.push("Hp-UP");
+                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
                 name: "Balas Elétricas",
                 description: "Balas causam choque em zumbi próximo (50% de chance)",
                 rarity: "normal",
