@@ -259,6 +259,7 @@
         let player = { x: 500, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
         let zombies = [];
         let bullets = [];
+        let bossBullets = [];
         let coins = [];
         let boss = null;
         let score = 0;
@@ -298,6 +299,7 @@
         let equippedWeapon = 'none';
         let hasInitialUpgrade = false;
         let collectedUpgrades = [];
+        let bosses = 0;
 
         const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
@@ -309,6 +311,7 @@
             hasInitialUpgrade: false,
             speedUpgrades: 0,
             healthCost: 50,
+            bosses: 0,
             ranking: []
         };
         coinCount = savedDataLocal.coins;
@@ -320,6 +323,7 @@
         hasInitialUpgrade = savedDataLocal.hasInitialUpgrade || false;
         speedUpgrades = savedDataLocal.speedUpgrades || 0;
         healthCost = savedDataLocal.healthCost || 50;
+        bosses = savedDataLocal.bosses || 0;
         player.maxHealth = 10 * Math.pow(1.2, healthUpgrades);
         player.health = player.maxHealth;
         player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
@@ -408,9 +412,10 @@
                 hasInitialUpgrade: hasInitialUpgrade,
                 speedUpgrades: speedUpgrades,
                 healthCost: healthCost,
+                bosses: bosses,
                 ranking: savedDataLocal.ranking
             }));
-            console.log('Dados salvos:', { coins: coinCount, score, xp, level });
+            console.log('Dados salvos:', { coins: coinCount, score, xp, level, bosses });
         }
 
         function updateWeaponButtons() {
@@ -441,6 +446,7 @@
                 equippedWeapon = 'none';
                 hasInitialUpgrade = false;
                 healthCost = 50;
+                bosses = 0;
                 player.maxHealth = 10;
                 player.health = player.maxHealth;
                 player.speed = player.baseSpeed;
@@ -502,12 +508,20 @@
             } else if (score <= 40) {
                 zombieCount = 3;
                 spawnInterval = 4000;
-            } else if (score >= 52 && !bossSpawned) {
+            } else if ((score >= 52 && score < 100 && !bossSpawned) || (score > 100 && !bossSpawned)) {
                 zombieCount = 4;
                 spawnInterval = 4000;
             } else {
                 zombieCount = 3;
                 spawnInterval = 3000;
+            }
+
+            if (score === 50 || score === 100) {
+                zombies = [];
+                countdown = 3;
+                countdownStart = Date.now();
+                console.log(`Contagem regressiva para boss iniciada na onda ${score}`);
+                return;
             }
 
             for (let i = 0; i < zombieCount; i++) {
@@ -528,9 +542,25 @@
             else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
             else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
             else { x = canvas.width + 40; y = Math.random() * canvas.height; }
-            boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0, chargeWarning: false };
+            const bossTypes = ['charger', 'shooter'];
+            const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+            const bossHealth = 50 * (bosses + 1);
+            boss = {
+                x,
+                y,
+                size: 40,
+                speed: 1.5,
+                health: bossHealth,
+                baseSpeed: 1.5,
+                type: bossType,
+                chargeTimer: 0,
+                spawnZombieTimer: 0,
+                chargeWarning: false,
+                shootTimer: 0,
+                isStopped: false
+            };
             bossSpawned = true;
-            console.log('Boss gerado em x:', x, 'y:', y);
+            console.log(`Boss ${bossType} gerado na onda ${score}, vida: ${bossHealth}, bosses: ${bosses + 1}`);
         }
 
         function spawnCoin(x, y) {
@@ -1009,11 +1039,11 @@
                         }
                         score += 1;
                         xp += 1;
-                        if (score === 50 && !boss && !bossSpawned && countdown === 0) {
+                        if ((score === 50 || score === 100) && !boss && !bossSpawned && countdown === 0) {
                             zombies = [];
                             countdown = 3;
                             countdownStart = Date.now();
-                            console.log('Contagem regressiva para boss iniciada');
+                            console.log(`Contagem regressiva para boss iniciada na onda ${score}`);
                         }
                         if (vampirism && Math.random() < 0.3) {
                             player.health = Math.min(player.maxHealth, player.health + 1);
@@ -1032,11 +1062,11 @@
                                 zombies = zombies.filter(z => z !== nearbyZombie);
                                 score += 1;
                                 xp += 1;
-                                if (score === 50 && !boss && !bossSpawned && countdown === 0) {
+                                if ((score === 50 || score === 100) && !boss && !bossSpawned && countdown === 0) {
                                     zombies = [];
                                     countdown = 3;
                                     countdownStart = Date.now();
-                                    console.log('Contagem regressiva para boss iniciada (zumbi próximo)');
+                                    console.log(`Contagem regressiva para boss iniciada na onda ${score} (zumbi próximo)`);
                                 }
                                 if (vampirism && Math.random() < 0.3) {
                                     player.health = Math.min(player.maxHealth, player.health + 1);
@@ -1060,33 +1090,59 @@
                 const dy = player.y - boss.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
-                    boss.chargeWarning = true;
-                    bossChargeWarning = now;
-                    console.log('Aviso de investida iniciado');
+                if (boss.type === 'charger') {
+                    if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
+                        boss.chargeWarning = true;
+                        bossChargeWarning = now;
+                        console.log('Aviso de investida iniciado (Boss Charger)');
+                    }
+                    if (now - lastBossCharge >= 5000) {
+                        boss.speed = 4;
+                        boss.chargeTimer = now;
+                        lastBossCharge = now;
+                        boss.chargeWarning = false;
+                        console.log('Investida do Boss Charger iniciada');
+                    }
+                    if (boss.chargeTimer && now - boss.chargeTimer >= 1000) {
+                        boss.speed = boss.baseSpeed;
+                        boss.chargeTimer = 0;
+                        console.log('Investida do Boss Charger terminada');
+                    }
+                } else if (boss.type === 'shooter') {
+                    if (now - boss.shootTimer >= 3000 && !boss.isStopped) {
+                        boss.isStopped = true;
+                        boss.speed = 0;
+                        boss.shootTimer = now;
+                        console.log('Boss Shooter parado, preparando tiro');
+                    }
+                    if (boss.isStopped && now - boss.shootTimer >= 2000) {
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        if (length > 0) {
+                            bossBullets.push({
+                                x: boss.x,
+                                y: boss.y,
+                                dx: (dx / length) * 5,
+                                dy: (dy / length) * 5,
+                                size: 10
+                            });
+                            console.log('Boss Shooter disparou projétil');
+                        }
+                        boss.isStopped = false;
+                        boss.speed = boss.baseSpeed;
+                        boss.shootTimer = now;
+                    }
                 }
 
-                if (now - lastBossCharge >= 5000) {
-                    boss.speed = 4;
-                    boss.chargeTimer = now;
-                    lastBossCharge = now;
-                    boss.chargeWarning = false;
-                    console.log('Investida do boss iniciada');
+                if (!boss.isStopped) {
+                    boss.x += (dx / distance) * boss.speed;
+                    boss.y += (dy / distance) * boss.speed;
                 }
-                if (boss.chargeTimer && now - boss.chargeTimer >= 1000) {
-                    boss.speed = boss.baseSpeed;
-                    boss.chargeTimer = 0;
-                    console.log('Investida do boss terminada');
-                }
-
-                boss.x += (dx / distance) * boss.speed;
-                boss.y += (dy / distance) * boss.speed;
 
                 if (now - lastBossSpawnZombies >= 10000) {
                     zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9 });
                     zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9 });
                     lastBossSpawnZombies = now;
-                    console.log('Boss gerou 2 zumbis');
+                    console.log(`Boss ${boss.type} gerou 2 zumbis`);
                 }
 
                 if (distance < player.size + boss.size) {
@@ -1101,11 +1157,10 @@
                     }
                 }
 
-                // Processar dano de todas as balas no boss
                 bullets.forEach((bullet, bIndex) => {
                     const bDistance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
                     if (bDistance < boss.size) {
-                        console.log(`Bala acertou o boss, vida antes: ${boss.health}`);
+                        console.log(`Bala acertou o boss ${boss.type}, vida antes: ${boss.health}`);
                         boss.health -= 1;
                         bullet.pierce -= 1;
                         if (bullet.electric && bullet.electricTimer === null) {
@@ -1114,16 +1169,36 @@
                         if (bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0)) {
                             bullets.splice(bIndex, 1);
                         }
-                        console.log(`Vida do boss após dano: ${boss.health}`);
+                        console.log(`Vida do boss ${boss.type} após dano: ${boss.health}`);
                     }
                 });
 
-                // Verificar morte do boss após processar todas as balas
+                bossBullets.forEach((bullet, bIndex) => {
+                    bullet.x += bullet.dx;
+                    bullet.y += bullet.dy;
+                    const pDistance = Math.sqrt((bullet.x - player.x) ** 2 + (bullet.y - player.y) ** 2);
+                    if (pDistance < player.size + bullet.size) {
+                        player.health -= 5;
+                        bossBullets.splice(bIndex, 1);
+                        healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                        console.log('Jogador acertado por projétil do Boss Shooter, vida do jogador:', player.health);
+                        if (player.health <= 0) {
+                            gameOver = true;
+                            gameOverDisplay.style.display = 'block';
+                            isPaused = true;
+                            console.log('Jogador morreu ao ser acertado por projétil do boss');
+                        }
+                    }
+                });
+                bossBullets = bossBullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
+
                 if (boss && boss.health <= 0) {
-                    console.log('Boss derrotado, iniciando atualizações');
+                    console.log(`Boss ${boss.type} derrotado, iniciando atualizações`);
                     const bossX = boss.x;
                     const bossY = boss.y;
-                    score = 51;
+                    bosses += 1;
+                    score = score === 50 ? 51 : 101;
                     xp += 10;
                     coinCount += 5;
                     spawnCoin(bossX, bossY);
@@ -1134,7 +1209,8 @@
                     saveData();
                     boss = null;
                     bossSpawned = false;
-                    console.log('Boss removido, estado atualizado:', { score, xp, coinCount, boss: null, bossSpawned });
+                    bossBullets = [];
+                    console.log('Boss removido, estado atualizado:', { score, xp, coinCount, bosses, boss: null, bossSpawned });
                 }
             }
 
@@ -1168,7 +1244,7 @@
             });
 
             if (boss) {
-                if (boss.chargeWarning && Date.now() - bossChargeWarning < 1000) {
+                if (boss.type === 'charger' && boss.chargeWarning && Date.now() - bossChargeWarning < 1000) {
                     const dx = player.x - boss.x;
                     const dy = player.y - boss.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1185,10 +1261,16 @@
                     ctx.lineTo(boss.x + normalizedDy * warningWidth / 2, boss.y - normalizedDx * warningWidth / 2);
                     ctx.closePath();
                     ctx.fill();
-                    console.log('Desenhando aviso de investida');
+                    console.log('Desenhando aviso de investida (Boss Charger)');
+                } else if (boss.type === 'shooter' && boss.isStopped) {
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(boss.x, boss.y, boss.size + 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    console.log('Desenhando indicador de preparo de tiro (Boss Shooter)');
                 }
 
-                ctx.fillStyle = 'darkred';
+                ctx.fillStyle = boss.type === 'charger' ? 'darkred' : 'purple';
                 ctx.beginPath();
                 ctx.arc(boss.x, boss.y, boss.size, 0, Math.PI * 2);
                 ctx.fill();
@@ -1201,6 +1283,13 @@
             bullets.forEach(bullet => {
                 ctx.beginPath();
                 ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.fillStyle = 'green';
+            bossBullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
                 ctx.fill();
             });
 
@@ -1217,6 +1306,7 @@
             player = { x: 500, y: 375, size: 20, speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), baseSpeed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth };
             zombies = [];
             bullets = [];
+            bossBullets = [];
             coins = [];
             boss = null;
             score = 0;
