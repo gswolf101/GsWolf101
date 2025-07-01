@@ -135,6 +135,143 @@
         .epico { background-color: purple; color: white; }
         .lendario { background-color: yellow; color: black; }
     </style>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Sobrevivência a Zumbis</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #gameCanvas {
+            background: #333;
+            display: block;
+            width: 1000px;
+            height: 750px;
+            max-width: 100%;
+            max-height: 100vh;
+        }
+        #healthBar, #xpBar, #startHealthBar, #startXpBar {
+            width: 1000px;
+            height: 20px;
+            background: #555;
+            border: 2px solid #000;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #healthBar {
+            top: -30px;
+        }
+        #xpBar {
+            top: -60px;
+        }
+        #startHealthBar {
+            top: -100px;
+        }
+        #startXpBar {
+            top: -130px;
+        }
+        #health, #startHealth {
+            height: 100%;
+            background: #f00;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #xp, #startXp {
+            height: 100%;
+            background: #0f0;
+            width: 0%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #healthText, #xpText, #startHealthText, #startXpText {
+            position: relative;
+            z-index: 2;
+            color: white;
+            font-size: 14px;
+            text-shadow: 1px 1px 1px #000;
+        }
+        #score {
+            position: absolute;
+            top: -80px;
+            left: 10px;
+            color: white;
+            font-size: 20px;
+        }
+        #countdown {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 48px;
+            text-shadow: 2px 2px 2px #000;
+            z-index Gareth: 10;
+        }
+        #startScreen, #gameOver, #ranking, #shop, #upgradeMenu {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #444;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        #startScreen {
+            display: block;
+        }
+        #gameOver button, #startScreen button, #ranking button, #shop button, #upgradeMenu button {
+            margin: 10px;
+            padding: 10px 20 Horizonte: 20px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        #shop button#resetAllBtn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #shop button#resetAllBtn:hover {
+            background-color: #cc0000;
+        }
+        #ranking ul {
+            list-style: none;
+            padding: 0;
+        }
+        .raro { background-color: green; color: white; }
+        .normal { background-color: blue; color: white; }
+        .epico { background-color: purple; color: white; }
+        .lendario { background-color: yellow; color: black; }
+    </style>
 </head>
 <body>
     <div id="gameContainer">
@@ -215,6 +352,9 @@
         const buyGlockBtn = document.getElementById('buyGlockBtn');
         const buyRifleBtn = document.getElementById('buyRifleBtn');
 
+        const MAX_ZOMBIES = 50;
+        const MAX_BULLETS = 100;
+
         let player = { x: 500, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
         let zombies = [];
         let bullets = [];
@@ -243,7 +383,8 @@
         let frontShots = 0;
         let homingShot = false;
         let electricShot = false;
-        let pierceCount = 0;
+        let pierceCount = 0წ
+
         let regen = false;
         let vampirism = false;
         let lightHands = false;
@@ -256,7 +397,6 @@
         let equippedWeapon = 'none';
         let hasInitialUpgrade = false;
 
-        // Carregar dados do localStorage
         const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
             healthUpgrades: 0,
@@ -308,13 +448,11 @@
             ArrowRight: false
         };
 
-        // Captura de teclas com depuração
         document.addEventListener('keydown', (e) => {
             const key = e.key;
             const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
             if (normalizedKey in keys) {
                 keys[normalizedKey] = true;
-                console.log(`Tecla pressionada: ${normalizedKey}, keys:`, keys);
             }
             if (normalizedKey === 'r' && gameOver) resetGame();
         });
@@ -324,22 +462,30 @@
             const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
             if (normalizedKey in keys) {
                 keys[normalizedKey] = false;
-                console.log(`Tecla solta: ${normalizedKey}, keys:`, keys);
             }
         });
 
-        // Garantir foco no canvas
         canvas.addEventListener('click', () => {
             canvas.focus();
-            console.log('Canvas focado por clique');
         });
 
-        // Restaurar foco após alertas/confirm
-        function restoreCanvasFocus() {
+        function showMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = text;
+            messageDiv.style.position = 'absolute';
+            messageDiv.style.top = '20%';
+            messageDiv.style.left = '50%';
+            messageDiv.style.transform = 'translate(-50%, -50%)';
+            messageDiv.style.background = '#444';
+            messageDiv.style.color = 'white';
+            messageDiv.style.padding = '10px';
+            messageDiv.style.borderRadius = '5px';
+            messageDiv.style.zIndex = '20';
+            document.getElementById('gameContainer').appendChild(messageDiv);
             setTimeout(() => {
+                messageDiv.remove();
                 canvas.focus();
-                console.log('Foco restaurado no canvas após diálogo');
-            }, 100);
+            }, 2000);
         }
 
         function saveData() {
@@ -401,10 +547,7 @@
                 startXpBar.style.width = '0%';
                 startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                 saveData();
-                alert('Todas as características, moedas e compras foram resetadas!');
-                restoreCanvasFocus();
-            } else {
-                restoreCanvasFocus();
+                showMessage('Todas as características, moedas e compras foram resetadas!');
             }
         }
 
@@ -412,7 +555,6 @@
             startScreen.style.display = 'none';
             isPaused = false;
             canvas.focus();
-            console.log('Jogo iniciado, canvas focado');
             resetGame();
         }
 
@@ -429,7 +571,7 @@
         }
 
         function spawnZombies() {
-            if (isPaused || countdown > 0) return;
+            if (isPaused || countdown > 0 || zombies.length >= MAX_ZOMBIES) return;
             const now = Date.now();
             if (now - lastSpawn < spawnInterval) return;
             lastSpawn = now;
@@ -446,7 +588,7 @@
                 spawnInterval = 3000;
             }
 
-            for (let i = 0; i < zombieCount; i++) {
+            for (let i = 0; i < zombieCount && zombies.length < MAX_ZOMBIES; i++) {
                 const side = Math.floor(Math.random() * 4);
                 let x, y;
                 if (side === 0) { x = Math.random() * canvas.width; y = -20; }
@@ -466,7 +608,6 @@
             else { x = canvas.width + 40; y = Math.random() * canvas.height; }
             boss = { x, y, size: 40, speed: 1.5, health: 50, baseSpeed: 1.5, chargeTimer: 0, spawnZombieTimer: 0, chargeWarning: false, chargeDx: 0, chargeDy: 0 };
             bossSpawned = true;
-            console.log('Boss gerado em x:', x, 'y:', y);
         }
 
         function spawnCoin(x, y) {
@@ -519,8 +660,7 @@
                 accumulable: true,
                 effect: () => {
                     diagonalShots += 1;
-                    alert("Upgrade +1 Diagonais aplicado! Total de pares diagonais: " + diagonalShots);
-                    restoreCanvasFocus();
+                    showMessage("Upgrade +1 Diagonais aplicado! Total de pares diagonais: " + diagonalShots);
                 }
             },
             {
@@ -531,8 +671,7 @@
                 accumulable: true,
                 effect: () => {
                     frontShots += 1;
-                    alert("Upgrade +1 Frente aplicado! Total de balas frontais extras: " + frontShots);
-                    restoreCanvasFocus();
+                    showMessage("Upgrade +1 Frente aplicado! Total de balas frontais extras: " + frontShots);
                 }
             },
             {
@@ -544,8 +683,7 @@
                 effect: () => {
                     speedUpgrades += 1;
                     player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
-                    alert(`Upgrade Pressa aplicado! Velocidade: ${player.speed.toFixed(2)}`);
-                    restoreCanvasFocus();
+                    showMessage(`Upgrade Pressa aplicado! Velocidade: ${player.speed.toFixed(2)}`);
                 }
             },
             {
@@ -556,8 +694,7 @@
                 accumulable: false,
                 effect: () => {
                     electricShot = true;
-                    alert("Upgrade Balas Elétricas aplicado! Chance de choque: 50%");
-                    restoreCanvasFocus();
+                    showMessage("Upgrade Balas Elétricas aplicado! Chance de choque: 50%");
                 }
             },
             {
@@ -569,8 +706,7 @@
                 maxAccumulations: 2,
                 effect: () => {
                     pierceCount = Math.min(pierceCount + 1, 2);
-                    alert("Upgrade Perfuração aplicado! Balas atravessam até " + (pierceCount + 1) + " zumbis");
-                    restoreCanvasFocus();
+                    showMessage("Upgrade Perfuração aplicado! Balas atravessam até " + (pierceCount + 1) + " zumbis");
                 }
             },
             {
@@ -583,8 +719,7 @@
                     lightHands = true;
                     goodHands = false;
                     updateShootDelay();
-                    alert("Upgrade Mãos Leves aplicado! Velocidade de disparo +20%");
-                    restoreCanvasFocus();
+                    showMessage("Upgrade Mãos Leves aplicado! Velocidade de disparo +20%");
                 }
             },
             {
@@ -597,8 +732,7 @@
                     goodHands = true;
                     lightHands = false;
                     updateShootDelay();
-                    alert("Upgrade Mãos Boas aplicado! Velocidade de disparo +30%");
-                    restoreCanvasFocus();
+                    showMessage("Upgrade Mãos Boas aplicado! Velocidade de disparo +30%");
                 }
             },
             {
@@ -609,8 +743,7 @@
                 accumulable: false,
                 effect: () => {
                     homingShot = true;
-                    alert("Upgrade Balas Teleguiadas aplicado! Balas agora seguem zumbis");
-                    restoreCanvasFocus();
+                    showMessage("Upgrade Balas Teleguiadas aplicado! Balas agora seguem zumbis");
                 }
             },
             {
@@ -621,8 +754,7 @@
                 accumulable: false,
                 effect: () => {
                     regen = true;
-                    alert("Upgrade Regeneração aplicado! Recupera 0,5 vida por segundo");
-                    restoreCanvasFocus();
+                    showMessage("Upgrade Regeneração aplicado! Recupera 0,5 vida por segundo");
                 }
             },
             {
@@ -633,8 +765,7 @@
                 accumulable: false,
                 effect: () => {
                     vampirism = true;
-                    alert("Upgrade Vampirismo aplicado! 30% de chance de recuperar 1 vida por morte");
-                    restoreCanvasFocus();
+                    showMessage("Upgrade Vampirismo aplicado! 30% de chance de recuperar 1 vida por morte");
                 }
             }
         ];
@@ -644,7 +775,6 @@
             if (lightHands) baseDelay *= 0.8;
             if (goodHands) baseDelay *= 0.7;
             shootDelay = Math.max(50, baseDelay);
-            console.log(`shootDelay atualizado: ${shootDelay}ms`);
         }
 
         function applyInitialUpgrade() {
@@ -673,20 +803,13 @@
             }
             if (selectedUpgrade) {
                 selectedUpgrade.effect();
-                restoreCanvasFocus();
             }
         }
 
         function shoot() {
-            if (isPaused) {
-                console.log('Tiro bloqueado: jogo pausado');
-                return;
-            }
+            if (isPaused || bullets.length >= MAX_BULLETS) return;
             const now = Date.now();
-            if (now - lastShot < shootDelay) {
-                console.log(`Tiro bloqueado: intervalo de ${shootDelay}ms não atingido (lastShot=${lastShot}, now=${now})`);
-                return;
-            }
+            if (now - lastShot < shootDelay) return;
             lastShot = now;
 
             let dx = 0, dy = 0;
@@ -700,19 +823,20 @@
                 dx /= length;
                 dy /= length;
 
-                bullets.push({ 
-                    x: player.x, 
-                    y: player.y, 
-                    dx: dx * 7, 
-                    dy: dy * 7, 
-                    homing: homingShot,
-                    electric: electricShot,
-                    electricTimer: null,
-                    pierce: pierceCount
-                });
-                console.log(`Bala disparada: dx=${dx}, dy=${dy}, bullets:`, bullets);
+                if (bullets.length < MAX_BULLETS) {
+                    bullets.push({ 
+                        x: player.x, 
+                        y: player.y, 
+                        dx: dx * 7, 
+                        dy: dy * 7, 
+                        homing: homingShot,
+                        electric: electricShot,
+                        electricTimer: null,
+                        pierce: pierceCount
+                    });
+                }
 
-                for (let i = 1; i <= diagonalShots; i++) {
+                for (let i = 1; i <= diagonalShots && bullets.length < MAX_BULLETS; i++) {
                     const angle1 = Math.PI / 4;
                     const angle2 = -Math.PI / 4;
                     bullets.push({
@@ -735,10 +859,9 @@
                         electricTimer: null,
                         pierce: pierceCount
                     });
-                    console.log(`Balas diagonais disparadas: ${i} par(es)`);
                 }
 
-                for (let i = 1; i <= frontShots; i++) {
+                for (let i = 1; i <= frontShots && bullets.length < MAX_BULLETS; i++) {
                     const offset = i * 10 * (i % 2 === 0 ? -1 : 1);
                     bullets.push({
                         x: player.x + offset,
@@ -750,10 +873,7 @@
                         electricTimer: null,
                         pierce: pierceCount
                     });
-                    console.log(`Bala frontal extra disparada: offset=${offset}`);
                 }
-            } else {
-                console.log('Nenhuma direção de tiro detectada (dx=0, dy=0)');
             }
         }
 
@@ -800,7 +920,6 @@
                     upgradeMenu.style.display = 'none';
                     isPaused = false;
                     canvas.focus();
-                    console.log('Menu de upgrade fechado, canvas focado');
                 };
                 upgradeOptions.appendChild(button);
             });
@@ -820,12 +939,9 @@
         }
 
         function update() {
-            if (gameOver || isPaused) {
-                console.log(`Update bloqueado: gameOver=${gameOver}, isPaused=${isPaused}`);
-                return;
-            }
+            if (gameOver || isPaused) return;
 
-            if (countdown > 0) {
+            if (countdown > 0 && !isPaused) {
                 const now = Date.now();
                 const elapsed = now - countdownStart;
                 const remaining = Math.ceil((3000 - elapsed) / 1000);
@@ -839,8 +955,6 @@
                 return;
             }
 
-            // Movimento do jogador com depuração
-            console.log('Estado das teclas:', keys);
             if (keys.w && player.y > player.size) player.y -= player.speed;
             if (keys.s && player.y < canvas.height - player.size) player.y += player.speed;
             if (keys.a && player.x > player.size) player.x -= player.speed;
@@ -859,7 +973,6 @@
             }
 
             if (keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
-                console.log('Tecla de seta detectada, chamando shoot()');
                 shoot();
             }
 
@@ -870,8 +983,13 @@
                         const dx = closestZombie.x - bullet.x;
                         const dy = closestZombie.y - bullet.y;
                         const length = Math.sqrt(dx * dx + dy * dy);
-                        bullet.dx = (dx / length) * 7;
-                        bullet.dy = (dy / length) * 7;
+                        if (length > 0) {
+                            bullet.dx = (dx / length) * 7;
+                            bullet.dy = (dy / length) * 7;
+                        }
+                    } else {
+                        bullet.dx = bullet.dx || 0;
+                        bullet.dy = bullet.dy || 0;
                     }
                 }
                 bullet.x += bullet.dx;
@@ -883,16 +1001,19 @@
             });
             bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
 
+            const zombiesToRemove = [];
             zombies.forEach((zombie, zIndex) => {
                 const dx = player.x - zombie.x;
                 const dy = player.y - zombie.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                zombie.x += (dx / distance) * zombie.speed;
-                zombie.y += (dy / distance) * zombie.speed;
+                if (distance > 0) {
+                    zombie.x += (dx / distance) * zombie.speed;
+                    zombie.y += (dy / distance) * zombie.speed;
+                }
 
                 if (distance < player.size + zombie.size) {
                     player.health -= 5;
-                    zombies.splice(zIndex, 1);
+                    zombiesToRemove.push(zIndex);
                     healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                     healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                     startHealthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
@@ -908,7 +1029,7 @@
                 bullets.forEach((bullet, bIndex) => {
                     const bDistance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
                     if (bDistance < zombie.size) {
-                        zombies.splice(zIndex, 1);
+                        zombiesToRemove.push(zIndex);
                         bullet.pierce -= 1;
                         if (bullet.electric && bullet.electricTimer === null) {
                             bullet.electricTimer = Date.now();
@@ -945,7 +1066,7 @@
                             if (nearbyZombie) {
                                 const nearbyIndex = zombies.indexOf(nearbyZombie);
                                 if (nearbyIndex !== -1) {
-                                    zombies.splice(nearbyIndex, 1);
+                                    zombiesToRemove.push(nearbyIndex);
                                     if (!nearbyZombie.isBossMinion) {
                                         score += 1;
                                         xp += 1;
@@ -975,37 +1096,34 @@
                     }
                 });
             });
+            zombiesToRemove.sort((a, b) => b - a).forEach(index => zombies.splice(index, 1));
 
             if (boss) {
                 const now = Date.now();
 
-                // Aviso de investida (1 segundo antes)
                 if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
                     boss.chargeWarning = true;
                     bossChargeWarning = now;
                     const dx = player.x - boss.x;
                     const dy = player.y - boss.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    boss.chargeDx = dx / distance;
-                    boss.chargeDy = dy / distance;
-                    console.log('Aviso de investida iniciado, direção fixada: chargeDx=', boss.chargeDx, 'chargeDy=', boss.chargeDy);
+                    if (distance > 0) {
+                        boss.chargeDx = dx / distance;
+                        boss.chargeDy = dy / distance;
+                    }
                 }
 
-                // Investida rápida (a cada 5 segundos)
                 if (now - lastBossCharge >= 5000) {
                     boss.speed = 4;
                     boss.chargeTimer = now;
                     lastBossCharge = now;
                     boss.chargeWarning = false;
-                    console.log('Investida do boss iniciada');
                 }
                 if (boss.chargeTimer && now - boss.chargeTimer >= 1000) {
                     boss.speed = boss.baseSpeed;
                     boss.chargeTimer = 0;
-                    console.log('Investida do boss terminada');
                 }
 
-                // Movimento do boss
                 if (boss.chargeTimer) {
                     boss.x += boss.chargeDx * boss.speed;
                     boss.y += boss.chargeDy * boss.speed;
@@ -1013,19 +1131,18 @@
                     const dx = player.x - boss.x;
                     const dy = player.y - boss.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    boss.x += (dx / distance) * boss.speed;
-                    boss.y += (dy / distance) * boss.speed;
+                    if (distance > 0) {
+                        boss.x += (dx / distance) * boss.speed;
+                        boss.y += (dy / distance) * boss.speed;
+                    }
                 }
 
-                // Ataque especial: Spawn de Zumbis (a cada 10 segundos)
-                if (now - lastBossSpawnZombies >= 10000) {
+                if (now - lastBossSpawnZombies >= 10000 && zombies.length < MAX_ZOMBIES) {
                     zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9, isBossMinion: true });
                     zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9, isBossMinion: true });
                     lastBossSpawnZombies = now;
-                    console.log('Boss gerou 2 zumbis (lacaios)');
                 }
 
-                // Colisão com o jogador
                 const dx = player.x - boss.x;
                 const dy = player.y - boss.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1042,7 +1159,6 @@
                     }
                 }
 
-                // Colisão com balas
                 let bossDefeated = false;
                 bullets.forEach((bullet, bIndex) => {
                     const bDistance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
@@ -1062,7 +1178,6 @@
                 });
 
                 if (bossDefeated) {
-                    console.log('Boss derrotado, iniciando recompensas');
                     score += 10;
                     coinCount += 5;
                     level += 1;
@@ -1081,7 +1196,6 @@
                     scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
                     saveData();
                     showUpgradeMenu();
-                    console.log('Recompensas aplicadas, boss removido');
                 }
             }
 
@@ -1126,7 +1240,6 @@
                     ctx.lineTo(boss.x + boss.chargeDy * warningWidth / 2, boss.y - boss.chargeDx * warningWidth / 2);
                     ctx.closePath();
                     ctx.fill();
-                    console.log('Desenhando aviso de investida');
                 }
 
                 ctx.fillStyle = 'darkred';
@@ -1200,7 +1313,6 @@
             startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             applyInitialUpgrade();
             canvas.focus();
-            console.log('Jogo resetado, canvas focado, lastShot resetado');
         }
 
         function showRanking() {
@@ -1231,7 +1343,6 @@
                 startXpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             }
             canvas.focus();
-            console.log('Ranking fechado, canvas focado');
         }
 
         function showShop() {
@@ -1246,7 +1357,6 @@
             shopDisplay.style.display = 'none';
             gameOverDisplay.style.display = 'block';
             canvas.focus();
-            console.log('Loja fechada, canvas focado');
         }
 
         function buyHealth() {
@@ -1261,11 +1371,9 @@
                 startHealthBar.style.width = '100%';
                 startHealthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                 saveData();
-                alert('Vida extra comprada! Vida máxima: ' + player.maxHealth);
-                restoreCanvasFocus();
+                showMessage('Vida extra comprada! Vida máxima: ' + player.maxHealth);
             } else {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
+                showMessage('Moedas insuficientes!');
             }
         }
 
@@ -1278,11 +1386,9 @@
                 shopCoins.textContent = coinCount;
                 fireRateCostDisplay.textContent = Math.round(fireRateCost);
                 saveData();
-                alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
-                restoreCanvasFocus();
+                showMessage('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
             } else {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
+                showMessage('Moedas insuficientes!');
             }
         }
 
@@ -1295,18 +1401,15 @@
                 shopCoins.textContent = coinCount;
                 updateWeaponButtons();
                 saveData();
-                alert('Glock comprada e equipada! Atraso de tiro: ' + shootDelay + 'ms');
-                restoreCanvasFocus();
+                showMessage('Glock comprada e equipada! Atraso de tiro: ' + shootDelay + 'ms');
             } else if (hasGlock && equippedWeapon !== 'glock') {
                 equippedWeapon = 'glock';
                 updateShootDelay();
                 updateWeaponButtons();
                 saveData();
-                alert('Glock equipada! Atraso de tiro: ' + shootDelay + 'ms');
-                restoreCanvasFocus();
+                showMessage('Glock equipada! Atraso de tiro: ' + shootDelay + 'ms');
             } else if (!hasGlock) {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
+                showMessage('Moedas insuficientes!');
             }
         }
 
@@ -1319,18 +1422,15 @@
                 shopCoins.textContent = coinCount;
                 updateWeaponButtons();
                 saveData();
-                alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms');
-                restoreCanvasFocus();
+                showMessage('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms');
             } else if (hasRifle && equippedWeapon !== 'rifle') {
                 equippedWeapon = 'rifle';
                 updateShootDelay();
                 updateWeaponButtons();
                 saveData();
-                alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms');
-                restoreCanvasFocus();
+                showMessage('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms');
             } else if (!hasRifle) {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
+                showMessage('Moedas insuficientes!');
             }
         }
 
@@ -1342,14 +1442,11 @@
                 buyInitialUpgradeBtn.disabled = true;
                 buyInitialUpgradeBtn.textContent = "Comprado";
                 saveData();
-                alert('Upgrade Inicial comprado! Você receberá um upgrade aleatório no início de cada partida.');
-                restoreCanvasFocus();
+                showMessage('Upgrade Inicial comprado! Você receberá um upgrade aleatório no início de cada partida.');
             } else if (hasInitialUpgrade) {
-                alert('Upgrade Inicial já comprado!');
-                restoreCanvasFocus();
+                showMessage('Upgrade Inicial já comprado!');
             } else {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
+                showMessage('Moedas insuficientes!');
             }
         }
 
@@ -1359,9 +1456,7 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Foco inicial no canvas
         canvas.focus();
-        console.log('Canvas focado ao carregar');
         gameLoop();
     </script>
 </body>
