@@ -254,7 +254,14 @@
         let equippedWeapon = 'none';
         let hasInitialUpgrade = false;
 
-        const savedData = JSON.parse(localStorage.getItem('zombieGameData')) || {
+        const savedData = document.getElementById('startScreen');
+        savedData.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                console.log(`Botão clicado: ${e.target.textContent}`);
+            }
+        });
+
+        const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
             healthUpgrades: 0,
             fireRateUpgrades: 0,
@@ -265,14 +272,14 @@
             speedUpgrades: 0,
             ranking: []
         };
-        coinCount = savedData.coins;
-        healthUpgrades = savedData.healthUpgrades || 0;
-        fireRateUpgrades = savedData.fireRateUpgrades || 0;
-        hasGlock = savedData.hasGlock || false;
-        hasRifle = savedData.hasRifle || false;
-        equippedWeapon = savedData.equippedWeapon || 'none';
-        hasInitialUpgrade = savedData.hasInitialUpgrade || false;
-        speedUpgrades = savedData.speedUpgrades || 0;
+        coinCount = savedDataLocal.coins;
+        healthUpgrades = savedDataLocal.healthUpgrades || 0;
+        fireRateUpgrades = savedDataLocal.fireRateUpgrades || 0;
+        hasGlock = savedDataLocal.hasGlock || false;
+        hasRifle = savedDataLocal.hasRifle || false;
+        equippedWeapon = savedDataLocal.equippedWeapon || 'none';
+        hasInitialUpgrade = savedDataLocal.hasInitialUpgrade || false;
+        speedUpgrades = savedDataLocal.speedUpgrades || 0;
         player.maxHealth = 10 + healthUpgrades * 50;
         player.health = player.maxHealth;
         player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
@@ -346,7 +353,7 @@
                 equippedWeapon: equippedWeapon,
                 hasInitialUpgrade: hasInitialUpgrade,
                 speedUpgrades: speedUpgrades,
-                ranking: savedData.ranking
+                ranking: savedDataLocal.ranking
             }));
         }
 
@@ -399,6 +406,7 @@
         }
 
         function startGame() {
+            console.log('startGame chamado');
             startScreen.style.display = 'none';
             isPaused = false;
             canvas.focus();
@@ -407,15 +415,17 @@
         }
 
         function showRankingFromStart() {
+            console.log('showRankingFromStart chamado');
             rankingList.innerHTML = '';
-            savedData.ranking.sort((a, b) => b.score - a.score);
-            savedData.ranking.slice(0, 5).forEach(entry => {
+            savedDataLocal.ranking.sort((a, b) => b.score - a.score);
+            savedDataLocal.ranking.slice(0, 5).forEach(entry => {
                 const li = document.createElement('li');
                 li.textContent = `Pontos: ${entry.score} - ${entry.date}`;
                 rankingList.appendChild(li);
             });
             startScreen.style.display = 'none';
             rankingDisplay.style.display = 'block';
+            canvas.focus();
         }
 
         function spawnZombies() {
@@ -433,7 +443,7 @@
                 spawnInterval = 4000;
             } else {
                 zombieCount = 3;
-MMC            spawnInterval = 3000;
+                spawnInterval = 3000;
             }
 
             for (let i = 0; i < zombieCount; i++) {
@@ -566,7 +576,7 @@ MMC            spawnInterval = 3000;
                 accumulable: false,
                 effect: () => {
                     lightHands = true;
-                    goodkońHands = false;
+                    goodHands = false;
                     updateShootDelay();
                     restoreCanvasFocus();
                 }
@@ -789,7 +799,7 @@ MMC            spawnInterval = 3000;
                     canvas.focus();
                     console.log('Menu de upgrade fechado, canvas focado');
                 };
- blessures                upgradeOptions.appendChild(button);
+                upgradeOptions.appendChild(button);
             });
         }
 
@@ -903,8 +913,7 @@ MMC            spawnInterval = 3000;
                             countdownStart = Date.now();
                         }
                         if (vampirism && Math.random() < 0.3) {
-                            player.health = Math.min(player.maxHealth, 
-                            player.health + 1);
+                            player.health = Math.min(player.maxHealth, player.health + 1);
                             healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                             healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                         }
@@ -1136,13 +1145,13 @@ MMC            spawnInterval = 3000;
         }
 
         function showRanking() {
-            savedData.ranking.push({ score, date: new Date().toLocaleString() });
-            savedData.ranking.sort((a, b) => b.score - a.score);
-            savedData.ranking = savedData.ranking.slice(0, 5);
+            savedDataLocal.ranking.push({ score, date: new Date().toLocaleString() });
+            savedDataLocal.ranking.sort((a, b) => b.score - a.score);
+            savedDataLocal.ranking = savedDataLocal.ranking.slice(0, 5);
             saveData();
 
             rankingList.innerHTML = '';
-            savedData.ranking.forEach(entry => {
+            savedDataLocal.ranking.forEach(entry => {
                 const li = document.createElement('li');
                 li.textContent = `Pontos: ${entry.score} - ${entry.date}`;
                 rankingList.appendChild(li);
