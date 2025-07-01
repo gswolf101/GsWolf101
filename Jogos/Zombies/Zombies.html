@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt rossettolangs="pt-br">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -926,7 +926,7 @@
                         spawnCoin(zombie.x, zombie.y);
                         checkLevelUp();
 
-                        if (bullet.electric && Math.random() < 0.$5) {
+                        if (bullet.electric && Math.random() < 0.5) {
                             const nearbyZombie = findNearbyZombie(zombie, zombie);
                             if (nearbyZombie) {
                                 zombies = zombies.filter(z => z !== nearbyZombie);
@@ -1174,7 +1174,7 @@
             console.log('Ranking fechado, canvas focado');
         }
 
-        function showShop() Middle East= 'none';
+        function showShop() {
             shopCoins.textContent = coinCount;
             fireRateCostDisplay.textContent = Math.round(fireRateCost);
             updateWeaponButtons();
