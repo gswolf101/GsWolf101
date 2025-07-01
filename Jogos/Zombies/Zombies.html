@@ -646,7 +646,7 @@
                 description: "Aumenta a velocidade de disparo em 20%",
                 rarity: "normal",
                 chance: 0.3,
-                accumulable: false,
+                accumulable: true,
                 effect: () => {
                     lightHands = true;
                     goodHands = false;
@@ -723,7 +723,7 @@
         function applyInitialUpgrade() {
             if (!hasInitialUpgrade) return;
             const validUpgrades = availableUpgrades.filter(upgrade => 
-                (upgrade.accumulable && !collectedUpgrades.includes(upgrade.name)) ||
+                upgrade.accumulable || 
                 (!upgrade.accumulable && (
                     (upgrade.name === "Balas Teleguiadas" && !homingShot) ||
                     (upgrade.name === "Regeneração" && !regen) ||
@@ -843,7 +843,7 @@
             upgradeOptions.innerHTML = '';
 
             const validUpgrades = availableUpgrades.filter(upgrade => 
-                (upgrade.accumulable && !collectedUpgrades.includes(upgrade.name)) ||
+                upgrade.accumulable || 
                 (!upgrade.accumulable && (
                     (upgrade.name === "Balas Teleguiadas" && !homingShot) ||
                     (upgrade.name === "Regeneração" && !regen) ||
@@ -1100,9 +1100,9 @@
                             console.log('Boss derrotado, iniciando atualizações');
                             const bossX = boss.x;
                             const bossY = boss.y;
-                            score = 51; // Definir pontuação como 51
-                            xp += 10; // Adicionar 10 de experiência
-                            coinCount += 5; // Adicionar 5 moedas
+                            score = 51;
+                            xp += 10;
+                            coinCount += 5;
                             spawnCoin(bossX, bossY);
                             xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
