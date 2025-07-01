@@ -299,13 +299,6 @@
         let hasInitialUpgrade = false;
         let collectedUpgrades = [];
 
-        const savedData = document.getElementById('startScreen');
-        savedData.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                console.log(`Botão clicado: ${e.target.textContent}`);
-            }
-        });
-
         const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
             healthUpgrades: 0,
@@ -417,6 +410,7 @@
                 healthCost: healthCost,
                 ranking: savedDataLocal.ranking
             }));
+            console.log('Dados salvos:', { coins: coinCount, score, xp, level });
         }
 
         function updateWeaponButtons() {
@@ -901,6 +895,7 @@
                 xpBar.style.width = '0%';
                 xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                 showUpgradeMenu();
+                console.log('Subiu de nível:', { level, xp, xpToNextLevel });
             }
         }
 
@@ -981,6 +976,7 @@
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
                         isPaused = true;
+                        console.log('Jogador morreu ao colidir com zumbi');
                     }
                 }
 
@@ -992,7 +988,7 @@
                         if (bullet.electric && bullet.electricTimer === null) {
                             bullet.electricTimer = Date.now();
                         }
-                        if ((bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0))) {
+                        if (bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0)) {
                             bullets.splice(bIndex, 1);
                         }
                         score += 1;
@@ -1001,6 +997,7 @@
                             zombies = [];
                             countdown = 3;
                             countdownStart = Date.now();
+                            console.log('Contagem regressiva para boss iniciada');
                         }
                         if (vampirism && Math.random() < 0.3) {
                             player.health = Math.min(player.maxHealth, player.health + 1);
@@ -1023,6 +1020,7 @@
                                     zombies = [];
                                     countdown = 3;
                                     countdownStart = Date.now();
+                                    console.log('Contagem regressiva para boss iniciada (zumbi próximo)');
                                 }
                                 if (vampirism && Math.random() < 0.3) {
                                     player.health = Math.min(player.maxHealth, player.health + 1);
@@ -1095,16 +1093,16 @@
                         if (bullet.electric && bullet.electricTimer === null) {
                             bullet.electricTimer = Date.now();
                         }
-                        if ((bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0))) {
+                        if (bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0)) {
                             bullets.splice(bIndex, 1);
                         }
                         if (boss.health <= 0) {
                             console.log('Boss derrotado, iniciando atualizações');
                             const bossX = boss.x;
                             const bossY = boss.y;
-                            score = 52;
-                            xp += 5;
-                            coinCount += 5;
+                            score = 51; // Definir pontuação como 51
+                            xp += 10; // Adicionar 10 de experiência
+                            coinCount += 5; // Adicionar 5 moedas
                             spawnCoin(bossX, bossY);
                             xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
@@ -1113,7 +1111,7 @@
                             saveData();
                             boss = null;
                             bossSpawned = false;
-                            console.log('Boss removido, estado atualizado');
+                            console.log('Boss removido, estado atualizado:', { score, xp, coinCount, boss: null, bossSpawned });
                         }
                     }
                 });
@@ -1201,7 +1199,7 @@
             coins = [];
             boss = null;
             score = 0;
-            xp =  overal;
+            xp = 0;
             level = 1;
             xpToNextLevel = 10;
             countdown = 0;
