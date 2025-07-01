@@ -124,6 +124,7 @@
             padding: 20px;
             border-radius: 10px;
             text-align: center;
+            z-index: 20;
         }
         #startScreen {
             display: block;
@@ -173,6 +174,33 @@
         }
         .tab-content.active {
             display: block;
+        }
+        /* Estilos para dispositivos móveis em paisagem */
+        @media (max-width: 768px) and (orientation: landscape) {
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+            }
+            #gameCanvas {
+                width: 100vw;
+                height: 100vh;
+            }
+            #healthBar, #xpBar {
+                width: 90%;
+                top: 5px;
+            }
+            #xpBar {
+                top: 30px;
+            }
+            #score {
+                top: 55px;
+                font-size: 16px;
+            }
+            #upgradesList {
+                top: 80px;
+                font-size: 12px;
+                max-width: 150px;
+            }
         }
     </style>
 </head>
@@ -301,6 +329,11 @@
         let collectedUpgrades = [];
         let bosses = 0;
 
+        // Joystick para dispositivos móveis
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        const movementJoystick = { x: 100, y: canvas.height - 100, radius: 50, innerRadius: 20, active: false, touchId: null, dx: 0, dy: 0 };
+        const shootJoystick = { x: canvas.width - 100, y: canvas.height - 100, radius: 50, innerRadius: 20, active: false, touchId: null, dx: 0, dy: 0 };
+
         const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
             healthUpgrades: 0,
@@ -339,6 +372,28 @@
             buyInitialUpgradeBtn.textContent = "Comprado";
         }
         updateWeaponButtons();
+
+        // Ajustar tamanho do canvas para dispositivos móveis
+        function resizeCanvas() {
+            if (isMobile) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                movementJoystick.x = 100;
+                movementJoystick.y = canvas.height - 100;
+                shootJoystick.x = canvas.width - 100;
+                shootJoystick.y = canvas.height - 100;
+            } else {
+                canvas.width = 1000;
+                canvas.height = 750;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Tentar forçar orientação paisagem
+        if (isMobile && screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(err => console.log('Não foi possível forçar orientação paisagem:', err));
+        }
 
         const keys = {
             w: false,
@@ -380,6 +435,79 @@
             canvas.focus();
             console.log('Canvas focado por clique');
         });
+
+        // Eventos de toque para joysticks
+        if (isMobile) {
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    const touchX = touch.clientX * (canvas.width / canvas.offsetWidth);
+                    const touchY = touch.clientY * (canvas.height / canvas.offsetHeight);
+                    if (Math.hypot(touchX - movementJoystick.x, touchY - movementJoystick.y) < movementJoystick.radius) {
+                        movementJoystick.active = true;
+                        movementJoystick.touchId = touch.identifier;
+                    }
+                    if (Math.hypot(touchX - shootJoystick.x, touchY - shootJoystick.y) < shootJoystick.radius) {
+                        shootJoystick.active = true;
+                        shootJoystick.touchId = touch.identifier;
+                    }
+                }
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    const touchX = touch.clientX * (canvas.width / canvas.offsetWidth);
+                    const touchY = touch.clientY * (canvas.height / canvas.offsetHeight);
+                    if (movementJoystick.active && touch.identifier === movementJoystick.touchId) {
+                        const dx = touchX - movementJoystick.x;
+                        const dy = touchY - movementJoystick.y;
+                        const distance = Math.hypot(dx, dy);
+                        const maxDistance = movementJoystick.radius - movementJoystick.innerRadius;
+                        if (distance > maxDistance) {
+                            const scale = maxDistance / distance;
+                            movementJoystick.dx = dx * scale;
+                            movementJoystick.dy = dy * scale;
+                        } else {
+                            movementJoystick.dx = dx;
+                            movementJoystick.dy = dy;
+                        }
+                    }
+                    if (shootJoystick.active && touch.identifier === shootJoystick.touchId) {
+                        const dx = touchX - shootJoystick.x;
+                        const dy = touchY - shootJoystick.y;
+                        const distance = Math.hypot(dx, dy);
+                        const maxDistance = shootJoystick.radius - shootJoystick.innerRadius;
+                        if (distance > maxDistance) {
+                            const scale = maxDistance / distance;
+                            shootJoystick.dx = dx * scale;
+                            shootJoystick.dy = dy * scale;
+                        } else {
+                            shootJoystick.dx = dx;
+                            shootJoystick.dy = dy;
+                        }
+                    }
+                }
+            });
+
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    if (movementJoystick.active && touch.identifier === movementJoystick.touchId) {
+                        movementJoystick.active = false;
+                        movementJoystick.touchId = null;
+                        movementJoystick.dx = 0;
+                        movementJoystick.dy = 0;
+                    }
+                    if (shootJoystick.active && touch.identifier === shootJoystick.touchId) {
+                        shootJoystick.active = false;
+                        shootJoystick.touchId = null;
+                        shootJoystick.dx = 0;
+                        shootJoystick.dy = 0;
+                    }
+                }
+            });
+        }
 
         function restoreCanvasFocus() {
             setTimeout(() => {
@@ -809,10 +937,15 @@
             lastShot = now;
 
             let dx = 0, dy = 0;
-            if (keys.ArrowUp) dy -= 1;
-            if (keys.ArrowDown) dy += 1;
-            if (keys.ArrowLeft) dx -= 1;
-            if (keys.ArrowRight) dx += 1;
+            if (isMobile && shootJoystick.active) {
+                dx = shootJoystick.dx / (shootJoystick.radius - shootJoystick.innerRadius);
+                dy = shootJoystick.dy / (shootJoystick.radius - shootJoystick.innerRadius);
+            } else {
+                if (keys.ArrowUp) dy -= 1;
+                if (keys.ArrowDown) dy += 1;
+                if (keys.ArrowLeft) dx -= 1;
+                if (keys.ArrowRight) dx += 1;
+            }
 
             if (dx !== 0 || dy !== 0) {
                 const length = Math.sqrt(dx * dx + dy * dy);
@@ -965,11 +1098,27 @@
                 return;
             }
 
-            console.log('Estado das teclas:', keys);
-            if (keys.w && player.y > player.size) player.y -= player.speed;
-            if (keys.s && player.y < canvas.height - player.size) player.y += player.speed;
-            if (keys.a && player.x > player.size) player.x -= player.speed;
-            if (keys.d && player.x < canvas.width - player.size) player.x += player.speed;
+            // Movimento do jogador com joystick ou teclas
+            if (isMobile && movementJoystick.active) {
+                const length = Math.hypot(movementJoystick.dx, movementJoystick.dy);
+                if (length > 0) {
+                    const normalizedDx = movementJoystick.dx / length;
+                    const normalizedDy = movementJoystick.dy / length;
+                    const moveX = normalizedDx * player.speed;
+                    const moveY = normalizedDy * player.speed;
+                    if (player.x + moveX > player.size && player.x + moveX < canvas.width - player.size) {
+                        player.x += moveX;
+                    }
+                    if (player.y + moveY > player.size && player.y + moveY < canvas.height - player.size) {
+                        player.y += moveY;
+                    }
+                }
+            } else {
+                if (keys.w && player.y > player.size) player.y -= player.speed;
+                if (keys.s && player.y < canvas.height - player.size) player.y += player.speed;
+                if (keys.a && player.x > player.size) player.x -= player.speed;
+                if (keys.d && player.x < canvas.width - player.size) player.x += player.speed;
+            }
 
             if (regen) {
                 const now = Date.now();
@@ -981,8 +1130,8 @@
                 }
             }
 
-            if (keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
-                console.log('Tecla de seta detectada, chamando shoot()');
+            if ((isMobile && shootJoystick.active) || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
+                console.log('Direção de tiro detectada, chamando shoot()');
                 shoot();
             }
 
@@ -1299,11 +1448,46 @@
                 ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
                 ctx.fill();
             });
+
+            // Desenhar joysticks em dispositivos móveis
+            if (isMobile) {
+                // Joystick de movimento
+                ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+                ctx.beginPath();
+                ctx.arc(movementJoystick.x, movementJoystick.y, movementJoystick.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.beginPath();
+                ctx.arc(
+                    movementJoystick.x + (movementJoystick.active ? movementJoystick.dx : 0),
+                    movementJoystick.y + (movementJoystick.active ? movementJoystick.dy : 0),
+                    movementJoystick.innerRadius,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+
+                // Joystick de tiro
+                ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+                ctx.beginPath();
+                ctx.arc(shootJoystick.x, shootJoystick.y, shootJoystick.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.beginPath();
+                ctx.arc(
+                    shootJoystick.x + (shootJoystick.active ? shootJoystick.dx : 0),
+                    shootJoystick.y + (shootJoystick.active ? shootJoystick.dy : 0),
+                    shootJoystick.innerRadius,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+            }
         }
 
         function resetGame() {
             console.log('Resetando jogo');
-            player = { x: 500, y: 375, size: 20, speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), baseSpeed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth };
+            player = { x: canvas.width / 2, y: canvas.height / 2, size: 20, speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), baseSpeed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth };
             zombies = [];
             bullets = [];
             bossBullets = [];
