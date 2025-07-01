@@ -1101,9 +1101,11 @@
                     }
                 }
 
+                // Processar dano de todas as balas no boss
                 bullets.forEach((bullet, bIndex) => {
                     const bDistance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
                     if (bDistance < boss.size) {
+                        console.log(`Bala acertou o boss, vida antes: ${boss.health}`);
                         boss.health -= 1;
                         bullet.pierce -= 1;
                         if (bullet.electric && bullet.electricTimer === null) {
@@ -1112,25 +1114,28 @@
                         if (bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0)) {
                             bullets.splice(bIndex, 1);
                         }
-                        if (boss.health <= 0) {
-                            console.log('Boss derrotado, iniciando atualizações');
-                            const bossX = boss.x;
-                            const bossY = boss.y;
-                            score = 51;
-                            xp += 10;
-                            coinCount += 5;
-                            spawnCoin(bossX, bossY);
-                            xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-                            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-                            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-                            checkLevelUp();
-                            saveData();
-                            boss = null;
-                            bossSpawned = false;
-                            console.log('Boss removido, estado atualizado:', { score, xp, coinCount, boss: null, bossSpawned });
-                        }
+                        console.log(`Vida do boss após dano: ${boss.health}`);
                     }
                 });
+
+                // Verificar morte do boss após processar todas as balas
+                if (boss && boss.health <= 0) {
+                    console.log('Boss derrotado, iniciando atualizações');
+                    const bossX = boss.x;
+                    const bossY = boss.y;
+                    score = 51;
+                    xp += 10;
+                    coinCount += 5;
+                    spawnCoin(bossX, bossY);
+                    xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                    xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                    checkLevelUp();
+                    saveData();
+                    boss = null;
+                    bossSpawned = false;
+                    console.log('Boss removido, estado atualizado:', { score, xp, coinCount, boss: null, bossSpawned });
+                }
             }
 
             coins = coins.filter(coin => {
