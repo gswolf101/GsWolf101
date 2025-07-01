@@ -93,6 +93,15 @@
             color: white;
             font-size: 20px;
         }
+        #upgradesList {
+            position: absolute;
+            top: 100px;
+            left: 10px;
+            color: white;
+            font-size: 16px;
+            max-width: 200px;
+            text-align: left;
+        }
         #countdown {
             display: none;
             position: absolute;
@@ -178,6 +187,7 @@
             <span id="healthText">Vida: 100%</span>
         </div>
         <div id="score">Pontos: 0 | Moedas: 0</div>
+        <div id="upgradesList">Upgrades: Nenhum</div>
         <div id="startScreen">
             <h2>Jogo de Sobrevivência a Zumbis</h2>
             <button onclick="startGame()">Iniciar Jogo</button><br>
@@ -244,6 +254,7 @@
         const buyRifleBtn = document.getElementById('buyRifleBtn');
         const upgradeMenu = document.getElementById('upgradeMenu');
         const upgradeOptions = document.getElementById('upgradeOptions');
+        const upgradesList = document.getElementById('upgradesList');
 
         let player = { x: 500, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
         let zombies = [];
@@ -286,6 +297,7 @@
         let hasRifle = false;
         let equippedWeapon = 'none';
         let hasInitialUpgrade = false;
+        let collectedUpgrades = [];
 
         const savedData = document.getElementById('startScreen');
         savedData.addEventListener('click', (e) => {
@@ -386,6 +398,12 @@
             document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
         }
 
+        function updateUpgradesList() {
+            upgradesList.textContent = collectedUpgrades.length > 0 
+                ? `Upgrades: ${collectedUpgrades.join(', ')}` 
+                : 'Upgrades: Nenhum';
+        }
+
         function saveData() {
             localStorage.setItem('zombieGameData', JSON.stringify({
                 coins: coinCount,
@@ -435,7 +453,9 @@
                 fireRateCost = 200;
                 shootDelay = 2000;
                 pierceCount = 0;
+                collectedUpgrades = [];
                 updateShootDelay();
+                updateUpgradesList();
                 shopCoins.textContent = coinCount;
                 fireRateCostDisplay.textContent = Math.round(fireRateCost);
                 healthCostDisplay.textContent = Math.round(healthCost);
@@ -569,6 +589,8 @@
                 accumulable: true,
                 effect: () => {
                     diagonalShots += 1;
+                    collectedUpgrades.push("+1 Diagonais");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -580,6 +602,8 @@
                 accumulable: true,
                 effect: () => {
                     frontShots += 1;
+                    collectedUpgrades.push("+1 Frente");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -592,6 +616,8 @@
                 effect: () => {
                     speedUpgrades += 1;
                     player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
+                    collectedUpgrades.push("Pressa");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -603,6 +629,8 @@
                 accumulable: false,
                 effect: () => {
                     electricShot = true;
+                    collectedUpgrades.push("Balas Elétricas");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -611,10 +639,11 @@
                 description: "Balas atravessam até 2 zumbis",
                 rarity: "normal",
                 chance: 0.3,
-                accumulable: true,
-                maxAccumulations: 2,
+                accumulable: false,
                 effect: () => {
-                    pierceCount = Math.min(pierceCount + 1, 2);
+                    pierceCount = 2;
+                    collectedUpgrades.push("Perfuração");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -628,6 +657,8 @@
                     lightHands = true;
                     goodHands = false;
                     updateShootDelay();
+                    collectedUpgrades.push("Mãos Leves");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -641,6 +672,8 @@
                     goodHands = true;
                     lightHands = false;
                     updateShootDelay();
+                    collectedUpgrades.push("Mãos Boas");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -652,6 +685,8 @@
                 accumulable: false,
                 effect: () => {
                     homingShot = true;
+                    collectedUpgrades.push("Balas Teleguiadas");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -663,6 +698,8 @@
                 accumulable: false,
                 effect: () => {
                     regen = true;
+                    collectedUpgrades.push("Regeneração");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             },
@@ -674,6 +711,8 @@
                 accumulable: false,
                 effect: () => {
                     vampirism = true;
+                    collectedUpgrades.push("Vampirismo");
+                    updateUpgradesList();
                     restoreCanvasFocus();
                 }
             }
@@ -690,14 +729,15 @@
         function applyInitialUpgrade() {
             if (!hasInitialUpgrade) return;
             const validUpgrades = availableUpgrades.filter(upgrade => 
-                (upgrade.accumulable && (!upgrade.maxAccumulations || (upgrade.name === "Perfuração" && pierceCount < 2))) ||
+                (upgrade.accumulable && !collectedUpgrades.includes(upgrade.name)) ||
                 (!upgrade.accumulable && (
                     (upgrade.name === "Balas Teleguiadas" && !homingShot) ||
                     (upgrade.name === "Regeneração" && !regen) ||
                     (upgrade.name === "Vampirismo" && !vampirism) ||
                     (upgrade.name === "Balas Elétricas" && !electricShot) ||
                     (upgrade.name === "Mãos Leves" && !lightHands && !goodHands) ||
-                    (upgrade.name === "Mãos Boas" && !goodHands && !lightHands)
+                    (upgrade.name === "Mãos Boas" && !goodHands && !lightHands) ||
+                    (upgrade.name === "Perfuração" && pierceCount < 2 && !collectedUpgrades.includes("Perfuração"))
                 ))
             );
             if (validUpgrades.length === 0) return;
@@ -713,7 +753,6 @@
             }
             if (selectedUpgrade) {
                 selectedUpgrade.effect();
-                restoreCanvasFocus();
             }
         }
 
@@ -810,14 +849,15 @@
             upgradeOptions.innerHTML = '';
 
             const validUpgrades = availableUpgrades.filter(upgrade => 
-                (upgrade.accumulable && (!upgrade.maxAccumulations || (upgrade.name === "Perfuração" && pierceCount < 2))) ||
+                (upgrade.accumulable && !collectedUpgrades.includes(upgrade.name)) ||
                 (!upgrade.accumulable && (
                     (upgrade.name === "Balas Teleguiadas" && !homingShot) ||
                     (upgrade.name === "Regeneração" && !regen) ||
                     (upgrade.name === "Vampirismo" && !vampirism) ||
                     (upgrade.name === "Balas Elétricas" && !electricShot) ||
                     (upgrade.name === "Mãos Leves" && !lightHands && !goodHands) ||
-                    (upgrade.name === "Mãos Boas" && !goodHands && !lightHands)
+                    (upgrade.name === "Mãos Boas" && !goodHands && !lightHands) ||
+                    (upgrade.name === "Perfuração" && pierceCount < 2 && !collectedUpgrades.includes("Perfuração"))
                 ))
             );
 
@@ -1043,6 +1083,7 @@
                         gameOver = true;
                         gameOverDisplay.style.display = 'block';
                         isPaused = true;
+                        console.log('Jogador morreu ao colidir com o boss');
                     }
                 }
 
@@ -1058,17 +1099,21 @@
                             bullets.splice(bIndex, 1);
                         }
                         if (boss.health <= 0) {
+                            console.log('Boss derrotado, iniciando atualizações');
+                            const bossX = boss.x;
+                            const bossY = boss.y;
                             score = 52;
                             xp += 5;
                             coinCount += 5;
-                            boss = null;
-                            bossSpawned = false;
-                            spawnCoin(boss.x, boss.y);
+                            spawnCoin(bossX, bossY);
                             xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
                             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                             scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
                             checkLevelUp();
                             saveData();
+                            boss = null;
+                            bossSpawned = false;
+                            console.log('Boss removido, estado atualizado');
                         }
                     }
                 });
@@ -1149,13 +1194,14 @@
         }
 
         function resetGame() {
+            console.log('Resetando jogo');
             player = { x: 500, y: 375, size: 20, speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), baseSpeed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth };
             zombies = [];
             bullets = [];
             coins = [];
             boss = null;
             score = 0;
-            xp = 0;
+            xp =  overal;
             level = 1;
             xpToNextLevel = 10;
             countdown = 0;
@@ -1173,6 +1219,8 @@
             vampirism = false;
             lightHands = false;
             goodHands = false;
+            collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
+            updateUpgradesList();
             gameOver = false;
             isPaused = false;
             lastSpawn = 0;
@@ -1280,17 +1328,22 @@
                 coinCount -= 100;
                 hasGlock = true;
                 equippedWeapon = 'glock';
+                pierceCount = 0;
                 updateShootDelay();
                 shopCoins.textContent = coinCount;
                 updateWeaponButtons();
+                collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
+                updateUpgradesList();
                 saveData();
                 alert('Glock comprada e equipada! Atraso de tiro: ' + shootDelay + 'ms');
                 restoreCanvasFocus();
             } else if (hasGlock && equippedWeapon !== 'glock') {
                 equippedWeapon = 'glock';
-                pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
+                pierceCount = 0;
                 updateShootDelay();
                 updateWeaponButtons();
+                collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
+                updateUpgradesList();
                 saveData();
                 alert('Glock equipada! Atraso de tiro: ' + shootDelay + 'ms');
                 restoreCanvasFocus();
@@ -1309,6 +1362,10 @@
                 updateShootDelay();
                 shopCoins.textContent = coinCount;
                 updateWeaponButtons();
+                if (!collectedUpgrades.includes('Perfuração')) {
+                    collectedUpgrades.push('Perfuração');
+                    updateUpgradesList();
+                }
                 saveData();
                 alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
                 restoreCanvasFocus();
@@ -1317,6 +1374,10 @@
                 pierceCount = 1;
                 updateShootDelay();
                 updateWeaponButtons();
+                if (!collectedUpgrades.includes('Perfuração')) {
+                    collectedUpgrades.push('Perfuração');
+                    updateUpgradesList();
+                }
                 saveData();
                 alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
                 restoreCanvasFocus();
