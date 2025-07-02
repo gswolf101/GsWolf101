@@ -1370,3 +1370,4 @@ function gameLoop() {
 
 canvas.focus();
 gameLoop();
+
