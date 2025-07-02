@@ -137,7 +137,7 @@
         }
         #gameOver button, #startScreen button, #ranking button, #shop button, #upgradeMenu button {
             margin: 10px;
-            padding perched: 10px 20px;
+            padding: 10px 20px;
             font-size: 20px;
             cursor: pointer;
         }
@@ -326,6 +326,7 @@
         const movementJoystick = document.getElementById('movementJoystick');
         const shootJoystick = document.getElementById('shootJoystick');
 
+        // Alteração: Velocidade base do jogador ajustada para 1.75
         let player = { x: 500, y: 375, size: 20, speed: 1.75, baseSpeed: 1.75, health: 10, maxHealth: 10, damage: 1 };
         let zombies = [];
         let bullets = [];
@@ -458,19 +459,19 @@
             a: false,
             s: false,
             d: false,
-            '1': false,
-            '2': false,
-            '3': false,
-            'e': false,
             ArrowUp: false,
             ArrowDown: false,
             ArrowLeft: false,
-            ArrowRight: false
+            ArrowRight: false,
+            '1': false,
+            '2': false,
+            '3': false,
+            'e': false
         };
 
         document.addEventListener('keydown', (e) => {
             const key = e.key;
-            const normalizedKey = key.toLowerCase();
+            const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
             if (normalizedKey in keys) {
                 keys[normalizedKey] = true;
             }
@@ -483,7 +484,7 @@
 
         document.addEventListener('keyup', (e) => {
             const key = e.key;
-            const normalizedKey = key.toLowerCase();
+            const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
             if (normalizedKey in keys) {
                 keys[normalizedKey] = false;
             }
@@ -753,6 +754,7 @@
                 else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
                 else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
                 else { x = canvas.width + 20; y = Math.random() * canvas.height; }
+                // Velocidade dos zumbis mantida em 1.5
                 zombies.push({ x, y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
             }
         }
@@ -767,6 +769,7 @@
             const bossTypes = ['charger', 'shooter'];
             const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
             const bossHealth = 50 * (bosses + 1);
+            // Velocidade do boss mantida em 1.2
             boss = {
                 x,
                 y,
@@ -1106,6 +1109,7 @@
             }
 
             if (dx !== 0 || dy !== 0) {
+                // Tiro principal
                 bullets.push({ 
                     x: player.x, 
                     y: player.y, 
@@ -1119,19 +1123,25 @@
                     damage: player.damage
                 });
 
+                // Balas diagonais
                 for (let i = 1; i <= diagonalShots; i++) {
-                    const angle = Math.atan2(dy, dx);
-                    const angleLeft = angle + Math.PI / 4;
-                    const angleRight = angle - Math.PI / 4;
+                    // Calcular ângulos de 45° à esquerda e direita da direção do tiro
+                    const angle = Math.atan2(dy, dx); // Ângulo do tiro principal
+                    const angleLeft = angle + Math.PI / 4; // +45°
+                    const angleRight = angle - Math.PI / 4; // -45°
+                    // Offset lateral para alinhar balas lado a lado (10 pixels por nível de diagonalShots)
                     const offset = i * 10;
+                    // Vetor perpendicular para offset (90° à direita do vetor de direção)
                     const perpDx = -dy;
                     const perpDy = dx;
+                    // Normalizar o vetor perpendicular
                     const perpLength = Math.sqrt(perpDx * perpDx + perpDy * perpDy);
                     const normPerpDx = perpLength > 0 ? perpDx / perpLength : 0;
                     const normPerpDy = perpLength > 0 ? perpDy / perpLength : 0;
 
+                    // Bala diagonal à esquerda
                     bullets.push({
-                        x: player.x + normPerpDx * offset,
+                        x: player.x + normPerpDx * offset, // Offset lateral
                         y: player.y + normPerpDy * offset,
                         dx: Math.cos(angleLeft) * 7,
                         dy: Math.sin(angleLeft) * 7,
@@ -1142,8 +1152,9 @@
                         ricochet: ricochetCount,
                         damage: player.damage
                     });
+                    // Bala diagonal à direita
                     bullets.push({
-                        x: player.x - normPerpDx * offset,
+                        x: player.x - normPerpDx * offset, // Offset lateral oposto
                         y: player.y - normPerpDy * offset,
                         dx: Math.cos(angleRight) * 7,
                         dy: Math.sin(angleRight) * 7,
@@ -1156,6 +1167,7 @@
                     });
                 }
 
+                // Balas frontais
                 for (let i = 1; i <= frontShots; i++) {
                     const offset = i * 10 * (i % 2 === 0 ? -1 : 1);
                     bullets.push({
@@ -1365,7 +1377,7 @@
                                         x: zombie.x,
                                         y: zombie.y,
                                         dx: (closestZombie.x - zombie.x) / Math.hypot(closestZombie.x - zombie.x, closestZombie.y - zombie.y) * 7,
-                                        dy: (closestZombie.y - zombie.y) / Math.hypot(closestZombie.x - zombie.x,角色: closestZombie.y - zombie.y) * 7,
+                                        dy: (closestZombie.y - zombie.y) / Math.hypot(closestZombie.x - zombie.x, closestZombie.y - zombie.y) * 7,
                                         homing: bullet.homing,
                                         electric: bullet.electric,
                                         electricTimer: bullet.electricTimer,
@@ -1396,7 +1408,7 @@
                                         countdown = 3;
                                         countdownStart = now;
                                     }
-                                    if (vampirism && Math.random() < 0.Case 0.3) {
+                                    if (vampirism && Math.random() < 0.3) {
                                         player.health = Math.min(player.maxHealth, player.health + 1);
                                         healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                                         healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
@@ -1472,6 +1484,7 @@
                 }
 
                 if (now - lastBossSpawnZombies >= 10000) {
+                    // Velocidade dos zumbis spawnados pelo boss mantida em 1.5
                     zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
                     zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
                     lastBossSpawnZombies = now;
@@ -1826,130 +1839,130 @@
                 restoreCanvasFocus();
             }
         }
+        function buyRifle() {
+    if (!hasRifle && coinCount >= 250) {
+        coinCount -= 250;
+        hasRifle = true;
+        equippedWeapon = 'rifle';
+        pierceCount = 1;
+        player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+        updateShootDelay();
+        shopCoins.textContent = coinCount;
+        updateWeaponButtons();
+        if (!collectedUpgrades.includes("Perfuração")) {
+            collectedUpgrades.push("Perfuração");
+        }
+        updateUpgradesList();
+        saveData();
+        alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
+        restoreCanvasFocus();
+    } else if (hasRifle && equippedWeapon !== 'rifle') {
+        equippedWeapon = 'rifle';
+        pierceCount = 1;
+        player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+        updateShootDelay();
+        updateWeaponButtons();
+        if (!collectedUpgrades.includes("Perfuração")) {
+            collectedUpgrades.push("Perfuração");
+        }
+        updateUpgradesList();
+        saveData();
+        alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
+        restoreCanvasFocus();
+    } else if (!hasRifle) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
+    }
+}
 
-	    function buyRifle() {
-        if (!hasRifle && coinCount >= 250) {
-            coinCount -= 250;
-            hasRifle = true;
-            equippedWeapon = 'rifle';
-            pierceCount = 1;
-            player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-            updateShootDelay();
-            shopCoins.textContent = coinCount;
-            updateWeaponButtons();
-            if (!collectedUpgrades.includes("Perfuração")) {
-                collectedUpgrades.push("Perfuração");
-            }
-            updateUpgradesList();
-            saveData();
-            alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
-            restoreCanvasFocus();
-        } else if (hasRifle && equippedWeapon !== 'rifle') {
-            equippedWeapon = 'rifle';
-            pierceCount = 1;
-            player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-            updateShootDelay();
-            updateWeaponButtons();
-            if (!collectedUpgrades.includes("Perfuração")) {
-                collectedUpgrades.push("Perfuração");
-            }
-            updateUpgradesList();
-            saveData();
-            alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
-            restoreCanvasFocus();
-        } else if (!hasRifle) {
-            alert('Moedas insuficientes!');
-            restoreCanvasFocus();
-        }
+function buyInitialUpgrade() {
+    if (!hasInitialUpgrade && coinCount >= 100) {
+        coinCount -= 100;
+        hasInitialUpgrade = true;
+        shopCoins.textContent = coinCount;
+        buyInitialUpgradeBtn.disabled = true;
+        buyInitialUpgradeBtn.textContent = "Comprado";
+        saveData();
+        alert('Upgrade Inicial comprado! Um upgrade será aplicado ao iniciar o jogo.');
+        restoreCanvasFocus();
+    } else if (!hasInitialUpgrade) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
     }
-    
-    function buyInitialUpgrade() {
-        if (!hasInitialUpgrade && coinCount >= 100) {
-            coinCount -= 100;
-            hasInitialUpgrade = true;
-            shopCoins.textContent = coinCount;
-            buyInitialUpgradeBtn.disabled = true;
-            buyInitialUpgradeBtn.textContent = "Comprado";
-            saveData();
-            alert('Upgrade Inicial comprado! Um upgrade será aplicado ao iniciar o jogo.');
-            restoreCanvasFocus();
-        } else if (!hasInitialUpgrade) {
-            alert('Moedas insuficientes!');
-            restoreCanvasFocus();
-        }
+}
+
+function buyMagnet() {
+    if (!hasMagnet && coinCount >= 1000) {
+        coinCount -= 1000;
+        hasMagnet = true;
+        equippedAccessory = 'magnet';
+        shopCoins.textContent = coinCount;
+        updateAccessoryButtons();
+        saveData();
+        alert('Imã Velho comprado e equipado! Coleta moedas por 15s, recarga em 60s.');
+        restoreCanvasFocus();
+    } else if (hasMagnet && equippedAccessory !== 'magnet') {
+        equippedAccessory = 'magnet';
+        updateAccessoryButtons();
+        saveData();
+        alert('Imã Velho equipado! Coleta moedas por 15s, recarga em 60s.');
+        restoreCanvasFocus();
+    } else if (!hasMagnet) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
     }
-    
-    function buyMagnet() {
-        if (!hasMagnet && coinCount >= 1000) {
-            coinCount -= 1000;
-            hasMagnet = true;
-            equippedAccessory = 'magnet';
-            shopCoins.textContent = coinCount;
-            updateAccessoryButtons();
-            saveData();
-            alert('Imã Velho comprado e equipado! Coleta moedas por 15s, recarga em 60s.');
-            restoreCanvasFocus();
-        } else if (hasMagnet && equippedAccessory !== 'magnet') {
-            equippedAccessory = 'magnet';
-            updateAccessoryButtons();
-            saveData();
-            alert('Imã Velho equipado! Coleta moedas por 15s, recarga em 60s.');
-            restoreCanvasFocus();
-        } else if (!hasMagnet) {
-            alert('Moedas insuficientes!');
-            restoreCanvasFocus();
-        }
+}
+
+function buyAdrenaline() {
+    if (!hasAdrenaline && coinCount >= 500) {
+        coinCount -= 500;
+        hasAdrenaline = true;
+        equippedAccessory = 'adrenaline';
+        shopCoins.textContent = coinCount;
+        updateAccessoryButtons();
+        saveData();
+        alert('Adrenalina comprada e equipada! -75% tempo de disparo por 10s, recarga em 60s.');
+        restoreCanvasFocus();
+    } else if (hasAdrenaline && equippedAccessory !== 'adrenaline') {
+        equippedAccessory = 'adrenaline';
+        updateAccessoryButtons();
+        saveData();
+        alert('Adrenalina equipada! -75% tempo de disparo por 10s, recarga em 60s.');
+        restoreCanvasFocus();
+    } else if (!hasAdrenaline) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
     }
-    
-    function buyAdrenaline() {
-        if (!hasAdrenaline && coinCount >= 500) {
-            coinCount -= 500;
-            hasAdrenaline = true;
-            equippedAccessory = 'adrenaline';
-            shopCoins.textContent = coinCount;
-            updateAccessoryButtons();
-            saveData();
-            alert('Adrenalina comprada e equipada! -75% tempo de disparo por 10s, recarga em 60s.');
-            restoreCanvasFocus();
-        } else if (hasAdrenaline && equippedAccessory !== 'adrenaline') {
-            equippedAccessory = 'adrenaline';
-            updateAccessoryButtons();
-            saveData();
-            alert('Adrenalina equipada! -75% tempo de disparo por 10s, recarga em 60s.');
-            restoreCanvasFocus();
-        } else if (!hasAdrenaline) {
-            alert('Moedas insuficientes!');
-            restoreCanvasFocus();
+}
+
+function gameLoop() {
+    if (!isPaused) {
+        let dx = 0, dy = 0;
+        if (isMobile && joystickState.movement.active) {
+            dx = joystickState.movement.dx / 40;
+            dy = joystickState.movement.dy / 40;
+        } else {
+            if (keys.w || keys.ArrowUp) dy -= 1;
+            if (keys.s || keys.ArrowDown) dy += 1;
+            if (keys.a || keys.ArrowLeft) dx -= 1;
+            if (keys.d || keys.ArrowRight) dx += 1;
         }
-    }
-    
-    function gameLoop() {
-        if (!isPaused) {
-            let dx = 0, dy = 0;
-            if (isMobile && joystickState.movement.active) {
-                dx = joystickState.movement.dx / 40;
-                dy = joystickState.movement.dy / 40;
-            } else {
-                if (keys.w || keys.ArrowUp) dy -= 1;
-                if (keys.s || keys.ArrowDown) dy += 1;
-                if (keys.a || keys.ArrowLeft) dx -= 1;
-                if (keys.d || keys.ArrowRight) dx += 1;
-            }
-            const length = Math.sqrt(dx * dx + dy * dy);
-            if (length > 0) {
-                dx = (dx / length) * player.speed;
-                dy = (dy / length) * player.speed;
-            }
-            player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x + dx));
-            player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y + dy));
-    
-            update();
-            draw();
+        const length = Math.sqrt(dx * dx + dy * dy);
+        if (length > 0) {
+            dx = (dx / length) * player.speed;
+            dy = (dy / length) * player.speed;
         }
-        requestAnimationFrame(gameLoop);
+        player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x + dx));
+        player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y + dy));
+
+        update();
+        draw();
     }
-    
-    gameLoop();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
     </script>
 </body>
 </html>
+       
