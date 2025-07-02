@@ -8,6 +8,7 @@ body {
     height: 100vh;
     font-family: Arial, sans-serif;
 }
+
 #gameContainer {
     position: relative;
     width: 750px;
@@ -19,6 +20,7 @@ body {
     align-items: center;
     flex-direction: column;
 }
+
 #gameCanvas {
     background: #333;
     width: 750px;
@@ -28,6 +30,7 @@ body {
     max-height: 100%;
     object-fit: contain;
 }
+
 #uiContainer {
     position: absolute;
     top: 0;
@@ -41,16 +44,19 @@ body {
     justify-content: space-between;
     align-items: flex-start;
 }
+
 #leftUI {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
 }
+
 #rightUI {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
 }
+
 #healthBar, #xpBar {
     width: 200px;
     height: 20px;
@@ -61,6 +67,7 @@ body {
     justify-content: center;
     margin-bottom: 10px;
 }
+
 #health, #xp {
     height: 100%;
     position: absolute;
@@ -68,14 +75,17 @@ body {
     left: 0;
     z-index: 1;
 }
+
 #health {
     background: #f00;
     width: 100%;
 }
+
 #xp {
     background: #0f0;
     width: 0%;
 }
+
 #healthText, #xpText {
     position: relative;
     z-index: 2;
@@ -83,10 +93,12 @@ body {
     font-size: 14px;
     text-shadow: 1px 1px 1px #000;
 }
+
 #score, #upgradesList {
     font-size: 16px;
     margin-bottom: 10px;
 }
+
 #countdown {
     display: none;
     position: absolute;
@@ -98,6 +110,7 @@ body {
     text-shadow: 2px 2px 2px #000;
     z-index: 10;
 }
+
 #startScreen, #gameOver, #ranking, #shop, #upgradeMenu {
     display: none;
     position: absolute;
@@ -112,37 +125,45 @@ body {
     z-index: 20;
     max-width: 80%;
 }
+
 #startScreen {
     display: block;
 }
+
 #gameOver button, #startScreen button, #ranking button, #shop button, #upgradeMenu button {
     margin: 10px;
     padding: 10px 20px;
     font-size: 20px;
     cursor: pointer;
 }
+
 #shop button#resetAllBtn {
     background-color: #ff4444;
     color: white;
     border: none;
     border-radius: 5px;
 }
+
 #shop button#resetAllBtn:hover {
     background-color: #cc0000;
 }
+
 #ranking ul {
     list-style: none;
     padding: 0;
 }
+
 .raro { background-color: green; color: white; }
 .normal { background-color: blue; color: white; }
 .epico { background-color: purple; color: white; }
 .lendario { background-color: yellow; color: black; }
+
 .tab-buttons {
     display: flex;
     justify-content: center;
     margin-bottom: 10px;
 }
+
 .tab-button {
     padding: 10px 20px;
     margin: 0 5px;
@@ -152,30 +173,35 @@ body {
     color: white;
     cursor: pointer;
 }
+
 .tab-button.active {
     background: #888;
 }
+
 .tab-content {
     display: none;
 }
+
 .tab-content.active {
     display: block;
 }
+
 .joystick {
     position: fixed;
     bottom: 20px;
     width: 100px;
     height: 100px;
-    background: rgba(128, 128, 128, 0.3);
+    background: rgba(128, 128, 128, 0.5);
     display: none;
     touch-action: none;
-    z-index: 15;
 }
+
 .joystick.asterisk {
     background: none;
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 10 L50 90 M20 20 L80 80 M20 80 L80 20 M10 50 L90 50" stroke="white" stroke-width="5" fill="none"/></svg>');
     background-size: contain;
 }
+
 .joystick-inner {
     width: 40px;
     height: 40px;
@@ -186,51 +212,49 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
 #movementJoystick {
-    left: calc(50% - 450px);
+    left: calc(50% - 425px);
 }
+
 #shootJoystick {
-    right: calc(50% - 450px);
+    right: calc(50% - 425px);
 }
+
 @media (max-width: 900px) {
     #gameContainer {
         width: 90vw;
         height: 90vw;
     }
+
     #gameCanvas {
         width: 90vw;
         height: 90vw;
     }
+
     #uiContainer {
         flex-direction: column;
         align-items: flex-start;
         padding: 5px;
     }
+
     #leftUI, #rightUI {
         width: 100%;
     }
+
     #healthBar, #xpBar {
         width: 150px;
     }
+
     #score, #upgradesList {
         font-size: 14px;
     }
+
     .joystick {
         display: block;
-        width: 80px;
-        height: 80px;
-    }
-    .joystick-inner {
-        width: 32px;
-        height: 32px;
-    }
-    #movementJoystick {
-        left: 2vw;
-    }
-    #shootJoystick {
-        right: 2vw;
     }
 }
+
 @media (orientation: portrait) {
     #startScreen::before {
         content: "Por favor, gire o dispositivo para a orientação paisagem para uma melhor experiência.";
@@ -239,4 +263,3 @@ body {
         margin-bottom: 20px;
     }
 }
-
