@@ -20,8 +20,6 @@ const buyRifleBtn = document.getElementById('buyRifleBtn');
 const upgradeMenu = document.getElementById('upgradeMenu');
 const upgradeOptions = document.getElementById('upgradeOptions');
 const upgradesList = document.getElementById('upgradesList');
-const movementJoystick = document.getElementById('movementJoystick');
-const shootJoystick = document.getElementById('shootJoystick');
 
 let player = { x: 375, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
 let zombies = [];
@@ -69,9 +67,9 @@ let collectedUpgrades = [];
 let bosses = 0;
 
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-const joystickState = {
-    movement: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 },
-    shoot: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 }
+const touchState = {
+    movement: { active: false, touchId: null, startX: 0, startY: 0, dx: 0, dy: 0, targetX: null, targetY: null },
+    shoot: { active: false, touchId: null, startX: 0, startY: 0, dx: 0, dy: 0, lastShot: 0 }
 };
 
 const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
@@ -163,50 +161,92 @@ canvas.addEventListener('click', () => {
 });
 
 if (isMobile) {
-    movementJoystick.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        joystickState.movement.active = true;
-        joystickState.movement.touchId = touch.identifier;
-        updateJoystick(touch, joystickState.movement, movementJoystick);
-    });
-
-    shootJoystick.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        joystickState.shoot.active = true;
-        joystickState.shoot.touchId = touch.identifier;
-        updateJoystick(touch, joystickState.shoot, shootJoystick);
-    });
-
-    document.addEventListener('touchmove', (e) => {
+    canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         for (let touch of e.changedTouches) {
-            if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
-                updateJoystick(touch, joystickState.movement, movementJoystick);
-            }
-            if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
-                updateJoystick(touch, joystickState.shoot, shootJoystick);
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const touchX = (touch.clientX - rect.left) * scaleX;
+            const touchY = (touch.clientY - rect.top) * scaleY;
+
+            if (touchX < canvas.width / 2 && !touchState.movement.active) {
+                touchState.movement.active = true;
+                touchState.movement.touchId = touch.identifier;
+                touchState.movement.startX = touch.clientX;
+                touchState.movement.startY = touch.clientY;
+                touchState.movement.dx = 0;
+                touchState.movement.dy = 0;
+                touchState.movement.targetX = touchX;
+                touchState.movement.targetY = touchY;
+            } else if (touchX >= canvas.width / 2 && !touchState.shoot.active) {
+                touchState.shoot.active = true;
+                touchState.shoot.touchId = touch.identifier;
+                touchState.shoot.startX = touch.clientX;
+                touchState.shoot.startY = touch.clientY;
+                touchState.shoot.dx = touchX - player.x;
+                touchState.shoot.dy = touchY - player.y;
+                shoot(touchX, touchY);
             }
         }
     });
 
-    document.addEventListener('touchend', (e) => {
+    canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
         for (let touch of e.changedTouches) {
-            if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
-                joystickState.movement.active = false;
-                joystickState.movement.touchId = null;
-                joystickState.movement.dx = 0;
-                joystickState.movement.dy = 0;
-                updateJoystickPosition(joystickState.movement, movementJoystick);
+            if (touchState.movement.active && touch.identifier === touchState.movement.touchId) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const touchX = (touch.clientX - rect.left) * scaleX;
+                const touchY = (touch.clientY - rect.top) * scaleY;
+
+                touchState.movement.dx = touch.clientX - touchState.movement.startX;
+                touchState.movement.dy = touch.clientY - touchState.movement.startY;
+                const distance = Math.hypot(touchState.movement.dx, touchState.movement.dy);
+                const maxDistance = 100;
+                if (distance > maxDistance) {
+                    const scale = maxDistance / distance;
+                    touchState.movement.dx *= scale;
+                    touchState.movement.dy *= scale;
+                }
+                const snapped = snapToEightDirections(touchState.movement.dx, touchState.movement.dy);
+                touchState.movement.dx = snapped.dx;
+                touchState.movement.dy = snapped.dy;
+                touchState.movement.targetX = null;
+                touchState.movement.targetY = null;
             }
-            if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
-                joystickState.shoot.active = false;
-                joystickState.shoot.touchId = null;
-                joystickState.shoot.dx = 0;
-                joystickState.shoot.dy = 0;
-                updateJoystickPosition(joystickState.shoot, shootJoystick);
+            if (touchState.shoot.active && touch.identifier === touchState.shoot.touchId) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const touchX = (touch.clientX - rect.left) * scaleX;
+                const touchY = (touch.clientY - rect.top) * scaleY;
+                touchState.shoot.dx = touchX - player.x;
+                touchState.shoot.dy = touchY - player.y;
+            }
+        }
+    });
+
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        for (let touch of e.changedTouches) {
+            if (touchState.movement.active && touch.identifier === touchState.movement.touchId) {
+                touchState.movement.active = false;
+                touchState.movement.touchId = null;
+                touchState.movement.dx = 0;
+                touchState.movement.dy = 0;
+                if (!touchState.movement.targetX && !touchState.movement.targetY) {
+                    touchState.movement.targetX = null;
+                    touchState.movement.targetY = null;
+                }
+            }
+            if (touchState.shoot.active && touch.identifier === touchState.shoot.touchId) {
+                touchState.shoot.active = false;
+                touchState.shoot.touchId = null;
+                touchState.shoot.dx = 0;
+                touchState.shoot.dy = 0;
+                touchState.shoot.lastShot = 0;
             }
         }
     });
@@ -214,37 +254,11 @@ if (isMobile) {
     function snapToEightDirections(dx, dy) {
         const angle = Math.atan2(dy, dx);
         const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-        const magnitude = Math.hypot(dx, dy);
+        const magnitude = Math.hypot(dx, dy) || 1;
         return {
             dx: Math.cos(snappedAngle) * magnitude,
             dy: Math.sin(snappedAngle) * magnitude
         };
-    }
-
-    function updateJoystick(touch, joystick, element) {
-        const rect = element.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        let dx = touch.clientX - centerX;
-        let dy = touch.clientY - centerY;
-        const distance = Math.hypot(dx, dy);
-        const maxDistance = rect.width / 2 - 20;
-        if (distance > maxDistance) {
-            const scale = maxDistance / distance;
-            dx *= scale;
-            dy *= scale;
-        }
-        const snapped = snapToEightDirections(dx, dy);
-        joystick.dx = snapped.dx;
-        joystick.dy = snapped.dy;
-        joystick.x = centerX;
-        joystick.y = centerY;
-        updateJoystickPosition(joystick, element);
-    }
-
-    function updateJoystickPosition(joystick, element) {
-        const inner = element.querySelector('.joystick-inner');
-        inner.style.transform = `translate(${joystick.dx - 20}px, ${joystick.dy - 20}px)`;
     }
 }
 
@@ -655,17 +669,28 @@ function applyInitialUpgrade() {
     }
 }
 
-function shoot() {
+function shoot(touchX, touchY) {
     if (isPaused) return;
     const now = Date.now();
     if (now - lastShot < shootDelay) return;
     lastShot = now;
 
     let dx = 0, dy = 0;
-    if (isMobile && joystickState.shoot.active) {
-        const length = Math.hypot(joystickState.shoot.dx, joystickState.shoot.dy);
+    if (isMobile && touchX !== undefined && touchY !== undefined) {
+        dx = touchX - player.x;
+        dy = touchY - player.y;
+        const length = Math.hypot(dx, dy);
         if (length > 0) {
-            const snapped = snapToEightDirections(joystickState.shoot.dx, joystickState.shoot.dy);
+            const snapped = snapToEightDirections(dx, dy);
+            dx = snapped.dx / length;
+            dy = snapped.dy / length;
+        }
+    } else if (isMobile && touchState.shoot.active) {
+        dx = touchState.shoot.dx;
+        dy = touchState.shoot.dy;
+        const length = Math.hypot(dx, dy);
+        if (length > 0) {
+            const snapped = snapToEightDirections(dx, dy);
             dx = snapped.dx / length;
             dy = snapped.dy / length;
         }
@@ -819,19 +844,48 @@ function update() {
         return;
     }
 
-    if (isMobile && joystickState.movement.active) {
-        const length = Math.hypot(joystickState.movement.dx, joystickState.movement.dy);
-        if (length > 0) {
-            const snapped = snapToEightDirections(joystickState.movement.dx, joystickState.movement.dy);
-            const normalizedDx = snapped.dx / length;
-            const normalizedDy = snapped.dy / length;
-            const moveX = normalizedDx * player.speed;
-            const moveY = normalizedDy * player.speed;
-            if (player.x + moveX > player.size && player.x + moveX < canvas.width - player.size) {
-                player.x += moveX;
+    if (isMobile) {
+        if (touchState.movement.active && touchState.movement.dx !== 0 && touchState.movement.dy !== 0) {
+            const length = Math.hypot(touchState.movement.dx, touchState.movement.dy);
+            if (length > 0) {
+                const snapped = snapToEightDirections(touchState.movement.dx, touchState.movement.dy);
+                const normalizedDx = snapped.dx / length;
+                const normalizedDy = snapped.dy / length;
+                const moveX = normalizedDx * player.speed;
+                const moveY = normalizedDy * player.speed;
+                if (player.x + moveX > player.size && player.x + moveX < canvas.width - player.size) {
+                    player.x += moveX;
+                }
+                if (player.y + moveY > player.size && player.y + moveY < canvas.height - player.size) {
+                    player.y += moveY;
+                }
             }
-            if (player.y + moveY > player.size && player.y + moveY < canvas.height - player.size) {
-                player.y += moveY;
+        } else if (touchState.movement.targetX !== null && touchState.movement.targetY !== null) {
+            const dx = touchState.movement.targetX - player.x;
+            const dy = touchState.movement.targetY - player.y;
+            const distance = Math.hypot(dx, dy);
+            if (distance > 5) {
+                const snapped = snapToEightDirections(dx, dy);
+                const normalizedDx = snapped.dx / distance;
+                const normalizedDy = snapped.dy / distance;
+                const moveX = normalizedDx * player.speed;
+                const moveY = normalizedDy * player.speed;
+                if (player.x + moveX > player.size && player.x + moveX < canvas.width - player.size) {
+                    player.x += moveX;
+                }
+                if (player.y + moveY > player.size && player.y + moveY < canvas.height - player.size) {
+                    player.y += moveY;
+                }
+            } else {
+                touchState.movement.targetX = null;
+                touchState.movement.targetY = null;
+            }
+        }
+        if (touchState.shoot.active && touchState.shoot.dx !== 0 && touchState.shoot.dy !== 0) {
+            const now = Date.now();
+            if (now - touchState.shoot.lastShot >= shootDelay) {
+                shoot(touchState.shoot.dx + player.x, touchState.shoot.dy + player.y);
+                touchState.shoot.lastShot = now;
             }
         }
     } else {
@@ -839,6 +893,9 @@ function update() {
         if (keys.s && player.y < canvas.height - player.size) player.y += player.speed;
         if (keys.a && player.x > player.size) player.x -= player.speed;
         if (keys.d && player.x < canvas.width - player.size) player.x += player.speed;
+        if (keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
+            shoot();
+        }
     }
 
     if (regen) {
@@ -849,10 +906,6 @@ function update() {
             healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
             lastRegen = now;
         }
-    }
-
-    if ((isMobile && joystickState.shoot.active) || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
-        shoot();
     }
 
     bullets.forEach(bullet => {
@@ -1150,6 +1203,13 @@ function draw() {
         ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
         ctx.fill();
     });
+
+    if (isMobile && touchState.movement.targetX !== null && touchState.movement.targetY !== null) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.arc(touchState.movement.targetX, touchState.movement.targetY, 10, 0, Math.PI * 2);
+        ctx.fill();
+    }
 }
 
 function resetGame() {
