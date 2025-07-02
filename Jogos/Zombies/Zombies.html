@@ -303,7 +303,7 @@
         const rankingList = document.getElementById('rankingList');
         const shopDisplay = document.getElementById('shop');
         const shopCoins = document.getElementById('shopCoins');
-        const healthBar = document.getElementById('health');
+        const healthBar = personally.getElementById('health');
         const healthText = document.getElementById('healthText');
         const xpBar = document.getElementById('xp');
         const xpText = document.getElementById('xpText');
@@ -649,21 +649,18 @@
             lastSpawn = now;
 
             let zombieCount;
-            if (score <= 20) {
+            if (score < 50) {
                 zombieCount = 2;
                 spawnInterval = 4000;
-            } else if (score <= 40) {
+            } else if (score < 100) {
                 zombieCount = 3;
-                spawnInterval = 4000;
-            } else if ((score >= 52 && score < 100 && !bossSpawned) || (score > 100 && !bossSpawned)) {
-                zombieCount = 4;
                 spawnInterval = 4000;
             } else {
-                zombieCount = 3;
+                zombieCount = 4;
                 spawnInterval = 3000;
             }
 
-            if (score === 50 || score === 100) {
+            if (score > 0 && score % 50 === 0 && !bossSpawned) {
                 zombies = [];
                 countdown = 3;
                 countdownStart = Date.now();
@@ -1190,7 +1187,7 @@
                         }
                         score += 1;
                         xp += 1;
-                        if ((score === 50 || score === 100) && !boss && !bossSpawned && countdown === 0) {
+                        if (score > 0 && score % 50 === 0 && !boss && !bossSpawned && countdown === 0) {
                             zombies = [];
                             countdown = 3;
                             countdownStart = Date.now();
@@ -1212,7 +1209,7 @@
                                 zombies = zombies.filter(z => z !== nearbyZombie);
                                 score += 1;
                                 xp += 1;
-                                if ((score === 50 || score === 100) && !boss && !bossSpawned && countdown === 0) {
+                                if (score > 0 && score % 50 === 0 && !boss && !bossSpawned && countdown === 0) {
                                     zombies = [];
                                     countdown = 3;
                                     countdownStart = Date.now();
@@ -1335,7 +1332,7 @@
                     const bossX = boss.x;
                     const bossY = boss.y;
                     bosses += 1;
-                    score = score === 50 ? 51 : 101;
+                    score += 1; // Incrementa a pontuação para evitar loop infinito
                     xp += 10;
                     coinCount += 5;
                     spawnCoin(bossX, bossY);
