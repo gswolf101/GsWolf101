@@ -326,7 +326,8 @@
         const movementJoystick = document.getElementById('movementJoystick');
         const shootJoystick = document.getElementById('shootJoystick');
 
-        let player = { x: 500, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10, damage: 1 };
+        // Alteração: Velocidade base do jogador ajustada para 1.65 (10% mais rápido que zumbi)
+        let player = { x: 500, y: 375, size: 20, speed: 1.65, baseSpeed: 1.65, health: 10, maxHealth: 10, damage: 1 };
         let zombies = [];
         let bullets = [];
         let bossBullets = [];
@@ -706,7 +707,6 @@
             gameOver = false;
             resetGame();
             canvas.focus();
-            requestAnimationFrame(gameLoop); // Garantir que o gameLoop seja chamado
         }
 
         function showRankingFromStart() {
@@ -754,7 +754,8 @@
                 else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
                 else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
                 else { x = canvas.width + 20; y = Math.random() * canvas.height; }
-                zombies.push({ x, y, size: 20, speed: 1.9, health: zombieHealth, maxHealth: zombieHealth });
+                // Alteração: Velocidade dos zumbis reduzida para 1.5
+                zombies.push({ x, y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
             }
         }
 
@@ -768,13 +769,14 @@
             const bossTypes = ['charger', 'shooter'];
             const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
             const bossHealth = 50 * (bosses + 1);
+            // Alteração: Velocidade base do boss ajustada para 1.2
             boss = {
                 x,
                 y,
                 size: 40,
-                speed: 1.5,
+                speed: 1.2,
                 health: bossHealth,
-                baseSpeed: 1.5,
+                baseSpeed: 1.2,
                 type: bossType,
                 chargeTimer: 0,
                 spawnZombieTimer: 0,
@@ -1465,8 +1467,9 @@
                 }
 
                 if (now - lastBossSpawnZombies >= 10000) {
-                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9, health: zombieHealth, maxHealth: zombieHealth });
-                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9, health: zombieHealth, maxHealth: zombieHealth });
+                    // Alteração: Velocidade dos zumbis spawnados pelo boss ajustada para 1.5
+                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
+                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
                     lastBossSpawnZombies = now;
                 }
 
@@ -1639,7 +1642,16 @@
 
         function resetGame() {
             console.log('Resetando o jogo...');
-            player = { x: canvas.width / 2, y: canvas.height / 2, size: 20, speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), baseSpeed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth, damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) };
+            player = { 
+                x: canvas.width / 2, 
+                y: canvas.height / 2, 
+                size: 20, 
+                speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
+                baseSpeed: 1.65, 
+                health: player.maxHealth, 
+                maxHealth: player.maxHealth, 
+                damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
+            };
             zombies = [];
             bullets = [];
             bossBullets = [];
@@ -1811,43 +1823,43 @@
             }
         }
 
-        function buyRifle() {
-            if (!hasRifle && coinCount >= 250) {
-                coinCount -= 250;
-                hasRifle = true;
-                equippedWeapon = 'rifle';
-                pierceCount = 1;
-                player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-                updateShootDelay();
-                shopCoins.textContent = coinCount;
-                updateWeaponButtons();
-                if (!collectedUpgrades.includes('Perfuração')) {
-                    collectedUpgrades.push('Perfuração');
-                    updateUpgradesList();
-                }
-                saveData();
-                alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
-                               restoreCanvasFocus();
-            } else if (hasRifle && equippedWeapon !== 'rifle') {
-                equippedWeapon = 'rifle';
-                pierceCount = 1;
-                player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-                updateShootDelay();
-                updateWeaponButtons();
-                if (!collectedUpgrades.includes('Perfuração')) {
-                    collectedUpgrades.push('Perfuração');
-                    updateUpgradesList();
-                }
-                saveData();
-                alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
-                restoreCanvasFocus();
-            } else if (!hasRifle) {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
-            }
+       function buyRifle() {
+    if (!hasRifle && coinCount >= 250) {
+        coinCount -= 250;
+        hasRifle = true;
+        equippedWeapon = 'rifle';
+        pierceCount = 1;
+        player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+        updateShootDelay();
+        shopCoins.textContent = coinCount;
+        updateWeaponButtons();
+        if (!collectedUpgrades.includes('Perfuração')) {
+            collectedUpgrades.push('Perfuração');
+            updateUpgradesList();
         }
-
-        function buyMagnet() {
+        saveData();
+        alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
+        restoreCanvasFocus();
+    } else if (hasRifle && equippedWeapon !== 'rifle') {
+        equippedWeapon = 'rifle';
+        pierceCount = 1;
+        player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+        updateShootDelay();
+        updateWeaponButtons();
+        if (!collectedUpgrades.includes('Perfuração')) {
+            collectedUpgrades.push('Perfuração');
+            updateUpgradesList();
+        }
+        collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração' || equippedWeapon === 'rifle');
+        saveData();
+        alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
+        restoreCanvasFocus();
+    } else if (!hasRifle) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
+    }
+}
+                function buyMagnet() {
             if (!hasMagnet && coinCount >= 1000) {
                 coinCount -= 1000;
                 hasMagnet = true;
@@ -1910,6 +1922,7 @@
 
         function gameLoop() {
             if (!isPaused && !gameOver) {
+                // Alteração: Removida a lógica de movimento por teclado, mantendo apenas joystick
                 let dx = 0, dy = 0;
                 if (isMobile && joystickState.movement.active) {
                     const length = Math.hypot(joystickState.movement.dx, joystickState.movement.dy);
@@ -1917,11 +1930,6 @@
                         dx = (joystickState.movement.dx / length) * player.speed;
                         dy = (joystickState.movement.dy / length) * player.speed;
                     }
-                } else {
-                    if (keys.w || keys.ArrowUp) dy -= player.speed;
-                    if (keys.s || keys.ArrowDown) dy += player.speed;
-                    if (keys.a || keys.ArrowLeft) dx -= player.speed;
-                    if (keys.d || keys.ArrowRight) dx += player.speed;
                 }
                 const length = Math.sqrt(dx * dx + dy * dy);
                 if (length > 0) {
