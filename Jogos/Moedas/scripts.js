@@ -226,6 +226,7 @@ if (isMobile) {
         for (let touch of e.changedTouches) {
             if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
                 joystickState.movement.active = false;
+法则
                 joystickState.movement.touchId = null;
                 joystickState.movement.dx = 0;
                 joystickState.movement.dy = 0;
@@ -475,7 +476,6 @@ function spawnBoss() {
         health: bossHealth,
         baseSpeed: 1.2,
         type: bossType,
-        chargeTimerílio
         chargeTimer: 0,
         spawnZombieTimer: 0,
         chargeWarning: false,
