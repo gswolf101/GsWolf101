@@ -111,7 +111,9 @@ if (hasInitialUpgrade) {
 }
 updateWeaponButtons();
 
+// Função snapToEightDirections movida para o escopo global
 function snapToEightDirections(dx, dy) {
+    console.log('snapToEightDirections called'); // Log para verificar carregamento
     const angle = Math.atan2(dy, dx);
     const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
     return {
@@ -607,8 +609,7 @@ const availableUpgrades = [
         rarity: "lendario",
         chance: 0.05,
         accumulable: false,
-        effect: () => 
-```javascript
+        effect: () => {
             regen = true;
             collectedUpgrades.push("Regeneração");
             updateUpgradesList();
@@ -673,26 +674,40 @@ function shoot(touchX, touchY) {
     if (now - lastShot < shootDelay) return;
     lastShot = now;
 
+    console.log('shoot called', { touchX, touchY }); // Log para depuração
+
     let dx = 0, dy = 0;
     if (isMobile && touchX !== undefined && touchY !== undefined) {
         dx = touchX - player.x;
         dy = touchY - player.y;
-        const snapped = snapToEightDirections(dx, dy);
-        dx = snapped.dx;
-        dy = snapped.dy;
+        if (typeof snapToEightDirections === 'function') {
+            const snapped = snapToEightDirections(dx, dy);
+            dx = snapped.dx;
+            dy = snapped.dy;
+        } else {
+            console.error('snapToEightDirections is not defined');
+        }
     } else if (isMobile && touchState.shoot.active) {
-        const snapped = snapToEightDirections(touchState.shoot.dx, touchState.shoot.dy);
-        dx = snapped.dx;
-        dy = snapped.dy;
+        if (typeof snapToEightDirections === 'function') {
+            const snapped = snapToEightDirections(touchState.shoot.dx, touchState.shoot.dy);
+            dx = snapped.dx;
+            dy = snapped.dy;
+        } else {
+            console.error('snapToEightDirections is not defined');
+        }
     } else {
         if (keys.ArrowUp) dy = -1;
         if (keys.ArrowDown) dy = 1;
         if (keys.ArrowLeft) dx = -1;
         if (keys.ArrowRight) dx = 1;
         if (dx !== 0 || dy !== 0) {
-            const snapped = snapToEightDirections(dx, dy);
-            dx = snapped.dx;
-            dy = snapped.dy;
+            if (typeof snapToEightDirections === 'function') {
+                const snapped = snapToEightDirections(dx, dy);
+                dx = snapped.dx;
+                dy = snapped.dy;
+            } else {
+                console.error('snapToEightDirections is not defined');
+            }
         }
     }
 
