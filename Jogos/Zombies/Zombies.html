@@ -36,14 +36,24 @@
             max-height: 100%;
             object-fit: contain;
         }
+        #uiContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            box-sizing: border-box;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         #healthBar {
-            width: 980px;
+            width: 200px;
             height: 20px;
             background: #555;
             border: 2px solid #000;
-            position: absolute;
-            top: 10px;
-            left: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -65,13 +75,10 @@
             text-shadow: 1px 1px 1px #000;
         }
         #xpBar {
-            width: 980px;
+            width: 200px;
             height: 20px;
             background: #555;
             border: 2px solid #000;
-            position: absolute;
-            top: 40px;
-            left: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -93,19 +100,11 @@
             text-shadow: 1px 1px 1px #000;
         }
         #score {
-            position: absolute;
-            top: 70px;
-            left: 10px;
-            color: white;
-            font-size: 20px;
+            font-size: 16px;
         }
         #upgradesList {
-            position: absolute;
-            top: 100px;
-            left: 10px;
-            color: white;
             font-size: 16px;
-            max-width: 200px;
+            max-width: 300px;
             text-align: left;
         }
         #countdown {
@@ -182,6 +181,48 @@
         .tab-content.active {
             display: block;
         }
+        .joystick {
+            position: fixed;
+            bottom: 20px;
+            width: 80px;
+            height: 80px;
+            background: rgba(128, 128, 128, 0.5);
+            border-radius: 50%;
+            display: none;
+            touch-action: none;
+        }
+        #movementJoystick {
+            left: 20px;
+        }
+        #shootJoystick {
+            right: 20px;
+        }
+        .joystick-inner {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @media (max-width: 600px) {
+            .joystick {
+                display: block;
+            }
+            #uiContainer {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 5px;
+            }
+            #healthBar, #xpBar {
+                width: 150px;
+            }
+            #score, #upgradesList {
+                font-size: 14px;
+            }
+        }
         @media (orientation: portrait) {
             #startScreen::before {
                 content: "Por favor, gire o dispositivo para a orientação paisagem para uma melhor experiência.";
@@ -194,16 +235,18 @@
 </head>
 <body>
     <div id="gameContainer">
-        <div id="xpBar">
-            <div id="xp"></div>
-            <span id="xpText">Nível 1: 0/10 XP</span>
+        <div id="uiContainer">
+            <div id="healthBar">
+                <div id="health"></div>
+                <span id="healthText">Vida: 100%</span>
+            </div>
+            <div id="xpBar">
+                <div id="xp"></div>
+                <span id="xpText">Nível 1: 0/10 XP</span>
+            </div>
+            <div id="score">Pontos: 0 | Moedas: 0</div>
+            <div id="upgradesList">Upgrades: Nenhum</div>
         </div>
-        <div id="healthBar">
-            <div id="health"></div>
-            <span id="healthText">Vida: 100%</span>
-        </div>
-        <div id="score">Pontos: 0 | Moedas: 0</div>
-        <div id="upgradesList">Upgrades: Nenhum</div>
         <div id="startScreen">
             <h2>Jogo de Sobrevivência a Zumbis</h2>
             <button onclick="startGame()">Iniciar Jogo</button><br>
@@ -246,6 +289,8 @@
             <p>Escolha um upgrade (1, 2 ou 3):</p>
             <div id="upgradeOptions"></div>
         </div>
+        <div id="movementJoystick" class="joystick"><div class="joystick-inner"></div></div>
+        <div id="shootJoystick" class="joystick"><div class="joystick-inner"></div></div>
     </div>
 
     <script>
@@ -271,6 +316,8 @@
         const upgradeMenu = document.getElementById('upgradeMenu');
         const upgradeOptions = document.getElementById('upgradeOptions');
         const upgradesList = document.getElementById('upgradesList');
+        const movementJoystick = document.getElementById('movementJoystick');
+        const shootJoystick = document.getElementById('shootJoystick');
 
         let player = { x: 500, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
         let zombies = [];
@@ -317,10 +364,11 @@
         let collectedUpgrades = [];
         let bosses = 0;
 
-        // Joystick para dispositivos móveis
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const movementJoystick = { x: 100, y: 650, radius: 50, innerRadius: 20, active: false, touchId: null, dx: 0, dy: 0 };
-        const shootJoystick = { x: 900, y: 650, radius: 50, innerRadius: 20, active: false, touchId: null, dx: 0, dy: 0 };
+        const joystickState = {
+            movement: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 },
+            shoot: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 }
+        };
 
         const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
@@ -361,7 +409,6 @@
         }
         updateWeaponButtons();
 
-        // Ajustar escala do canvas
         function resizeCanvas() {
             const container = document.getElementById('gameContainer');
             const scaleX = window.innerWidth / 1000;
@@ -369,11 +416,6 @@
             const scale = Math.min(scaleX, scaleY);
             container.style.transform = `scale(${scale})`;
             container.style.transformOrigin = 'center';
-            // Ajustar posições dos joysticks para o tamanho fixo do canvas
-            movementJoystick.x = 100;
-            movementJoystick.y = 650;
-            shootJoystick.x = 900;
-            shootJoystick.y = 650;
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -416,69 +458,63 @@
             canvas.focus();
         });
 
-        // Eventos de toque para joysticks
         if (isMobile) {
-            canvas.addEventListener('touchstart', (e) => {
+            movementJoystick.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
+                const touch = e.changedTouches[0];
+                joystickState.movement.active = true;
+                joystickState.movement.touchId = touch.identifier;
+                updateJoystick(touch, joystickState.movement, movementJoystick);
+            });
+
+            shootJoystick.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                joystickState.shoot.active = true;
+                joystickState.shoot.touchId = touch.identifier;
+                updateJoystick(touch, joystickState.shoot, shootJoystick);
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                e.preventDefault();
                 for (let touch of e.changedTouches) {
-                    const touchX = (touch.clientX - rect.left) * scaleX;
-                    const touchY = (touch.clientY - rect.top) * scaleY;
-                    if (Math.hypot(touchX - movementJoystick.x, touchY - movementJoystick.y) < movementJoystick.radius) {
-                        movementJoystick.active = true;
-                        movementJoystick.touchId = touch.identifier;
-                        updateJoystick(touch, movementJoystick, rect, scaleX, scaleY);
+                    if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
+                        updateJoystick(touch, joystickState.movement, movementJoystick);
                     }
-                    if (Math.hypot(touchX - shootJoystick.x, touchY - shootJoystick.y) < shootJoystick.radius) {
-                        shootJoystick.active = true;
-                        shootJoystick.touchId = touch.identifier;
-                        updateJoystick(touch, shootJoystick, rect, scaleX, scaleY);
+                    if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
+                        updateJoystick(touch, joystickState.shoot, shootJoystick);
                     }
                 }
             });
 
-            canvas.addEventListener('touchmove', (e) => {
+            document.addEventListener('touchend', (e) => {
                 e.preventDefault();
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
                 for (let touch of e.changedTouches) {
-                    if (movementJoystick.active && touch.identifier === movementJoystick.touchId) {
-                        updateJoystick(touch, movementJoystick, rect, scaleX, scaleY);
+                    if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
+                        joystickState.movement.active = false;
+                        joystickState.movement.touchId = null;
+                        joystickState.movement.dx = 0;
+                        joystickState.movement.dy = 0;
+                        updateJoystickPosition(joystickState.movement, movementJoystick);
                     }
-                    if (shootJoystick.active && touch.identifier === shootJoystick.touchId) {
-                        updateJoystick(touch, shootJoystick, rect, scaleX, scaleY);
+                    if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
+                        joystickState.shoot.active = false;
+                        joystickState.shoot.touchId = null;
+                        joystickState.shoot.dx = 0;
+                        joystickState.shoot.dy = 0;
+                        updateJoystickPosition(joystickState.shoot, shootJoystick);
                     }
                 }
             });
 
-            canvas.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                for (let touch of e.changedTouches) {
-                    if (movementJoystick.active && touch.identifier === movementJoystick.touchId) {
-                        movementJoystick.active = false;
-                        movementJoystick.touchId = null;
-                        movementJoystick.dx = 0;
-                        movementJoystick.dy = 0;
-                    }
-                    if (shootJoystick.active && touch.identifier === shootJoystick.touchId) {
-                        shootJoystick.active = false;
-                        shootJoystick.touchId = null;
-                        shootJoystick.dx = 0;
-                        shootJoystick.dy = 0;
-                    }
-                }
-            });
-
-            function updateJoystick(touch, joystick, rect, scaleX, scaleY) {
-                const touchX = (touch.clientX - rect.left) * scaleX;
-                const touchY = (touch.clientY - rect.top) * scaleY;
-                let dx = touchX - joystick.x;
-                let dy = touchY - joystick.y;
+            function updateJoystick(touch, joystick, element) {
+                const rect = element.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
                 const distance = Math.hypot(dx, dy);
-                const maxDistance = joystick.radius - joystick.innerRadius;
+                const maxDistance = rect.width / 2 - 20; // 20 é o raio do joystick interno
                 if (distance > maxDistance) {
                     const scale = maxDistance / distance;
                     dx *= scale;
@@ -486,6 +522,14 @@
                 }
                 joystick.dx = dx;
                 joystick.dy = dy;
+                joystick.x = centerX;
+                joystick.y = centerY;
+                updateJoystickPosition(joystick, element);
+            }
+
+            function updateJoystickPosition(joystick, element) {
+                const inner = element.querySelector('.joystick-inner');
+                inner.style.transform = `translate(${joystick.dx - 20}px, ${joystick.dy - 20}px)`;
             }
         }
 
@@ -903,13 +947,11 @@
             lastShot = now;
 
             let dx = 0, dy = 0;
-            if (isMobile && shootJoystick.active) {
-                dx = shootJoystick.dx / (shootJoystick.radius - shootJoystick.innerRadius);
-                dy = shootJoystick.dy / (shootJoystick.radius - shootJoystick.innerRadius);
-                const length = Math.hypot(dx, dy);
+            if (isMobile && joystickState.shoot.active) {
+                const length = Math.hypot(joystickState.shoot.dx, joystickState.shoot.dy);
                 if (length > 0) {
-                    dx /= length;
-                    dy /= length;
+                    dx = joystickState.shoot.dx / length;
+                    dy = joystickState.shoot.dy / length;
                 }
             } else {
                 if (keys.ArrowUp) dy -= 1;
@@ -1061,11 +1103,11 @@
             }
 
             // Movimento do jogador
-            if (isMobile && movementJoystick.active) {
-                const length = Math.hypot(movementJoystick.dx, movementJoystick.dy);
+            if (isMobile && joystickState.movement.active) {
+                const length = Math.hypot(joystickState.movement.dx, joystickState.movement.dy);
                 if (length > 0) {
-                    const normalizedDx = movementJoystick.dx / length;
-                    const normalizedDy = movementJoystick.dy / length;
+                    const normalizedDx = joystickState.movement.dx / length;
+                    const normalizedDy = joystickState.movement.dy / length;
                     const moveX = normalizedDx * player.speed;
                     const moveY = normalizedDy * player.speed;
                     if (player.x + moveX > player.size && player.x + moveX < canvas.width - player.size) {
@@ -1092,7 +1134,7 @@
                 }
             }
 
-            if ((isMobile && shootJoystick.active) || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
+            if ((isMobile && joystickState.shoot.active) || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
                 shoot();
             }
 
@@ -1391,41 +1433,6 @@
                 ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
                 ctx.fill();
             });
-
-            // Desenhar joysticks em dispositivos móveis
-            if (isMobile) {
-                // Joystick de movimento
-                ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
-                ctx.beginPath();
-                ctx.arc(movementJoystick.x, movementJoystick.y, movementJoystick.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.beginPath();
-                ctx.arc(
-                    movementJoystick.x + movementJoystick.dx,
-                    movementJoystick.y + movementJoystick.dy,
-                    movementJoystick.innerRadius,
-                    0,
-                    Math.PI * 2
-                );
-                ctx.fill();
-
-                // Joystick de tiro
-                ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
-                ctx.beginPath();
-                ctx.arc(shootJoystick.x, shootJoystick.y, shootJoystick.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.beginPath();
-                ctx.arc(
-                    shootJoystick.x + shootJoystick.dx,
-                    shootJoystick.y + shootJoystick.dy,
-                    shootJoystick.innerRadius,
-                    0,
-                    Math.PI * 2
-                );
-                ctx.fill();
-            }
         }
 
         function resetGame() {
