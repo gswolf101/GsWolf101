@@ -69,7 +69,7 @@ let bosses = 0;
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 const touchState = {
     movement: { active: false, touchId: null, startX: 0, startY: 0, dx: 0, dy: 0, targetX: null, targetY: null },
-    shoot: { active: false, touchId: null, startX: 0, startY: 0, dx: 0, dy: 0, lastShot: 0 }
+    shoot: { active: false, touchId: null, dx: 0, dy: 0, lastShot: 0 }
 };
 
 const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
@@ -182,8 +182,6 @@ if (isMobile) {
             } else if (touchX >= canvas.width / 2 && !touchState.shoot.active) {
                 touchState.shoot.active = true;
                 touchState.shoot.touchId = touch.identifier;
-                touchState.shoot.startX = touch.clientX;
-                touchState.shoot.startY = touch.clientY;
                 touchState.shoot.dx = touchX - player.x;
                 touchState.shoot.dy = touchY - player.y;
                 shoot(touchX, touchY);
@@ -254,10 +252,9 @@ if (isMobile) {
     function snapToEightDirections(dx, dy) {
         const angle = Math.atan2(dy, dx);
         const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-        const magnitude = Math.hypot(dx, dy) || 1;
         return {
-            dx: Math.cos(snappedAngle) * magnitude,
-            dy: Math.sin(snappedAngle) * magnitude
+            dx: Math.cos(snappedAngle),
+            dy: Math.sin(snappedAngle)
         };
     }
 }
@@ -679,31 +676,22 @@ function shoot(touchX, touchY) {
     if (isMobile && touchX !== undefined && touchY !== undefined) {
         dx = touchX - player.x;
         dy = touchY - player.y;
-        const length = Math.hypot(dx, dy);
-        if (length > 0) {
-            const snapped = snapToEightDirections(dx, dy);
-            dx = snapped.dx / length;
-            dy = snapped.dy / length;
-        }
+        const snapped = snapToEightDirections(dx, dy);
+        dx = snapped.dx;
+        dy = snapped.dy;
     } else if (isMobile && touchState.shoot.active) {
-        dx = touchState.shoot.dx;
-        dy = touchState.shoot.dy;
-        const length = Math.hypot(dx, dy);
-        if (length > 0) {
-            const snapped = snapToEightDirections(dx, dy);
-            dx = snapped.dx / length;
-            dy = snapped.dy / length;
-        }
+        const snapped = snapToEightDirections(touchState.shoot.dx, touchState.shoot.dy);
+        dx = snapped.dx;
+        dy = snapped.dy;
     } else {
-        if (keys.ArrowUp) dy -= 1;
-        if (keys.ArrowDown) dy += 1;
-        if (keys.ArrowLeft) dx -= 1;
-        if (keys.ArrowRight) dx += 1;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        if (length > 0) {
+        if (keys.ArrowUp) dy = -1;
+        if (keys.ArrowDown) dy = 1;
+        if (keys.ArrowLeft) dx = -1;
+        if (keys.ArrowRight) dx = 1;
+        if (dx !== 0 || dy !== 0) {
             const snapped = snapToEightDirections(dx, dy);
-            dx = snapped.dx / length;
-            dy = snapped.dy / length;
+            dx = snapped.dx;
+            dy = snapped.dy;
         }
     }
 
@@ -849,8 +837,8 @@ function update() {
             const length = Math.hypot(touchState.movement.dx, touchState.movement.dy);
             if (length > 0) {
                 const snapped = snapToEightDirections(touchState.movement.dx, touchState.movement.dy);
-                const normalizedDx = snapped.dx / length;
-                const normalizedDy = snapped.dy / length;
+                const normalizedDx = snapped.dx;
+                const normalizedDy = snapped.dy;
                 const moveX = normalizedDx * player.speed;
                 const moveY = normalizedDy * player.speed;
                 if (player.x + moveX > player.size && player.x + moveX < canvas.width - player.size) {
@@ -866,8 +854,8 @@ function update() {
             const distance = Math.hypot(dx, dy);
             if (distance > 5) {
                 const snapped = snapToEightDirections(dx, dy);
-                const normalizedDx = snapped.dx / distance;
-                const normalizedDy = snapped.dy / distance;
+                const normalizedDx = snapped.dx;
+                const normalizedDy = snapped.dy;
                 const moveX = normalizedDx * player.speed;
                 const moveY = normalizedDy * player.speed;
                 if (player.x + moveX > player.size && player.x + moveX < canvas.width - player.size) {
@@ -884,7 +872,8 @@ function update() {
         if (touchState.shoot.active && touchState.shoot.dx !== 0 && touchState.shoot.dy !== 0) {
             const now = Date.now();
             if (now - touchState.shoot.lastShot >= shootDelay) {
-                shoot(touchState.shoot.dx + player.x, touchState.shoot.dy + player.y);
+                const snapped = snapToEightDirections(touchState.shoot.dx, touchState.shoot.dy);
+                shoot(player.x + snapped.dx * 50, player.y + snapped.dy * 50);
                 touchState.shoot.lastShot = now;
             }
         }
@@ -914,9 +903,9 @@ function update() {
             if (closestZombie) {
                 const dx = closestZombie.x - bullet.x;
                 const dy = closestZombie.y - bullet.y;
-                const length = Math.sqrt(dx * dx + dy * dy);
-                bullet.dx = (dx / length) * 7;
-                bullet.dy = (dy / length) * 7;
+                const snapped = snapToEightDirections(dx, dy);
+                bullet.dx = snapped.dx * 7;
+                bullet.dy = snapped.dy * 7;
             }
         }
         bullet.x += bullet.dx;
@@ -1050,12 +1039,6 @@ function update() {
         if (!boss.isStopped) {
             boss.x += (dx / distance) * boss.speed;
             boss.y += (dy / distance) * boss.speed;
-        }
-
-        if (now - lastBossSpawnZombies >= 10000) {
-            zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.9 });
-            zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.9 });
-            lastBossSpawnZombies = now;
         }
 
         if (distance < player.size + boss.size) {
