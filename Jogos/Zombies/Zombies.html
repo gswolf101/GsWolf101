@@ -249,7 +249,7 @@
         </div>
         <div id="startScreen">
             <h2>Jogo de Sobrevivência a Zumbis</h2>
-            <button onclick="startGame()">Iniciar Jogo</button><br>
+            <button id="startButton" onclick="startGame()">Iniciar Jogo</button><br>
             <button onclick="showRankingFromStart()">Ver Ranking</button>
         </div>
         <canvas id="gameCanvas" width="1000" height="750" tabindex="0"></canvas>
@@ -393,6 +393,7 @@
             shoot: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 }
         };
 
+        // Carregar dados salvos
         const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
             coins: 0,
             healthUpgrades: 0,
@@ -439,6 +440,7 @@
         }
         updateWeaponButtons();
         updateAccessoryButtons();
+        scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
 
         function resizeCanvas() {
             const container = document.getElementById('gameContainer');
@@ -569,6 +571,7 @@
         function restoreCanvasFocus() {
             setTimeout(() => {
                 canvas.focus();
+                console.log('Canvas focado');
             }, 100);
         }
 
@@ -644,10 +647,13 @@
                 magnetActive = true;
                 magnetStart = now;
                 magnetCooldown = now;
+                console.log('Imã Velho ativado');
             } else if (equippedAccessory === 'adrenaline' && !adrenalineActive && now - adrenalineCooldown >= 60000) {
                 adrenalineActive = true;
                 adrenalineStart = now;
                 adrenalineCooldown = now;
+                updateShootDelay();
+                console.log('Adrenalina ativada');
             }
         }
 
@@ -694,10 +700,13 @@
         }
 
         function startGame() {
+            console.log('Iniciando o jogo...');
             startScreen.style.display = 'none';
             isPaused = false;
-            canvas.focus();
+            gameOver = false;
             resetGame();
+            canvas.focus();
+            requestAnimationFrame(gameLoop); // Garantir que o gameLoop seja chamado
         }
 
         function showRankingFromStart() {
@@ -1230,8 +1239,8 @@
         function update() {
             if (gameOver || isPaused) return;
 
+            const now = Date.now();
             if (countdown > 0) {
-                const now = Date.now();
                 const elapsed = now - countdownStart;
                 const remaining = Math.ceil((3000 - elapsed) / 1000);
                 countdownDisplay.textContent = remaining;
@@ -1244,7 +1253,6 @@
                 return;
             }
 
-            const now = Date.now();
             if (magnetActive && now - magnetStart >= 15000) {
                 magnetActive = false;
             }
@@ -1507,7 +1515,7 @@
                 bossBullets.forEach((bullet, bIndex) => {
                     bullet.x += bullet.dx;
                     bullet.y += bullet.dy;
-                    const pDistance = abs(bullet.x - player.x) ** 2 + (bullet.y - player.y) ** 2);
+                    const pDistance = Math.sqrt((bullet.x - player.x) ** 2 + (bullet.y - player.y) ** 2);
                     if (pDistance < player.size + bullet.size) {
                         player.health -= bossDamage;
                         bossBullets.splice(bIndex, 1);
@@ -1630,6 +1638,7 @@
         }
 
         function resetGame() {
+            console.log('Resetando o jogo...');
             player = { x: canvas.width / 2, y: canvas.height / 2, size: 20, speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), baseSpeed: 2.2, health: player.maxHealth, maxHealth: player.maxHealth, damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) };
             zombies = [];
             bullets = [];
@@ -1687,6 +1696,7 @@
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             applyInitialUpgrade();
             canvas.focus();
+            console.log('Jogo resetado, pronto para começar.');
         }
 
         function showRanking() {
@@ -1817,7 +1827,7 @@
                 }
                 saveData();
                 alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
-                restoreCanvasFocus();
+                               restoreCanvasFocus();
             } else if (hasRifle && equippedWeapon !== 'rifle') {
                 equippedWeapon = 'rifle';
                 pierceCount = 1;
@@ -1881,6 +1891,23 @@
             }
         }
 
+        function buyInitialUpgrade() {
+            if (!hasInitialUpgrade && coinCount >= 100) {
+                coinCount -= 100;
+                hasInitialUpgrade = true;
+                shopCoins.textContent = coinCount;
+                buyInitialUpgradeBtn.disabled = true;
+                buyInitialUpgradeBtn.textContent = "Comprado";
+                saveData();
+                applyInitialUpgrade();
+                alert('Upgrade Inicial comprado! Um upgrade foi aplicado.');
+                restoreCanvasFocus();
+            } else if (!hasInitialUpgrade) {
+                alert('Moedas insuficientes!');
+                restoreCanvasFocus();
+            }
+        }
+
         function gameLoop() {
             if (!isPaused && !gameOver) {
                 let dx = 0, dy = 0;
@@ -1906,11 +1933,25 @@
 
                 update();
                 draw();
+            } else {
+                draw(); // Continua desenhando mesmo em pausa para manter o estado visual
             }
             requestAnimationFrame(gameLoop);
         }
 
-        gameLoop();
+        // Inicializar o jogo
+        function initializeGame() {
+            console.log('Inicializando o jogo...');
+            resizeCanvas();
+            applyInitialUpgrade();
+            updateUpgradesList();
+            canvas.focus();
+            requestAnimationFrame(gameLoop); // Iniciar o gameLoop
+        }
+
+        // Chamar a inicialização ao carregar a página
+        window.onload = initializeGame;
+
     </script>
 </body>
 </html>
