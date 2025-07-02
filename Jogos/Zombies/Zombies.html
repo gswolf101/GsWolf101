@@ -326,8 +326,8 @@
         const movementJoystick = document.getElementById('movementJoystick');
         const shootJoystick = document.getElementById('shootJoystick');
 
-        // Alteração: Velocidade base do jogador ajustada para 1.65 (10% mais rápido que zumbi)
-        let player = { x: 500, y: 375, size: 20, speed: 1.65, baseSpeed: 1.65, health: 10, maxHealth: 10, damage: 1 };
+        // Alteração: Velocidade base do jogador ajustada para 1.75
+        let player = { x: 500, y: 375, size: 20, speed: 1.75, baseSpeed: 1.75, health: 10, maxHealth: 10, damage: 1 };
         let zombies = [];
         let bullets = [];
         let bossBullets = [];
@@ -754,7 +754,7 @@
                 else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
                 else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
                 else { x = canvas.width + 20; y = Math.random() * canvas.height; }
-                // Alteração: Velocidade dos zumbis reduzida para 1.5
+                // Velocidade dos zumbis mantida em 1.5
                 zombies.push({ x, y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
             }
         }
@@ -769,7 +769,7 @@
             const bossTypes = ['charger', 'shooter'];
             const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
             const bossHealth = 50 * (bosses + 1);
-            // Alteração: Velocidade base do boss ajustada para 1.2
+            // Velocidade do boss mantida em 1.2
             boss = {
                 x,
                 y,
@@ -1109,6 +1109,7 @@
             }
 
             if (dx !== 0 || dy !== 0) {
+                // Tiro principal
                 bullets.push({ 
                     x: player.x, 
                     y: player.y, 
@@ -1122,14 +1123,28 @@
                     damage: player.damage
                 });
 
+                // Balas diagonais
                 for (let i = 1; i <= diagonalShots; i++) {
-                    const angle1 = Math.PI / 4;
-                    const angle2 = -Math.PI / 4;
+                    // Calcular ângulos de 45° à esquerda e direita da direção do tiro
+                    const angle = Math.atan2(dy, dx); // Ângulo do tiro principal
+                    const angleLeft = angle + Math.PI / 4; // +45°
+                    const angleRight = angle - Math.PI / 4; // -45°
+                    // Offset lateral para alinhar balas lado a lado (10 pixels por nível de diagonalShots)
+                    const offset = i * 10;
+                    // Vetor perpendicular para offset (90° à direita do vetor de direção)
+                    const perpDx = -dy;
+                    const perpDy = dx;
+                    // Normalizar o vetor perpendicular
+                    const perpLength = Math.sqrt(perpDx * perpDx + perpDy * perpDy);
+                    const normPerpDx = perpLength > 0 ? perpDx / perpLength : 0;
+                    const normPerpDy = perpLength > 0 ? perpDy / perpLength : 0;
+
+                    // Bala diagonal à esquerda
                     bullets.push({
-                        x: player.x,
-                        y: player.y,
-                        dx: Math.cos(angle1) * 7,
-                        dy: Math.sin(angle1) * 7,
+                        x: player.x + normPerpDx * offset, // Offset lateral
+                        y: player.y + normPerpDy * offset,
+                        dx: Math.cos(angleLeft) * 7,
+                        dy: Math.sin(angleLeft) * 7,
                         homing: homingShot,
                         electric: electricShot,
                         electricTimer: null,
@@ -1137,11 +1152,12 @@
                         ricochet: ricochetCount,
                         damage: player.damage
                     });
+                    // Bala diagonal à direita
                     bullets.push({
-                        x: player.x,
-                        y: player.y,
-                        dx: Math.cos(angle2) * 7,
-                        dy: Math.sin(angle2) * 7,
+                        x: player.x - normPerpDx * offset, // Offset lateral oposto
+                        y: player.y - normPerpDy * offset,
+                        dx: Math.cos(angleRight) * 7,
+                        dy: Math.sin(angleRight) * 7,
                         homing: homingShot,
                         electric: electricShot,
                         electricTimer: null,
@@ -1151,6 +1167,7 @@
                     });
                 }
 
+                // Balas frontais
                 for (let i = 1; i <= frontShots; i++) {
                     const offset = i * 10 * (i % 2 === 0 ? -1 : 1);
                     bullets.push({
@@ -1467,7 +1484,7 @@
                 }
 
                 if (now - lastBossSpawnZombies >= 10000) {
-                    // Alteração: Velocidade dos zumbis spawnados pelo boss ajustada para 1.5
+                    // Velocidade dos zumbis spawnados pelo boss mantida em 1.5
                     zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
                     zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
                     lastBossSpawnZombies = now;
@@ -1647,7 +1664,7 @@
                 y: canvas.height / 2, 
                 size: 20, 
                 speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
-                baseSpeed: 1.65, 
+                baseSpeed: 1.75, 
                 health: player.maxHealth, 
                 maxHealth: player.maxHealth, 
                 damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
@@ -1822,8 +1839,7 @@
                 restoreCanvasFocus();
             }
         }
-
-       function buyRifle() {
+        function buyRifle() {
     if (!hasRifle && coinCount >= 250) {
         coinCount -= 250;
         hasRifle = true;
@@ -1833,10 +1849,10 @@
         updateShootDelay();
         shopCoins.textContent = coinCount;
         updateWeaponButtons();
-        if (!collectedUpgrades.includes('Perfuração')) {
-            collectedUpgrades.push('Perfuração');
-            updateUpgradesList();
+        if (!collectedUpgrades.includes("Perfuração")) {
+            collectedUpgrades.push("Perfuração");
         }
+        updateUpgradesList();
         saveData();
         alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
         restoreCanvasFocus();
@@ -1846,11 +1862,10 @@
         player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
         updateShootDelay();
         updateWeaponButtons();
-        if (!collectedUpgrades.includes('Perfuração')) {
-            collectedUpgrades.push('Perfuração');
-            updateUpgradesList();
+        if (!collectedUpgrades.includes("Perfuração")) {
+            collectedUpgrades.push("Perfuração");
         }
-        collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração' || equippedWeapon === 'rifle');
+        updateUpgradesList();
         saveData();
         alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
         restoreCanvasFocus();
@@ -1859,112 +1874,95 @@
         restoreCanvasFocus();
     }
 }
-                    function buyMagnet() {
-            if (!hasMagnet && coinCount >= 1000) {
-                coinCount -= 1000;
-                hasMagnet = true;
-                equippedAccessory = 'magnet';
-                shopCoins.textContent = coinCount;
-                updateAccessoryButtons();
-                saveData();
-                alert('Imã Velho comprado e equipado! Coleta moedas por 15s, recarga 60s.');
-                restoreCanvasFocus();
-            } else if (hasMagnet && equippedAccessory !== 'magnet') {
-                equippedAccessory = 'magnet';
-                updateAccessoryButtons();
-                saveData();
-                alert('Imã Velho equipado!');
-                restoreCanvasFocus();
-            } else if (!hasMagnet) {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
-            }
+
+function buyInitialUpgrade() {
+    if (!hasInitialUpgrade && coinCount >= 100) {
+        coinCount -= 100;
+        hasInitialUpgrade = true;
+        shopCoins.textContent = coinCount;
+        buyInitialUpgradeBtn.disabled = true;
+        buyInitialUpgradeBtn.textContent = "Comprado";
+        saveData();
+        alert('Upgrade Inicial comprado! Um upgrade será aplicado ao iniciar o jogo.');
+        restoreCanvasFocus();
+    } else if (!hasInitialUpgrade) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
+    }
+}
+
+function buyMagnet() {
+    if (!hasMagnet && coinCount >= 1000) {
+        coinCount -= 1000;
+        hasMagnet = true;
+        equippedAccessory = 'magnet';
+        shopCoins.textContent = coinCount;
+        updateAccessoryButtons();
+        saveData();
+        alert('Imã Velho comprado e equipado! Coleta moedas por 15s, recarga em 60s.');
+        restoreCanvasFocus();
+    } else if (hasMagnet && equippedAccessory !== 'magnet') {
+        equippedAccessory = 'magnet';
+        updateAccessoryButtons();
+        saveData();
+        alert('Imã Velho equipado! Coleta moedas por 15s, recarga em 60s.');
+        restoreCanvasFocus();
+    } else if (!hasMagnet) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
+    }
+}
+
+function buyAdrenaline() {
+    if (!hasAdrenaline && coinCount >= 500) {
+        coinCount -= 500;
+        hasAdrenaline = true;
+        equippedAccessory = 'adrenaline';
+        shopCoins.textContent = coinCount;
+        updateAccessoryButtons();
+        saveData();
+        alert('Adrenalina comprada e equipada! -75% tempo de disparo por 10s, recarga em 60s.');
+        restoreCanvasFocus();
+    } else if (hasAdrenaline && equippedAccessory !== 'adrenaline') {
+        equippedAccessory = 'adrenaline';
+        updateAccessoryButtons();
+        saveData();
+        alert('Adrenalina equipada! -75% tempo de disparo por 10s, recarga em 60s.');
+        restoreCanvasFocus();
+    } else if (!hasAdrenaline) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
+    }
+}
+
+function gameLoop() {
+    if (!isPaused) {
+        let dx = 0, dy = 0;
+        if (isMobile && joystickState.movement.active) {
+            dx = joystickState.movement.dx / 40;
+            dy = joystickState.movement.dy / 40;
+        } else {
+            if (keys.w || keys.ArrowUp) dy -= 1;
+            if (keys.s || keys.ArrowDown) dy += 1;
+            if (keys.a || keys.ArrowLeft) dx -= 1;
+            if (keys.d || keys.ArrowRight) dx += 1;
         }
-
-        function buyAdrenaline() {
-            if (!hasAdrenaline && coinCount >= 500) {
-                coinCount -= 500;
-                hasAdrenaline = true;
-                equippedAccessory = 'adrenaline';
-                shopCoins.textContent = coinCount;
-                updateAccessoryButtons();
-                saveData();
-                alert('Adrenalina comprada e equipada! -75% tempo de disparo por 10s, recarga 60s.');
-                restoreCanvasFocus();
-            } else if (hasAdrenaline && equippedAccessory !== 'adrenaline') {
-                equippedAccessory = 'adrenaline';
-                updateAccessoryButtons();
-                saveData();
-                alert('Adrenalina equipada!');
-                restoreCanvasFocus();
-            } else if (!hasAdrenaline) {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
-            }
+        const length = Math.sqrt(dx * dx + dy * dy);
+        if (length > 0) {
+            dx = (dx / length) * player.speed;
+            dy = (dy / length) * player.speed;
         }
+        player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x + dx));
+        player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y + dy));
 
-        function buyInitialUpgrade() {
-            if (!hasInitialUpgrade && coinCount >= 100) {
-                coinCount -= 100;
-                hasInitialUpgrade = true;
-                shopCoins.textContent = coinCount;
-                buyInitialUpgradeBtn.disabled = true;
-                buyInitialUpgradeBtn.textContent = "Comprado";
-                saveData();
-                applyInitialUpgrade();
-                alert('Upgrade Inicial comprado! Um upgrade foi aplicado.');
-                restoreCanvasFocus();
-            } else if (!hasInitialUpgrade) {
-                alert('Moedas insuficientes!');
-                restoreCanvasFocus();
-            }
-        }
+        update();
+        draw();
+    }
+    requestAnimationFrame(gameLoop);
+}
 
-        function gameLoop() {
-            if (!isPaused && !gameOver) {
-                // Alteração: Adicionada movimentação por teclado com WASD, mantendo joystick para dispositivos móveis
-                let dx = 0, dy = 0;
-                if (isMobile && joystickState.movement.active) {
-                    const length = Math.hypot(joystickState.movement.dx, joystickState.movement.dy);
-                    if (length > 0) {
-                        dx = (joystickState.movement.dx / length) * player.speed;
-                        dy = (joystickState.movement.dy / length) * player.speed;
-                    }
-                } else {
-                    if (keys.w) dy -= player.speed;
-                    if (keys.s) dy += player.speed;
-                    if (keys.a) dx -= player.speed;
-                    if (keys.d) dx += player.speed;
-                }
-                const length = Math.sqrt(dx * dx + dy * dy);
-                if (length > 0) {
-                    dx = (dx / length) * player.speed;
-                    dy = (dy / length) * player.speed;
-                }
-                player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x + dx));
-                player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y + dy));
-
-                update();
-                draw();
-            } else {
-                draw(); // Continua desenhando mesmo em pausa para manter o estado visual
-            }
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Inicializar o jogo
-        function initializeGame() {
-            console.log('Inicializando o jogo...');
-            resizeCanvas();
-            applyInitialUpgrade();
-            updateUpgradesList();
-            canvas.focus();
-            requestAnimationFrame(gameLoop); // Iniciar o gameLoop
-        }
-
-        // Chamar a inicialização ao carregar a página
-        window.onload = initializeGame;
-
+gameLoop();
     </script>
 </body>
 </html>
+       
