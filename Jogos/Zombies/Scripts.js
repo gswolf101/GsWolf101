@@ -111,6 +111,15 @@ if (hasInitialUpgrade) {
 }
 updateWeaponButtons();
 
+function snapToEightDirections(dx, dy) {
+    const angle = Math.atan2(dy, dx);
+    const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+    return {
+        dx: Math.cos(snappedAngle),
+        dy: Math.sin(snappedAngle)
+    };
+}
+
 function resizeCanvas() {
     const container = document.getElementById('gameContainer');
     const scaleX = window.innerWidth / 750;
@@ -248,15 +257,6 @@ if (isMobile) {
             }
         }
     });
-
-    function snapToEightDirections(dx, dy) {
-        const angle = Math.atan2(dy, dx);
-        const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-        return {
-            dx: Math.cos(snappedAngle),
-            dy: Math.sin(snappedAngle)
-        };
-    }
 }
 
 function restoreCanvasFocus() {
@@ -607,7 +607,8 @@ const availableUpgrades = [
         rarity: "lendario",
         chance: 0.05,
         accumulable: false,
-        effect: () => {
+        effect: () => 
+```javascript
             regen = true;
             collectedUpgrades.push("Regeneração");
             updateUpgradesList();
