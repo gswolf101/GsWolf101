@@ -1859,7 +1859,7 @@
         restoreCanvasFocus();
     }
 }
-                function buyMagnet() {
+                    function buyMagnet() {
             if (!hasMagnet && coinCount >= 1000) {
                 coinCount -= 1000;
                 hasMagnet = true;
@@ -1922,7 +1922,7 @@
 
         function gameLoop() {
             if (!isPaused && !gameOver) {
-                // Alteração: Removida a lógica de movimento por teclado, mantendo apenas joystick
+                // Alteração: Adicionada movimentação por teclado com WASD, mantendo joystick para dispositivos móveis
                 let dx = 0, dy = 0;
                 if (isMobile && joystickState.movement.active) {
                     const length = Math.hypot(joystickState.movement.dx, joystickState.movement.dy);
@@ -1930,6 +1930,11 @@
                         dx = (joystickState.movement.dx / length) * player.speed;
                         dy = (joystickState.movement.dy / length) * player.speed;
                     }
+                } else {
+                    if (keys.w) dy -= player.speed;
+                    if (keys.s) dy += player.speed;
+                    if (keys.a) dx -= player.speed;
+                    if (keys.d) dx += player.speed;
                 }
                 const length = Math.sqrt(dx * dx + dy * dy);
                 if (length > 0) {
