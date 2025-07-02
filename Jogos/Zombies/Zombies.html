@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -171,12 +170,17 @@
         }
         .joystick {
             position: fixed;
-            bottom: 20px;
-            width: 100px;
-            height: 100px;
+            bottom: 5vh; /* Ajuste vertical para evitar sobreposição com UI */
+            width: clamp(80px, 15vw, 120px); /* Tamanho adaptável */
+            height: clamp(80px, 15vw, 120px);
             background: rgba(128, 128, 128, 0.5);
             display: none;
             touch-action: none;
+            z-index: 30;
+            transition: background 0.2s ease; /* Transição para feedback visual */
+        }
+        .joystick.active {
+            background: rgba(128, 128, 128, 0.8); /* Feedback visual quando ativo */
         }
         .joystick.asterisk {
             background: none;
@@ -184,20 +188,21 @@
             background-size: contain;
         }
         .joystick-inner {
-            width: 40px;
-            height: 40px;
+            width: 40%;
+            height: 40%;
             background: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            transition: transform 0.1s ease; /* Transição suave para o movimento */
         }
         #movementJoystick {
-            left: calc(50% - 425px);
+            left: 5vw; /* Posicionamento relativo à esquerda */
         }
         #shootJoystick {
-            right: calc(50% - 425px);
+            right: 5vw; /* Posicionamento relativo à direita */
         }
         @media (max-width: 900px) {
             #gameContainer {
@@ -232,6 +237,9 @@
                 display: block;
                 color: yellow;
                 margin-bottom: 20px;
+            }
+            .joystick {
+                bottom: 10vh; /* Ajuste para evitar sobreposição em modo retrato */
             }
         }
     </style>
@@ -296,9 +304,9 @@
             <p>Escolha um upgrade (1, 2 ou 3):</p>
             <div id="upgradeOptions"></div>
         </div>
-        <div id="movementJoystick" class="joystick asterisk"><div class="joystick-inner"></div></div>
-        <div id="shootJoystick" class="joystick asterisk"><div class="joystick-inner"></div></div>
     </div>
+    <div id="movementJoystick" class="joystick asterisk"><div class="joystick-inner"></div></div>
+    <div id="shootJoystick" class="joystick asterisk"><div class="joystick-inner"></div></div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -370,6 +378,7 @@
         let hasInitialUpgrade = false;
         let collectedUpgrades = [];
         let bosses = 0;
+        let joystickSensitivity = 1.0; // Sensibilidade ajustável (1.0 = padrão)
 
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const joystickState = {
@@ -388,7 +397,8 @@
             speedUpgrades: 0,
             healthCost: 50,
             bosses: 0,
-            ranking: []
+            ranking: [],
+            joystickSensitivity: 1.0 // Adiciona sensibilidade ao save
         };
         coinCount = savedDataLocal.coins;
         healthUpgrades = savedDataLocal.healthUpgrades || 0;
@@ -400,6 +410,7 @@
         speedUpgrades = savedDataLocal.speedUpgrades || 0;
         healthCost = savedDataLocal.healthCost || 50;
         bosses = savedDataLocal.bosses || 0;
+        joystickSensitivity = savedDataLocal.joystickSensitivity || 1.0;
         player.maxHealth = 10 * Math.pow(1.2, healthUpgrades);
         player.health = player.maxHealth;
         player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
@@ -471,6 +482,8 @@
                 const touch = e.changedTouches[0];
                 joystickState.movement.active = true;
                 joystickState.movement.touchId = touch.identifier;
+                movementJoystick.classList.add('active'); // Feedback visual
+                if (navigator.vibrate) navigator.vibrate(50); // Feedback háptico
                 updateJoystick(touch, joystickState.movement, movementJoystick);
             });
 
@@ -479,6 +492,8 @@
                 const touch = e.changedTouches[0];
                 joystickState.shoot.active = true;
                 joystickState.shoot.touchId = touch.identifier;
+                shootJoystick.classList.add('active'); // Feedback visual
+                if (navigator.vibrate) navigator.vibrate(50); // Feedback háptico
                 updateJoystick(touch, joystickState.shoot, shootJoystick);
             });
 
@@ -502,6 +517,7 @@
                         joystickState.movement.touchId = null;
                         joystickState.movement.dx = 0;
                         joystickState.movement.dy = 0;
+                        movementJoystick.classList.remove('active'); // Remove feedback visual
                         updateJoystickPosition(joystickState.movement, movementJoystick);
                     }
                     if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
@@ -509,6 +525,7 @@
                         joystickState.shoot.touchId = null;
                         joystickState.shoot.dx = 0;
                         joystickState.shoot.dy = 0;
+                        shootJoystick.classList.remove('active'); // Remove feedback visual
                         updateJoystickPosition(joystickState.shoot, shootJoystick);
                     }
                 }
@@ -517,7 +534,7 @@
             function snapToEightDirections(dx, dy) {
                 const angle = Math.atan2(dy, dx);
                 const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-                const magnitude = Math.hypot(dx, dy);
+                const magnitude = Math.hypot(dx, dy) * joystickSensitivity; // Aplica sensibilidade
                 return {
                     dx: Math.cos(snappedAngle) * magnitude,
                     dy: Math.sin(snappedAngle) * magnitude
@@ -528,10 +545,10 @@
                 const rect = element.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
-                let dx = touch.clientX - centerX;
-                let dy = touch.clientY - centerY;
+                let dx = (touch.clientX - centerX) * joystickSensitivity;
+                let dy = (touch.clientY - centerY) * joystickSensitivity;
                 const distance = Math.hypot(dx, dy);
-                const maxDistance = rect.width / 2 - 20;
+                const maxDistance = rect.width / 2 - (rect.width * 0.2); // Ajuste proporcional
                 if (distance > maxDistance) {
                     const scale = maxDistance / distance;
                     dx *= scale;
@@ -547,7 +564,8 @@
 
             function updateJoystickPosition(joystick, element) {
                 const inner = element.querySelector('.joystick-inner');
-                inner.style.transform = `translate(${joystick.dx - 20}px, ${joystick.dy - 20}px)`;
+                inner.style.transition = joystick.active ? 'transform 0.1s ease' : 'transform 0.2s ease-out';
+                inner.style.transform = `translate(${joystick.dx - (element.offsetWidth * 0.2)}px, ${joystick.dy - (element.offsetHeight * 0.2)}px)`;
             }
         }
 
@@ -582,7 +600,8 @@
                 speedUpgrades: speedUpgrades,
                 healthCost: healthCost,
                 bosses: bosses,
-                ranking: savedDataLocal.ranking
+                ranking: savedDataLocal.ranking,
+                joystickSensitivity: joystickSensitivity
             }));
         }
 
@@ -615,6 +634,7 @@
                 hasInitialUpgrade = false;
                 healthCost = 50;
                 bosses = 0;
+                joystickSensitivity = 1.0;
                 player.maxHealth = 10;
                 player.health = player.maxHealth;
                 player.speed = player.baseSpeed;
