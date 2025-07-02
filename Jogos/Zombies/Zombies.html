@@ -17,10 +17,11 @@
         }
         #gameContainer {
             position: relative;
-            width: 750px;
+            width: 1000px;
             height: 750px;
             max-width: 100vw;
-            max-height: 100vw;
+            max-height: 100vh;
+            aspect-ratio: 4 / 3;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -28,7 +29,7 @@
         }
         #gameCanvas {
             background: #333;
-            width: 750px;
+            width: 1000px;
             height: 750px;
             display: block;
             max-width: 100%;
@@ -46,19 +47,9 @@
             color: white;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
         }
-        #leftUI {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        #rightUI {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-        #healthBar, #xpBar {
+        #healthBar {
             width: 200px;
             height: 20px;
             background: #555;
@@ -66,33 +57,55 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 10px;
         }
-        #health, #xp {
+        #health {
             height: 100%;
+            background: #f00;
+            width: 100%;
             position: absolute;
             top: 0;
             left: 0;
             z-index: 1;
         }
-        #health {
-            background: #f00;
-            width: 100%;
-        }
-        #xp {
-            background: #0f0;
-            width: 0%;
-        }
-        #healthText, #xpText {
+        #healthText {
             position: relative;
             z-index: 2;
             color: white;
             font-size: 14px;
             text-shadow: 1px 1px 1px #000;
         }
-        #score, #upgradesList {
+        #xpBar {
+            width: 200px;
+            height: 20px;
+            background: #555;
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #xp {
+            height: 100%;
+            background: #0f0;
+            width: 0%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #xpText {
+            position: relative;
+            z-index: 2;
+            color: white;
+            font-size: 14px;
+            text-shadow: 1px 1px 1px #000;
+        }
+        #score {
             font-size: 16px;
-            margin-bottom: 10px;
+        }
+        #upgradesList {
+            font-size: 16px;
+            max-width: 300px;
+            text-align: left;
         }
         #countdown {
             display: none;
@@ -171,16 +184,18 @@
         .joystick {
             position: fixed;
             bottom: 20px;
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             background: rgba(128, 128, 128, 0.5);
+            border-radius: 50%;
             display: none;
             touch-action: none;
         }
-        .joystick.asterisk {
-            background: none;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 10 L50 90 M20 20 L80 80 M20 80 L80 20 M10 50 L90 50" stroke="white" stroke-width="5" fill="none"/></svg>');
-            background-size: contain;
+        #movementJoystick {
+            left: 20px;
+        }
+        #shootJoystick {
+            right: 20px;
         }
         .joystick-inner {
             width: 40px;
@@ -192,37 +207,20 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
-        #movementJoystick {
-            left: calc(50% - 425px);
-        }
-        #shootJoystick {
-            right: calc(50% - 425px);
-        }
-        @media (max-width: 900px) {
-            #gameContainer {
-                width: 90vw;
-                height: 90vw;
-            }
-            #gameCanvas {
-                width: 90vw;
-                height: 90vw;
+        @media (max-width: 600px) {
+            .joystick {
+                display: block;
             }
             #uiContainer {
                 flex-direction: column;
                 align-items: flex-start;
                 padding: 5px;
             }
-            #leftUI, #rightUI {
-                width: 100%;
-            }
             #healthBar, #xpBar {
                 width: 150px;
             }
             #score, #upgradesList {
                 font-size: 14px;
-            }
-            .joystick {
-                display: block;
             }
         }
         @media (orientation: portrait) {
@@ -238,28 +236,24 @@
 <body>
     <div id="gameContainer">
         <div id="uiContainer">
-            <div id="leftUI">
-                <div id="score">Pontos: 0 | Moedas: 0</div>
-                <div id="upgradesList">Upgrades: Nenhum</div>
+            <div id="healthBar">
+                <div id="health"></div>
+                <span id="healthText">Vida: 100%</span>
             </div>
-            <div id="rightUI">
-                <div id="healthBar">
-                    <div id="health"></div>
-                    <span id="healthText">Vida: 100%</span>
-                </div>
-                <div id="xpBar">
-                    <div id="xp"></div>
-                    <span id="xpText">Nível 1: 0/10 XP</span>
-                </div>
+            <div id="xpBar">
+                <div id="xp"></div>
+                <span id="xpText">Nível 1: 0/10 XP</span>
             </div>
+            <div id="score">Pontos: 0 | Moedas: 0</div>
+            <div id="upgradesList">Upgrades: Nenhum</div>
         </div>
-        <canvas id="gameCanvas" width="750" height="750" tabindex="0"></canvas>
-        <div id="countdown">3</div>
         <div id="startScreen">
             <h2>Jogo de Sobrevivência a Zumbis</h2>
             <button onclick="startGame()">Iniciar Jogo</button><br>
             <button onclick="showRankingFromStart()">Ver Ranking</button>
         </div>
+        <canvas id="gameCanvas" width="1000" height="750" tabindex="0"></canvas>
+        <div id="countdown">3</div>
         <div id="gameOver">
             Game Over!<br>
             <button onclick="showRanking()">Adicionar ao Ranking</button><br>
@@ -295,8 +289,8 @@
             <p>Escolha um upgrade (1, 2 ou 3):</p>
             <div id="upgradeOptions"></div>
         </div>
-        <div id="movementJoystick" class="joystick asterisk"><div class="joystick-inner"></div></div>
-        <div id="shootJoystick" class="joystick asterisk"><div class="joystick-inner"></div></div>
+        <div id="movementJoystick" class="joystick"><div class="joystick-inner"></div></div>
+        <div id="shootJoystick" class="joystick"><div class="joystick-inner"></div></div>
     </div>
 
     <script>
@@ -325,7 +319,7 @@
         const movementJoystick = document.getElementById('movementJoystick');
         const shootJoystick = document.getElementById('shootJoystick');
 
-        let player = { x: 375, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
+        let player = { x: 500, y: 375, size: 20, speed: 2.2, baseSpeed: 2.2, health: 10, maxHealth: 10 };
         let zombies = [];
         let bullets = [];
         let bossBullets = [];
@@ -417,7 +411,7 @@
 
         function resizeCanvas() {
             const container = document.getElementById('gameContainer');
-            const scaleX = window.innerWidth / 750;
+            const scaleX = window.innerWidth / 1000;
             const scaleY = window.innerHeight / 750;
             const scale = Math.min(scaleX, scaleY);
             container.style.transform = `scale(${scale})`;
@@ -513,16 +507,6 @@
                 }
             });
 
-            function snapToEightDirections(dx, dy) {
-                const angle = Math.atan2(dy, dx);
-                const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-                const magnitude = Math.hypot(dx, dy);
-                return {
-                    dx: Math.cos(snappedAngle) * magnitude,
-                    dy: Math.sin(snappedAngle) * magnitude
-                };
-            }
-
             function updateJoystick(touch, joystick, element) {
                 const rect = element.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
@@ -530,15 +514,14 @@
                 let dx = touch.clientX - centerX;
                 let dy = touch.clientY - centerY;
                 const distance = Math.hypot(dx, dy);
-                const maxDistance = rect.width / 2 - 20;
+                const maxDistance = rect.width / 2 - 20; // 20 é o raio do joystick interno
                 if (distance > maxDistance) {
                     const scale = maxDistance / distance;
                     dx *= scale;
                     dy *= scale;
                 }
-                const snapped = snapToEightDirections(dx, dy);
-                joystick.dx = snapped.dx;
-                joystick.dy = snapped.dy;
+                joystick.dx = dx;
+                joystick.dy = dy;
                 joystick.x = centerX;
                 joystick.y = centerY;
                 updateJoystickPosition(joystick, element);
@@ -967,9 +950,8 @@
             if (isMobile && joystickState.shoot.active) {
                 const length = Math.hypot(joystickState.shoot.dx, joystickState.shoot.dy);
                 if (length > 0) {
-                    const snapped = snapToEightDirections(joystickState.shoot.dx, joystickState.shoot.dy);
-                    dx = snapped.dx / length;
-                    dy = snapped.dy / length;
+                    dx = joystickState.shoot.dx / length;
+                    dy = joystickState.shoot.dy / length;
                 }
             } else {
                 if (keys.ArrowUp) dy -= 1;
@@ -978,9 +960,8 @@
                 if (keys.ArrowRight) dx += 1;
                 const length = Math.sqrt(dx * dx + dy * dy);
                 if (length > 0) {
-                    const snapped = snapToEightDirections(dx, dy);
-                    dx = snapped.dx / length;
-                    dy = snapped.dy / length;
+                    dx /= length;
+                    dy /= length;
                 }
             }
 
@@ -1121,12 +1102,12 @@
                 return;
             }
 
+            // Movimento do jogador
             if (isMobile && joystickState.movement.active) {
                 const length = Math.hypot(joystickState.movement.dx, joystickState.movement.dy);
                 if (length > 0) {
-                    const snapped = snapToEightDirections(joystickState.movement.dx, joystickState.movement.dy);
-                    const normalizedDx = snapped.dx / length;
-                    const normalizedDy = snapped.dy / length;
+                    const normalizedDx = joystickState.movement.dx / length;
+                    const normalizedDy = joystickState.movement.dy / length;
                     const moveX = normalizedDx * player.speed;
                     const moveY = normalizedDy * player.speed;
                     if (player.x + moveX > player.size && player.x + moveX < canvas.width - player.size) {
