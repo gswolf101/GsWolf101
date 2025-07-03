@@ -1298,11 +1298,6 @@
                     lastRegen = now;
                 }
             }
-
-            if ((isMobile && joystickState.shoot.active) || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
-                shoot();
-            }
-
             electricLines = electricLines.filter(line => now - line.startTime < 500);
 
             bullets.forEach(bullet => {
