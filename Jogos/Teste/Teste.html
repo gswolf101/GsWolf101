@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -277,6 +276,7 @@
             <div id="weapons" class="tab-content active">
                 <p>Glock (100 moedas, 1.2s, 2 Dano): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
                 <p>Rifle Velho (250 moedas, 1s, 2 Dano, +1 Perfuração): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
+                <p>SMG Velha (3500 moedas, 0.5s, 1.5 Dano): <button id="buySMGBtn" onclick="buySMG()">Comprar</button></p>
             </div>
             <div id="upgrades" class="tab-content">
                 <p>Vida Extra (<span id="healthCost">50</span> moedas): <button id="buyHealthBtn" onclick="buyHealth()">Comprar</button></p>
@@ -1871,6 +1871,38 @@
         alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
         restoreCanvasFocus();
     } else if (!hasRifle) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
+    }
+}
+
+        function buySMG() {
+    if (!hasSMG && coinCount >= 3500) {
+        coinCount -= 3500;
+        hasSMG = true;
+        equippedWeapon = 'smg';
+        pierceCount = 0;
+        player.damage = 1.5 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+        updateShootDelay();
+        shopCoins.textContent = coinCount;
+        updateWeaponButtons();
+        collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
+        updateUpgradesList();
+        saveData();
+        alert('SMG Velha comprada e equipada! Atraso de tiro: ' + shootDelay + 'ms');
+        restoreCanvasFocus();
+    } else if (hasSMG && equippedWeapon !== 'smg') {
+        equippedWeapon = 'smg';
+        pierceCount = 0;
+        player.damage = 1.5 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+        updateShootDelay();
+        updateWeaponButtons();
+        collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
+        updateUpgradesList();
+        saveData();
+        alert('SMG Velha equipada! Atraso de tiro: ' + shootDelay + 'ms');
+        restoreCanvasFocus();
+    } else if (!hasSMG) {
         alert('Moedas insuficientes!');
         restoreCanvasFocus();
     }
