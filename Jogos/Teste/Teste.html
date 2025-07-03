@@ -299,1164 +299,1119 @@
     </div>
 
     <script>
-     const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('score');
-const startScreen = document.getElementById('startScreen');
-const gameOverDisplay = document.getElementById('gameOver');
-const rankingDisplay = document.getElementById('ranking');
-const rankingList = document.getElementById('rankingList');
-const shopDisplay = document.getElementById('shop');
-const shopCoins = document.getElementById('shopCoins');
-const healthBar = document.getElementById('health');
-const healthText = document.getElementById('healthText');
-const xpBar = document.getElementById('xp');
-const xpText = document.getElementById('xpText');
-const fireRateCostDisplay = document.getElementById('fireRateCost');
-const healthCostDisplay = document.getElementById('healthCost');
-const countdownDisplay = document.getElementById('countdown');
-const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
-const buyGlockBtn = document.getElementById('buyGlockBtn');
-const buyRifleBtn = document.getElementById('buyRifleBtn');
-const buyMagnetBtn = document.getElementById('buyMagnetBtn');
-const buyAdrenalineBtn = document.getElementById('buyAdrenalineBtn');
-const upgradeMenu = document.getElementById('upgradeMenu');
-const upgradeOptions = document.getElementById('upgradeOptions');
-const upgradesList = document.getElementById('upgradesList');
-const movementJoystick = document.getElementById('movementJoystick');
-const shootJoystick = document.getElementById('shootJoystick');
-
-let player = { x: 500, y: 375, size: 20, speed: 1.75, baseSpeed: 1.75, health: 10, maxHealth: 10, damage: 1 };
-let zombies = [];
-let bullets = [];
-let bossBullets = [];
-let coins = [];
-let boss = null;
-let score = 0;
-let coinCount = 0;
-let xp = 0;
-let level = 1;
-let xpToNextLevel = 10;
-let gameOver = false;
-let isPaused = true;
-let lastShot = 0;
-let lastSpawn = 0;
-let lastRegen = 0;
-let countdown = 0;
-let countdownStart = 0;
-let bossSpawned = false;
-let lastBossCharge = 0;
-let lastBossSpawnZombies = 0;
-let bossChargeWarning = 0;
-let shootDelay = 2000;
-let fireRateCost = 200;
-let healthCost = 50;
-let spawnInterval = 4000;
-let diagonalShots = 0;
-let frontShots = 0;
-let homingShot = false;
-let electricShot = false;
-let pierceCount = 0;
-let regen = false;
-let vampirism = false;
-let lightHands = false;
-let goodHands = false;
-let speedUpgrades = 0;
-let healthUpgrades = 0;
-let fireRateUpgrades = 0;
-let damageUpgrades = 0;
-let suplemento = false;
-let ricochetCount = 0;
-let steelHeart = false;
-let hasGlock = false;
-let hasRifle = false;
-let equippedWeapon = 'none';
-let hasInitialUpgrade = false;
-let collectedUpgrades = [];
-let bosses = 0;
-let zombieHealth = 2;
-let bossDamage = 5;
-let hasMagnet = false;
-let hasAdrenaline = false;
-let equippedAccessory = 'none';
-let magnetActive = false;
-let magnetStart = 0;
-let magnetCooldown = 0;
-let adrenalineActive = false;
-let adrenalineStart = 0;
-let adrenalineCooldown = 0;
-let electricLines = [];
-let shootDirection = { dx: 1, dy: 0 }; // Direção padrão para tiros
-
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-const joystickState = {
-    movement: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 },
-    shoot: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 }
-};
-
-// Carregar dados salvos com validação
-const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
-    coins: 0,
-    healthUpgrades: 0,
-    fireRateUpgrades: 0,
-    hasGlock: false,
-    hasRifle: false,
-    equippedWeapon: 'none',
-    hasInitialUpgrade: false,
-    speedUpgrades: 0,
-    healthCost: 50,
-    bosses: 0,
-    hasMagnet: false,
-    hasAdrenaline: false,
-    equippedAccessory: 'none',
-    ranking: []
-};
-coinCount = Number.isFinite(savedDataLocal.coins) ? savedDataLocal.coins : 0;
-healthUpgrades = Number.isFinite(savedDataLocal.healthUpgrades) ? savedDataLocal.healthUpgrades : 0;
-fireRateUpgrades = Number.isFinite(savedDataLocal.fireRateUpgrades) ? savedDataLocal.fireRateUpgrades : 0;
-hasGlock = typeof savedDataLocal.hasGlock === 'boolean' ? savedDataLocal.hasGlock : false;
-hasRifle = typeof savedDataLocal.hasRifle === 'boolean' ? savedDataLocal.hasRifle : false;
-equippedWeapon = ['none', 'glock', 'rifle'].includes(savedDataLocal.equippedWeapon) ? savedDataLocal.equippedWeapon : 'none';
-hasInitialUpgrade = typeof savedDataLocal.hasInitialUpgrade === 'boolean' ? savedDataLocal.hasInitialUpgrade : false;
-speedUpgrades = Number.isFinite(savedDataLocal.speedUpgrades) ? savedDataLocal.speedUpgrades : 0;
-healthCost = Number.isFinite(savedDataLocal.healthCost) ? savedDataLocal.healthCost : 50;
-bosses = Number.isFinite(savedDataLocal.bosses) ? savedDataLocal.bosses : 0;
-hasMagnet = typeof savedDataLocal.hasMagnet === 'boolean' ? savedDataLocal.hasMagnet : false;
-hasAdrenaline = typeof savedDataLocal.hasAdrenaline === 'boolean' ? savedDataLocal.hasAdrenaline : false;
-equippedAccessory = ['none', 'magnet', 'adrenaline'].includes(savedDataLocal.equippedAccessory) ? savedDataLocal.equippedAccessory : 'none';
-player.maxHealth = 10 * Math.pow(1.2, healthUpgrades);
-player.health = player.maxHealth;
-player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
-fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
-shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
-shootDelay = Math.max(50, shootDelay);
-player.damage = (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-fireRateCostDisplay.textContent = Math.round(fireRateCost);
-healthCostDisplay.textContent = Math.round(healthCost);
-healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-if (hasInitialUpgrade) {
-    buyInitialUpgradeBtn.disabled = true;
-    buyInitialUpgradeBtn.textContent = "Comprado";
-}
-updateWeaponButtons();
-updateAccessoryButtons();
-scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-
-function resizeCanvas() {
-    const container = document.getElementById('gameContainer');
-    const scaleX = window.innerWidth / 1000;
-    const scaleY = window.innerHeight / 750;
-    const scale = Math.min(scaleX, scaleY);
-    container.style.transform = `scale(${scale})`;
-    container.style.transformOrigin = 'center';
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-const keys = {
-    w: false,
-    a: false,
-    s: false,
-    d: false,
-    ArrowUp: false,
-    ArrowDown: false,
-    ArrowLeft: false,
-    ArrowRight: false,
-    '1': false,
-    '2': false,
-    '3': false,
-    'e': false
-};
-
-document.addEventListener('keydown', (e) => {
-    const key = e.key;
-    const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
-    if (normalizedKey in keys) {
-        keys[normalizedKey] = true;
-    }
-    if (normalizedKey === 'r' && gameOver) resetGame();
-    if (normalizedKey === 'e' && !isPaused) activateAccessory();
-    if (upgradeMenu.style.display === 'block' && ['1', '2', '3'].includes(normalizedKey)) {
-        selectUpgrade(parseInt(normalizedKey) - 1);
-    }
-    // Setas do teclado controlam a direção dos tiros
-    if (normalizedKey === 'ArrowUp') shootDirection = { dx: 0, dy: -1 };
-    if (normalizedKey === 'ArrowDown') shootDirection = { dx: 0, dy: 1 };
-    if (normalizedKey === 'ArrowLeft') shootDirection = { dx: -1, dy: 0 };
-    if (normalizedKey === 'ArrowRight') shootDirection = { dx: 1, dy: 0 };
-});
-
-document.addEventListener('keyup', (e) => {
-    const key = e.key;
-    const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
-    if (normalizedKey in keys) {
-        keys[normalizedKey] = false;
-    }
-});
-
-canvas.addEventListener('click', () => {
-    canvas.focus();
-});
-
-if (isMobile) {
-    movementJoystick.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        joystickState.movement.active = true;
-        joystickState.movement.touchId = touch.identifier;
-        updateJoystick(touch, joystickState.movement, movementJoystick);
-    });
-
-    shootJoystick.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        joystickState.shoot.active = true;
-        joystickState.shoot.touchId = touch.identifier;
-        updateJoystick(touch, joystickState.shoot, shootJoystick);
-    });
-
-    document.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        for (let touch of e.changedTouches) {
-            if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
-                updateJoystick(touch, joystickState.movement, movementJoystick);
-            }
-            if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
-                updateJoystick(touch, joystickState.shoot, shootJoystick);
-            }
-        }
-    });
-
-    document.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        for (let touch of e.changedTouches) {
-            if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
-                joystickState.movement.active = false;
-                joystickState.movement.touchId = null;
-                joystickState.movement.dx = 0;
-                joystickState.movement.dy = 0;
-                updateJoystickPosition(joystickState.movement, movementJoystick);
-            }
-            if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
-                joystickState.shoot.active = false;
-                joystickState.shoot.touchId = null;
-                joystickState.shoot.dx = 0;
-                joystickState.shoot.dy = 0;
-                updateJoystickPosition(joystickState.shoot, shootJoystick);
-            }
-        }
-    });
-
-    function updateJoystick(touch, joystick, element) {
-        const rect = element.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        let dx = touch.clientX - centerX;
-        let dy = touch.clientY - centerY;
-        const distance = Math.hypot(dx, dy);
-        const maxDistance = rect.width / 2 - 20;
-        if (distance > maxDistance) {
-            const scale = maxDistance / distance;
-            dx *= scale;
-            dy *= scale;
-        }
-        joystick.dx = dx;
-        joystick.dy = dy;
-        joystick.x = centerX;
-        joystick.y = centerY;
-        updateJoystickPosition(joystick, element);
-    }
-
-    function updateJoystickPosition(joystick, element) {
-        const inner = element.querySelector('.joystick-inner');
-        inner.style.transform = `translate(${joystick.dx - 20}px, ${joystick.dy - 20}px)`;
-    }
-}
-
-function restoreCanvasFocus() {
-    setTimeout(() => {
-        canvas.focus();
-        console.log('Canvas focado');
-    }, 100);
-}
-
-function showTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
-}
-
-function updateUpgradesList() {
-    upgradesList.textContent = collectedUpgrades.length > 0 
-        ? `Upgrades: ${collectedUpgrades.join(', ')}` 
-        : 'Upgrades: Nenhum';
-}
-
-function saveData() {
-    localStorage.setItem('zombieGameData', JSON.stringify({
-        coins: coinCount,
-        healthUpgrades: healthUpgrades,
-        fireRateUpgrades: fireRateUpgrades,
-        hasGlock: hasGlock,
-        hasRifle: hasRifle,
-        equippedWeapon: equippedWeapon,
-        hasInitialUpgrade: hasInitialUpgrade,
-        speedUpgrades: speedUpgrades,
-        healthCost: healthCost,
-        bosses: bosses,
-        hasMagnet: hasMagnet,
-        hasAdrenaline: hasAdrenaline,
-        equippedAccessory: equippedAccessory,
-        ranking: savedDataLocal.ranking
-    }));
-}
-
-function updateWeaponButtons() {
-    if (hasGlock) {
-        buyGlockBtn.textContent = equippedWeapon === 'glock' ? 'Equipado' : 'Equipar';
-        buyGlockBtn.disabled = equippedWeapon === 'glock';
-    } else {
-        buyGlockBtn.textContent = 'Comprar';
-        buyGlockBtn.disabled = false;
-    }
-    if (hasRifle) {
-        buyRifleBtn.textContent = equippedWeapon === 'rifle' ? 'Equipado' : 'Equipar';
-        buyRifleBtn.disabled = equippedWeapon === 'rifle';
-    } else {
-        buyRifleBtn.textContent = 'Comprar';
-        buyRifleBtn.disabled = false;
-    }
-}
-
-function updateAccessoryButtons() {
-    if (hasMagnet) {
-        buyMagnetBtn.textContent = equippedAccessory === 'magnet' ? 'Equipado' : 'Equipar';
-        buyMagnetBtn.disabled = equippedAccessory === 'magnet';
-    } else {
-        buyMagnetBtn.textContent = 'Comprar';
-        buyMagnetBtn.disabled = false;
-    }
-    if (hasAdrenaline) {
-        buyAdrenalineBtn.textContent = equippedAccessory === 'adrenaline' ? 'Equipado' : 'Equipar';
-        buyAdrenalineBtn.disabled = equippedAccessory === 'adrenaline';
-    } else {
-        buyAdrenalineBtn.textContent = 'Comprar';
-        buyAdrenalineBtn.disabled = false;
-    }
-}
-
-function activateAccessory() {
-    const now = Date.now();
-    if (equippedAccessory === 'magnet' && !magnetActive && now - magnetCooldown >= 60000) {
-        magnetActive = true;
-        magnetStart = now;
-        magnetCooldown = now;
-        console.log('Imã Velho ativado');
-    } else if (equippedAccessory === 'adrenaline' && !adrenalineActive && now - adrenalineCooldown >= 60000) {
-        adrenalineActive = true;
-        adrenalineStart = now;
-        adrenalineCooldown = now;
-        updateShootDelay();
-        console.log('Adrenalina ativada');
-    }
-}
-
-function resetAll() {
-    if (confirm('Tem certeza que deseja resetar todas as características, moedas e compras?')) {
-        coinCount = 0;
-        healthUpgrades = 0;
-        fireRateUpgrades = 0;
-        speedUpgrades = 0;
-        hasGlock = false;
-        hasRifle = false;
-        equippedWeapon = 'none';
-        hasInitialUpgrade = false;
-        healthCost = 50;
-        bosses = 0;
-        hasMagnet = false;
-        hasAdrenaline = false;
-        equippedAccessory = 'none';
-        player.maxHealth = 10;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverDisplay = document.getElementById('gameOver');
+        const rankingDisplay = document.getElementById('ranking');
+        const rankingList = document.getElementById('rankingList');
+        const shopDisplay = document.getElementById('shop');
+        const shopCoins = document.getElementById('shopCoins');
+        const healthBar = document.getElementById('health');
+        const healthText = document.getElementById('healthText');
+        const xpBar = document.getElementById('xp');
+        const xpText = document.getElementById('xpText');
+        const fireRateCostDisplay = document.getElementById('fireRateCost');
+        const healthCostDisplay = document.getElementById('healthCost');
+        const countdownDisplay = document.getElementById('countdown');
+        const buyInitialUpgradeBtn = document.getElementById('buyInitialUpgradeBtn');
+        const buyGlockBtn = document.getElementById('buyGlockBtn');
+        const buyRifleBtn = document.getElementById('buyRifleBtn');
+        const buyMagnetBtn = document.getElementById('buyMagnetBtn');
+        const buyAdrenalineBtn = document.getElementById('buyAdrenalineBtn');
+        const upgradeMenu = document.getElementById('upgradeMenu');
+        const upgradeOptions = document.getElementById('upgradeOptions');
+        const upgradesList = document.getElementById('upgradesList');
+        const movementJoystick = document.getElementById('movementJoystick');
+        const shootJoystick = document.getElementById('shootJoystick');
+        
+        let player = { x: 500, y: 375, size: 20, speed: 1.75, baseSpeed: 1.75, health: 10, maxHealth: 10, damage: 1 };
+        let zombies = [];
+        let bullets = [];
+        let bossBullets = [];
+        let coins = [];
+        let boss = null;
+        let score = 0;
+        let coinCount = 0;
+        let xp = 0;
+        let level = 1;
+        let xpToNextLevel = 10;
+        let gameOver = false;
+        let isPaused = true;
+        let lastShot = 0;
+        let lastSpawn = 0;
+        let lastRegen = 0;
+        let countdown = 0;
+        let countdownStart = 0;
+        let bossSpawned = false;
+        let lastBossCharge = 0;
+        let lastBossSpawnZombies = 0;
+        let bossChargeWarning = 0;
+        let shootDelay = 2000;
+        let fireRateCost = 200;
+        let healthCost = 50;
+        let spawnInterval = 4000;
+        let diagonalShots = 0;
+        let frontShots = 0;
+        let homingShot = false;
+        let electricShot = false;
+        let pierceCount = 0;
+        let regen = false;
+        let vampirism = false;
+        let lightHands = false;
+        let goodHands = false;
+        let speedUpgrades = 0;
+        let healthUpgrades = 0;
+        let fireRateUpgrades = 0;
+        let damageUpgrades = 0;
+        let suplemento = false;
+        let ricochetCount = 0;
+        let steelHeart = false;
+        let hasGlock = false;
+        let hasRifle = false;
+        let equippedWeapon = 'none';
+        let hasInitialUpgrade = false;
+        let collectedUpgrades = [];
+        let bosses = 0;
+        let zombieHealth = 2;
+        let bossDamage = 5;
+        let hasMagnet = false;
+        let hasAdrenaline = false;
+        let equippedAccessory = 'none';
+        let magnetActive = false;
+        let magnetStart = 0;
+        let magnetCooldown = 0;
+        let adrenalineActive = false;
+        let adrenalineStart = 0;
+        let adrenalineCooldown = 0;
+        let electricLines = [];
+        let shootDirection = { dx: 1, dy: 0 }; // Direção padrão para tiros
+        
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const joystickState = {
+            movement: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 },
+            shoot: { active: false, touchId: null, dx: 0, dy: 0, x: 0, y: 0 }
+        };
+        
+        // Carregar dados salvos com validação
+        const savedDataLocal = JSON.parse(localStorage.getItem('zombieGameData')) || {
+            coins: 0,
+            healthUpgrades: 0,
+            fireRateUpgrades: 0,
+            hasGlock: false,
+            hasRifle: false,
+            equippedWeapon: 'none',
+            hasInitialUpgrade: false,
+            speedUpgrades: 0,
+            healthCost: 50,
+            bosses: 0,
+            hasMagnet: false,
+            hasAdrenaline: false,
+            equippedAccessory: 'none',
+            ranking: []
+        };
+        coinCount = Number.isFinite(savedDataLocal.coins) ? savedDataLocal.coins : 0;
+        healthUpgrades = Number.isFinite(savedDataLocal.healthUpgrades) ? savedDataLocal.healthUpgrades : 0;
+        fireRateUpgrades = Number.isFinite(savedDataLocal.fireRateUpgrades) ? savedDataLocal.fireRateUpgrades : 0;
+        hasGlock = typeof savedDataLocal.hasGlock === 'boolean' ? savedDataLocal.hasGlock : false;
+        hasRifle = typeof savedDataLocal.hasRifle === 'boolean' ? savedDataLocal.hasRifle : false;
+        equippedWeapon = ['none', 'glock', 'rifle'].includes(savedDataLocal.equippedWeapon) ? savedDataLocal.equippedWeapon : 'none';
+        hasInitialUpgrade = typeof savedDataLocal.hasInitialUpgrade === 'boolean' ? savedDataLocal.hasInitialUpgrade : false;
+        speedUpgrades = Number.isFinite(savedDataLocal.speedUpgrades) ? savedDataLocal.speedUpgrades : 0;
+        healthCost = Number.isFinite(savedDataLocal.healthCost) ? savedDataLocal.healthCost : 50;
+        bosses = Number.isFinite(savedDataLocal.bosses) ? savedDataLocal.bosses : 0;
+        hasMagnet = typeof savedDataLocal.hasMagnet === 'boolean' ? savedDataLocal.hasMagnet : false;
+        hasAdrenaline = typeof savedDataLocal.hasAdrenaline === 'boolean' ? savedDataLocal.hasAdrenaline : false;
+        equippedAccessory = ['none', 'magnet', 'adrenaline'].includes(savedDataLocal.equippedAccessory) ? savedDataLocal.equippedAccessory : 'none';
+        player.maxHealth = 10 * Math.pow(1.2, healthUpgrades);
         player.health = player.maxHealth;
-        player.speed = player.baseSpeed;
-        player.damage = 1;
-        fireRateCost = 200;
-        shootDelay = 2000;
-        pierceCount = 0;
-        collectedUpgrades = [];
-        updateShootDelay();
-        updateUpgradesList();
-        shopCoins.textContent = coinCount;
+        player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
+        fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
+        shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
+        shootDelay = Math.max(50, shootDelay);
+        player.damage = (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
         fireRateCostDisplay.textContent = Math.round(fireRateCost);
         healthCostDisplay.textContent = Math.round(healthCost);
-        buyInitialUpgradeBtn.disabled = false;
-        buyInitialUpgradeBtn.textContent = 'Comprar';
+        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+        if (hasInitialUpgrade) {
+            buyInitialUpgradeBtn.disabled = true;
+            buyInitialUpgradeBtn.textContent = "Comprado";
+        }
         updateWeaponButtons();
         updateAccessoryButtons();
-        healthBar.style.width = '100%';
-        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-        saveData();
-        alert('Todas as características, moedas e compras foram resetadas!');
-        restoreCanvasFocus();
-    } else {
-        restoreCanvasFocus();
-    }
-}
-
-function startGame() {
-    console.log('Iniciando o jogo...');
-    startScreen.style.display = 'none';
-    isPaused = false;
-    gameOver = false;
-    resetGame();
-    canvas.focus();
-}
-
-function showRankingFromStart() {
-    rankingList.innerHTML = '';
-    savedDataLocal.ranking.sort((a, b) => b.score - a.score);
-    savedDataLocal.ranking.slice(0, 5).forEach(entry => {
-        const li = document.createElement('li');
-        li.textContent = `Pontos: ${entry.score} - ${entry.date}`;
-        rankingList.appendChild(li);
-    });
-    startScreen.style.display = 'none';
-    rankingDisplay.style.display = 'block';
-    canvas.focus();
-}
-
-function spawnZombies() {
-    if (isPaused || countdown > 0 || boss) return;
-    const now = Date.now();
-    if (now - lastSpawn < spawnInterval) return;
-    lastSpawn = now;
-
-    let zombieCount;
-    if (score < 50) {
-        zombieCount = 2;
-        spawnInterval = 4000;
-    } else if (score < 100) {
-        zombieCount = 3;
-        spawnInterval = 4000;
-    } else {
-        zombieCount = 4;
-        spawnInterval = 3000;
-    }
-
-    if (score > 0 && score % 50 === 0 && !bossSpawned) {
-        zombies = [];
-        countdown = 3;
-        countdownStart = Date.now();
-        return;
-    }
-
-    for (let i = 0; i < zombieCount; i++) {
-        const side = Math.floor(Math.random() * 4);
-        let x, y;
-        if (side === 0) { x = Math.random() * canvas.width; y = -20; }
-        else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
-        else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
-        else { x = canvas.width + 20; y = Math.random() * canvas.height; }
-        zombies.push({ x, y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
-    }
-}
-
-function spawnBoss() {
-    const side = Math.floor(Math.random() * 4);
-    let x, y;
-    if (side === 0) { x = Math.random() * canvas.width; y = -40; }
-    else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
-    else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
-    else { x = canvas.width + 40; y = Math.random() * canvas.height; }
-    const bossTypes = ['charger', 'shooter'];
-    const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
-    const bossHealth = 50 * (bosses + 1);
-    boss = {
-        x,
-        y,
-        size: 40,
-        speed: 1.2,
-        health: bossHealth,
-        baseSpeed: 1.2,
-        type: bossType,
-        chargeTimer: 0,
-        spawnZombieTimer: 0,
-        chargeWarning: false,
-        shootTimer: 0,
-        isStopped: false,
-        chargeDx: 0,
-        chargeDy: 0
-    };
-    bossSpawned = true;
-}
-
-function spawnCoin(x, y) {
-    if (Math.random() < 0.3) {
-        coins.push({ x, y, size: 10 });
-    }
-}
-
-function findClosestZombie(bullet) {
-    let closestZombie = null;
-    let minDistance = Infinity;
-    zombies.forEach(zombie => {
-        const distance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
-        if (distance < minDistance) {
-            minDistance = distance;
-            closestZombie = zombie;
+        scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+        
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            const scaleX = window.innerWidth / 1000;
+            const scaleY = window.innerHeight / 750;
+            const scale = Math.min(scaleX, scaleY);
+            container.style.transform = `scale(${scale})`;
+            container.style.transformOrigin = 'center';
         }
-    });
-    if (boss) {
-        const distance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
-        if (distance < minDistance) {
-            minDistance = distance;
-            closestZombie = boss;
-        }
-    }
-    return closestZombie;
-}
-
-function findNearbyZombie(zombie, exclude) {
-    let closestZombie = null;
-    let minDistance = 100;
-    zombies.forEach(z => {
-        if (z !== exclude) {
-            const distance = Math.sqrt((zombie.x - z.x) ** 2 + (zombie.y - z.y) ** 2);
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestZombie = z;
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        const keys = {
+            w: false,
+            a: false,
+            s: false,
+            d: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            '1': false,
+            '2': false,
+            '3': false,
+            'e': false
+        };
+        
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
+            if (normalizedKey in keys) {
+                keys[normalizedKey] = true;
+            }
+            if (normalizedKey === 'r' && gameOver) resetGame();
+            if (normalizedKey === 'e' && !isPaused) activateAccessory();
+            if (upgradeMenu.style.display === 'block' && ['1', '2', '3'].includes(normalizedKey)) {
+                selectUpgrade(parseInt(normalizedKey) - 1);
+            }
+            // Setas do teclado controlam a direção dos tiros
+            if (normalizedKey === 'ArrowUp') shootDirection = { dx: 0, dy: -1 };
+            if (normalizedKey === 'ArrowDown') shootDirection = { dx: 0, dy: 1 };
+            if (normalizedKey === 'ArrowLeft') shootDirection = { dx: -1, dy: 0 };
+            if (normalizedKey === 'ArrowRight') shootDirection = { dx: 1, dy: 0 };
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            const key = e.key;
+            const normalizedKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' ? key : key.toLowerCase();
+            if (normalizedKey in keys) {
+                keys[normalizedKey] = false;
+            }
+        });
+        
+        canvas.addEventListener('click', () => {
+            canvas.focus();
+        });
+        
+        if (isMobile) {
+            movementJoystick.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                joystickState.movement.active = true;
+                joystickState.movement.touchId = touch.identifier;
+                updateJoystick(touch, joystickState.movement, movementJoystick);
+            });
+        
+            shootJoystick.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                joystickState.shoot.active = true;
+                joystickState.shoot.touchId = touch.identifier;
+                updateJoystick(touch, joystickState.shoot, shootJoystick);
+            });
+        
+            document.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
+                        updateJoystick(touch, joystickState.movement, movementJoystick);
+                    }
+                    if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
+                        updateJoystick(touch, joystickState.shoot, shootJoystick);
+                    }
+                }
+            });
+        
+            document.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    if (joystickState.movement.active && touch.identifier === joystickState.movement.touchId) {
+                        joystickState.movement.active = false;
+                        joystickState.movement.touchId = null;
+                        joystickState.movement.dx = 0;
+                        joystickState.movement.dy = 0;
+                        updateJoystickPosition(joystickState.movement, movementJoystick);
+                    }
+                    if (joystickState.shoot.active && touch.identifier === joystickState.shoot.touchId) {
+                        joystickState.shoot.active = false;
+                        joystickState.shoot.touchId = null;
+                        joystickState.shoot.dx = 0;
+                        joystickState.shoot.dy = 0;
+                        updateJoystickPosition(joystickState.shoot, shootJoystick);
+                    }
+                }
+            });
+        
+            function updateJoystick(touch, joystick, element) {
+                const rect = element.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+                const distance = Math.hypot(dx, dy);
+                const maxDistance = rect.width / 2 - 20;
+                if (distance > maxDistance) {
+                    const scale = maxDistance / distance;
+                    dx *= scale;
+                    dy *= scale;
+                }
+                joystick.dx = dx;
+                joystick.dy = dy;
+                joystick.x = centerX;
+                joystick.y = centerY;
+                updateJoystickPosition(joystick, element);
+            }
+        
+            function updateJoystickPosition(joystick, element) {
+                const inner = element.querySelector('.joystick-inner');
+                inner.style.transform = `translate(${joystick.dx - 20}px, ${joystick.dy - 20}px)`;
             }
         }
-    });
-    return closestZombie;
-}
-
-const availableUpgrades = [
-    {
-        name: "+1 Diagonais",
-        description: "Adiciona uma bala diagonal para cada lado",
-        rarity: "raro",
-        chance: 0.5,
-        accumulable: true,
-        effect: () => {
-            diagonalShots += 1;
-            collectedUpgrades.push("+1 Diagonais");
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function restoreCanvasFocus() {
+            setTimeout(() => {
+                canvas.focus();
+                console.log('Canvas focado');
+            }, 100);
         }
-    },
-    {
-        name: "+1 Frente",
-        description: "Adiciona uma bala extra na direção frontal",
-        rarity: "raro",
-        chance: 0.5,
-        accumulable: true,
-        effect: () => {
-            frontShots += 1;
-            collectedUpgrades.push("+1 Frente");
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
         }
-    },
-    {
-        name: "Pressa",
-        description: "Aumenta a velocidade de movimento em 5%",
-        rarity: "raro",
-        chance: 0.5,
-        accumulable: true,
-        effect: () => {
-            speedUpgrades += 1;
-            player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
-            collectedUpgrades.push("Pressa");
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function updateUpgradesList() {
+            upgradesList.textContent = collectedUpgrades.length > 0 
+                ? `Upgrades: ${collectedUpgrades.join(', ')}` 
+                : 'Upgrades: Nenhum';
         }
-    },
-    {
-        name: "Hp-UP",
-        description: "Aumenta a vida máxima em 5%",
-        rarity: "raro",
-        chance: 0.5,
-        accumulable: true,
-        effect: () => {
-            player.maxHealth *= 1.05;
-            player.health = player.maxHealth;
-            collectedUpgrades.push("Hp-UP");
-            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function saveData() {
+            localStorage.setItem('zombieGameData', JSON.stringify({
+                coins: coinCount,
+                healthUpgrades: healthUpgrades,
+                fireRateUpgrades: fireRateUpgrades,
+                hasGlock: hasGlock,
+                hasRifle: hasRifle,
+                equippedWeapon: equippedWeapon,
+                hasInitialUpgrade: hasInitialUpgrade,
+                speedUpgrades: speedUpgrades,
+                healthCost: healthCost,
+                bosses: bosses,
+                hasMagnet: hasMagnet,
+                hasAdrenaline: hasAdrenaline,
+                equippedAccessory: equippedAccessory,
+                ranking: savedDataLocal.ranking
+            }));
         }
-    },
-    {
-        name: "Força-Up",
-        description: "Aumenta o dano em 5%",
-        rarity: "raro",
-        chance: 0.5,
-        accumulable: true,
-        effect: () => {
-            damageUpgrades += 1;
-            player.damage = (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-            collectedUpgrades.push("Força-Up");
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function updateWeaponButtons() {
+            if (hasGlock) {
+                buyGlockBtn.textContent = equippedWeapon === 'glock' ? 'Equipado' : 'Equipar';
+                buyGlockBtn.disabled = equippedWeapon === 'glock';
+            } else {
+                buyGlockBtn.textContent = 'Comprar';
+                buyGlockBtn.disabled = false;
+            }
+            if (hasRifle) {
+                buyRifleBtn.textContent = equippedWeapon === 'rifle' ? 'Equipado' : 'Equipar';
+                buyRifleBtn.disabled = equippedWeapon === 'rifle';
+            } else {
+                buyRifleBtn.textContent = 'Comprar';
+                buyRifleBtn.disabled = false;
+            }
         }
-    },
-    {
-        name: "Balas Elétricas",
-        description: "Balas causam choque em zumbi próximo (50% de chance)",
-        rarity: "normal",
-        chance: 0.3,
-        accumulable: false,
-        effect: () => {
-            electricShot = true;
-            collectedUpgrades.push("Balas Elétricas");
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function updateAccessoryButtons() {
+            if (hasMagnet) {
+                buyMagnetBtn.textContent = equippedAccessory === 'magnet' ? 'Equipado' : 'Equipar';
+                buyMagnetBtn.disabled = equippedAccessory === 'magnet';
+            } else {
+                buyMagnetBtn.textContent = 'Comprar';
+                buyMagnetBtn.disabled = false;
+            }
+            if (hasAdrenaline) {
+                buyAdrenalineBtn.textContent = equippedAccessory === 'adrenaline' ? 'Equipado' : 'Equipar';
+                buyAdrenalineBtn.disabled = equippedAccessory === 'adrenaline';
+            } else {
+                buyAdrenalineBtn.textContent = 'Comprar';
+                buyAdrenalineBtn.disabled = false;
+            }
         }
-    },
-    {
-        name: "Perfuração",
-        description: "Balas atravessam até 1 zumbi",
-        rarity: "normal",
-        chance: 0.3,
-        accumulable: false,
-        effect: () => {
-            pierceCount = 1;
-            collectedUpgrades.push("Perfuração");
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function activateAccessory() {
+            const now = Date.now();
+            if (equippedAccessory === 'magnet' && !magnetActive && now - magnetCooldown >= 60000) {
+                magnetActive = true;
+                magnetStart = now;
+                magnetCooldown = now;
+                console.log('Imã Velho ativado');
+            } else if (equippedAccessory === 'adrenaline' && !adrenalineActive && now - adrenalineCooldown >= 60000) {
+                adrenalineActive = true;
+                adrenalineStart = now;
+                adrenalineCooldown = now;
+                updateShootDelay();
+                console.log('Adrenalina ativada');
+            }
         }
-    },
-    {
-        name: "Mãos Leves",
-        description: "Aumenta a velocidade de disparo em 20%",
-        rarity: "normal",
-        chance: 0.3,
-        accumulable: true,
-        effect: () => {
-            lightHands = true;
-            goodHands = false;
-            updateShootDelay();
-            collectedUpgrades.push("Mãos Leves");
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function resetAll() {
+            if (confirm('Tem certeza que deseja resetar todas as características, moedas e compras?')) {
+                coinCount = 0;
+                healthUpgrades = 0;
+                fireRateUpgrades = 0;
+                speedUpgrades = 0;
+                hasGlock = false;
+                hasRifle = false;
+                equippedWeapon = 'none';
+                hasInitialUpgrade = false;
+                healthCost = 50;
+                bosses = 0;
+                hasMagnet = false;
+                hasAdrenaline = false;
+                equippedAccessory = 'none';
+                player.maxHealth = 10;
+                player.health = player.maxHealth;
+                player.speed = player.baseSpeed;
+                player.damage = 1;
+                fireRateCost = 200;
+                shootDelay = 2000;
+                pierceCount = 0;
+                collectedUpgrades = [];
+                updateShootDelay();
+                updateUpgradesList();
+                shopCoins.textContent = coinCount;
+                fireRateCostDisplay.textContent = Math.round(fireRateCost);
+                healthCostDisplay.textContent = Math.round(healthCost);
+                buyInitialUpgradeBtn.disabled = false;
+                buyInitialUpgradeBtn.textContent = 'Comprar';
+                updateWeaponButtons();
+                updateAccessoryButtons();
+                healthBar.style.width = '100%';
+                healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                saveData();
+                alert('Todas as características, moedas e compras foram resetadas!');
+                restoreCanvasFocus();
+            } else {
+                restoreCanvasFocus();
+            }
         }
-    },
-    {
-        name: "Mãos Boas",
-        description: "Aumenta a velocidade de disparo em 30%",
-        rarity: "epico",
-        chance: 0.15,
-        accumulable: false,
-        effect: () => {
-            goodHands = true;
-            lightHands = false;
-            updateShootDelay();
-            collectedUpgrades.push("Mãos Boas");
-            updateUpgradesList();
-            restoreCanvasFocus();
+        
+        function startGame() {
+            console.log('Iniciando o jogo...');
+            startScreen.style.display = 'none';
+            isPaused = false;
+            gameOver = false;
+            resetGame();
+            canvas.focus();
         }
-    },
-    {
-        name: "Suplemento",
-        description: "Aumenta o dano em 15%",
-        rarity: "epico",
-        chance: 0.15,
-        accumulable: false,
-        effect: () => {
-            suplemento = true;
-            player.damage = (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * 1.15;
-            collectedUpgrades.push("Suplemento");
-            updateUpgradesList();
-            restoreCanvasFocus();
-        }
-    },
-    {
-        name: "Ricochete",
-        description: `Balas ricocheteiam para ${ricochetCount + 1} zumbi${ricochetCount + 1 > 1 ? 's' : ''} próximo${ricochetCount + 1 > 1 ? 's' : ''}`,
-        rarity: "epico",
-        chance: 0.15,
-        accumulable: true,
-        effect: () => {
-            ricochetCount += 1;
-            collectedUpgrades.push("Ricochete");
-            updateUpgradesList();
-            restoreCanvasFocus();
-        }
-    },
-    {
-        name: "Balas Teleguiadas",
-        description: "Balas seguem o zumbi mais próximo",
-        rarity: "lendario",
-        chance: 0.05,
-        accumulable: false,
-        effect: () => {
-            homingShot = true;
-            collectedUpgrades.push("Balas Teleguiadas");
-            updateUpgradesList();
-            restoreCanvasFocus();
-        }
-    },
-    {
-        name: "Regeneração",
-        description: "Recupera 0,5 vida por segundo",
-        rarity: "lendario",
-        chance: 0.05,
-        accumulable: false,
-        effect: () => {
-            regen = true;
-            collectedUpgrades.push("Regeneração");
-            updateUpgradesList();
-            restoreCanvasFocus();
-        }
-    },
-    {
-        name: "Vampirismo",
-        description: "30% de chance de recuperar 1 vida ao matar um zumbi",
-        rarity: "lendario",
-        chance: 0.05,
-        accumulable: false,
-        effect: () => {
-            vampirism = true;
-            collectedUpgrades.push("Vampirismo");
-            updateUpgradesList();
-            restoreCanvasFocus();
-        }
-    },
-    {
-        name: "Coração de Aço",
-        description: "Aumenta a vida máxima em 30% e recupera vida total",
-        rarity: "lendario",
-        chance: 0.05,
-        accumulable: false,
-        effect: () => {
-            steelHeart = true;
-            player.maxHealth *= 1.3;
-            player.health = player.maxHealth;
-            collectedUpgrades.push("Coração de Aço");
-            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            updateUpgradesList();
-            restoreCanvasFocus();
-        }
-    }
-];
-
-function updateShootDelay() {
-    let baseDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
-    if (lightHands) baseDelay *= 0.8;
-    if (goodHands) baseDelay *= 0.7;
-    if (adrenalineActive) baseDelay *= 0.25;
-    shootDelay = Math.max(50, baseDelay);
-}
-
-function applyInitialUpgrade() {
-    if (!hasInitialUpgrade) return;
-    const validUpgrades = availableUpgrades.filter(upgrade => 
-        upgrade.accumulable || 
-        (!upgrade.accumulable && (
-            (upgrade.name === "Balas Teleguiadas" && !homingShot) ||
-            (upgrade.name === "Regeneração" && !regen) ||
-            (upgrade.name === "Vampirismo" && !vampirism) ||
-            (upgrade.name === "Balas Elétricas" && !electricShot) ||
-            (upgrade.name === "Mãos Leves" && !lightHands && !goodHands) ||
-            (upgrade.name === "Mãos Boas" && !goodHands && !lightHands) ||
-            (upgrade.name === "Suplemento" && !suplemento) ||
-            (upgrade.name === "Coração de Aço" && !steelHeart) ||
-            (upgrade.name === "Perfuração" && pierceCount < 1 && !collectedUpgrades.includes("Perfuração"))
-        ))
-    );
-    if (validUpgrades.length === 0) return;
-    const totalChance = validUpgrades.reduce((sum, u) => sum + u.chance, 0);
-    let random = Math.random() * totalChance;
-    let selectedUpgrade = null;
-    for (let upgrade of validUpgrades) {
-        random -= upgrade.chance;
-        if (random <= 0) {
-            selectedUpgrade = upgrade;
-            break;
-        }
-    }
-    if (selectedUpgrade) {
-        selectedUpgrade.effect();
-    }
-}
-
-function shoot() {
-    if (isPaused || gameOver || Date.now() - lastShot < shootDelay) return;
-    lastShot = Date.now();
-    let dx = 0, dy = 0;
-    if (isMobile && joystickState.shoot.active) {
-        const length = Math.hypot(joystickState.shoot.dx, joystickState.shoot.dy);
-        if (length > 0) {
-            dx = joystickState.shoot.dx / length;
-            dy = joystickState.shoot.dy / length;
-        }
-    } else {
-        dx = shootDirection.dx;
-        dy = shootDirection.dy;
-    }
-    const length = Math.sqrt(dx * dx + dy * dy);
-    if (length > 0) {
-        dx /= length;
-        dy /= length;
-        // Tiro principal
-        bullets.push({
-            x: player.x,
-            y: player.y,
-            dx: dx * 7,
-            dy: dy * 7,
-            size: 5,
-            homing: homingShot,
-            electric: electricShot,
-            electricTimer: null,
-            pierce: pierceCount,
-            ricochet: ricochetCount,
-            damage: player.damage
-        });
-        // Balas diagonais
-        for (let i = 1; i <= diagonalShots; i++) {
-            const angle = Math.atan2(dy, dx);
-            const angleLeft = angle + Math.PI / 4;
-            const angleRight = angle - Math.PI / 4;
-            const offset = i * 10;
-            const perpDx = -dy;
-            const perpDy = dx;
-            const perpLength = Math.sqrt(perpDx * perpDx + perpDy * perpDy);
-            const normPerpDx = perpLength > 0 ? perpDx / perpLength : 0;
-            const normPerpDy = perpLength > 0 ? perpDy / perpLength : 0;
-            bullets.push({
-                x: player.x + normPerpDx * offset,
-                y: player.y + normPerpDy * offset,
-                dx: Math.cos(angleLeft) * 7,
-                dy: Math.sin(angleLeft) * 7,
-                size: 5,
-                homing: homingShot,
-                electric: electricShot,
-                electricTimer: null,
-                pierce: pierceCount,
-                ricochet: ricochetCount,
-                damage: player.damage
+        
+        function showRankingFromStart() {
+            rankingList.innerHTML = '';
+            savedDataLocal.ranking.sort((a, b) => b.score - a.score);
+            savedDataLocal.ranking.slice(0, 5).forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `Pontos: ${entry.score} - ${entry.date}`;
+                rankingList.appendChild(li);
             });
-            bullets.push({
-                x: player.x - normPerpDx * offset,
-                y: player.y - normPerpDy * offset,
-                dx: Math.cos(angleRight) * 7,
-                dy: Math.sin(angleRight) * 7,
-                size: 5,
-                homing: homingShot,
-                electric: electricShot,
-                electricTimer: null,
-                pierce: pierceCount,
-                ricochet: ricochetCount,
-                damage: player.damage
-            });
+            startScreen.style.display = 'none';
+            rankingDisplay.style.display = 'block';
+            canvas.focus();
         }
-        // Balas frontais
-        for (let i = 1; i <= frontShots; i++) {
-            const offset = i * 10 * (i % 2 === 0 ? -1 : 1);
-            bullets.push({
-                x: player.x + offset,
-                y: player.y,
-                dx: dx * 7,
-                dy: dy * 7,
-                size: 5,
-                homing: homingShot,
-                electric: electricShot,
-                electricTimer: null,
-                pierce: pierceCount,
-                ricochet: ricochetCount,
-                damage: player.damage
-            });
+        
+        function spawnZombies() {
+            if (isPaused || countdown > 0 || boss) return;
+            const now = Date.now();
+            if (now - lastSpawn < spawnInterval) return;
+            lastSpawn = now;
+        
+            let zombieCount;
+            if (score < 50) {
+                zombieCount = 2;
+                spawnInterval = 4000;
+            } else if (score < 100) {
+                zombieCount = 3;
+                spawnInterval = 4000;
+            } else {
+                zombieCount = 4;
+                spawnInterval = 3000;
+            }
+        
+            if (score > 0 && score % 50 === 0 && !bossSpawned) {
+                zombies = [];
+                countdown = 3;
+                countdownStart = Date.now();
+                return;
+            }
+        
+            for (let i = 0; i < zombieCount; i++) {
+                const side = Math.floor(Math.random() * 4);
+                let x, y;
+                if (side === 0) { x = Math.random() * canvas.width; y = -20; }
+                else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 20; }
+                else if (side === 2) { x = -20; y = Math.random() * canvas.height; }
+                else { x = canvas.width + 20; y = Math.random() * canvas.height; }
+                zombies.push({ x, y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
+            }
         }
-    }
-}
-
-function selectUpgrade(index) {
-    const buttons = upgradeOptions.getElementsByTagName('button');
-    if (buttons[index]) {
-        buttons[index].click();
-    }
-}
-
-function showUpgradeMenu() {
-    isPaused = true;
-    upgradeMenu.style.display = 'block';
-    upgradeOptions.innerHTML = '';
-    const validUpgrades = availableUpgrades.filter(upgrade => 
-        upgrade.accumulable || 
-        (!upgrade.accumulable && (
-            (upgrade.name === "Balas Teleguiadas" && !homingShot) ||
-            (upgrade.name === "Regeneração" && !regen) ||
-            (upgrade.name === "Vampirismo" && !vampirism) ||
-            (upgrade.name === "Balas Elétricas" && !electricShot) ||
-            (upgrade.name === "Mãos Leves" && !lightHands && !goodHands) ||
-            (upgrade.name === "Mãos Boas" && !goodHands && !lightHands) ||
-            (upgrade.name === "Suplemento" && !suplemento) ||
-            (upgrade.name === "Coração de Aço" && !steelHeart) ||
-            (upgrade.name === "Perfuração" && pierceCount < 1 && !collectedUpgrades.includes("Perfuração"))
-        ))
-    );
-    const selectedUpgrades = [];
-    const totalChance = validUpgrades.reduce((sum, u) => sum + u.chance, 0);
-    while (selectedUpgrades.length < Math.min(3, validUpgrades.length)) {
-        let random = Math.random() * totalChance;
-        let selected = null;
-        for (let upgrade of validUpgrades) {
-            if (!selectedUpgrades.includes(upgrade)) {
+        
+        function spawnBoss() {
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            if (side === 0) { x = Math.random() * canvas.width; y = -40; }
+            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
+            else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
+            else { x = canvas.width + 40; y = Math.random() * canvas.height; }
+            const bossTypes = ['charger', 'shooter'];
+            const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+            const bossHealth = 50 * (bosses + 1);
+            boss = {
+                x,
+                y,
+                size: 40,
+                speed: 1.2,
+                health: bossHealth,
+                baseSpeed: 1.2,
+                type: bossType,
+                chargeTimer: 0,
+                spawnZombieTimer: 0,
+                chargeWarning: false,
+                shootTimer: 0,
+                isStopped: false,
+                chargeDx: 0,
+                chargeDy: 0
+            };
+            bossSpawned = true;
+        }
+        
+        function spawnCoin(x, y) {
+            if (Math.random() < 0.3) {
+                coins.push({ x, y, size: 10 });
+            }
+        }
+        
+        function findClosestZombie(bullet) {
+            let closestZombie = null;
+            let minDistance = Infinity;
+            zombies.forEach(zombie => {
+                const distance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestZombie = zombie;
+                }
+            });
+            if (boss) {
+                const distance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestZombie = boss;
+                }
+            }
+            return closestZombie;
+        }
+        
+        function findNearbyZombie(zombie, exclude) {
+            let closestZombie = null;
+            let minDistance = 100;
+            zombies.forEach(z => {
+                if (z !== exclude) {
+                    const distance = Math.sqrt((zombie.x - z.x) ** 2 + (zombie.y - z.y) ** 2);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestZombie = z;
+                    }
+                }
+            });
+            return closestZombie;
+        }
+        
+        const availableUpgrades = [
+            {
+                name: "+1 Diagonais",
+                description: "Adiciona uma bala diagonal para cada lado",
+                rarity: "raro",
+                chance: 0.5,
+                accumulable: true,
+                effect: () => {
+                    diagonalShots += 1;
+                    collectedUpgrades.push("+1 Diagonais");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "+1 Frente",
+                description: "Adiciona uma bala extra na direção frontal",
+                rarity: "raro",
+                chance: 0.5,
+                accumulable: true,
+                effect: () => {
+                    frontShots += 1;
+                    collectedUpgrades.push("+1 Frente");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Pressa",
+                description: "Aumenta a velocidade de movimento em 5%",
+                rarity: "raro",
+                chance: 0.5,
+                accumulable: true,
+                effect: () => {
+                    speedUpgrades += 1;
+                    player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
+                    collectedUpgrades.push("Pressa");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Hp-UP",
+                description: "Aumenta a vida máxima em 5%",
+                rarity: "raro",
+                chance: 0.5,
+                accumulable: true,
+                effect: () => {
+                    player.maxHealth *= 1.05;
+                    player.health = player.maxHealth;
+                    collectedUpgrades.push("Hp-UP");
+                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Força-Up",
+                description: "Aumenta o dano em 5%",
+                rarity: "raro",
+                chance: 0.5,
+                accumulable: true,
+                effect: () => {
+                    damageUpgrades += 1;
+                    player.damage = (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+                    collectedUpgrades.push("Força-Up");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Balas Elétricas",
+                description: "Balas causam choque em zumbi próximo (50% de chance)",
+                rarity: "normal",
+                chance: 0.3,
+                accumulable: false,
+                effect: () => {
+                    electricShot = true;
+                    collectedUpgrades.push("Balas Elétricas");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Perfuração",
+                description: "Balas atravessam até 1 zumbi",
+                rarity: "normal",
+                chance: 0.3,
+                accumulable: false,
+                effect: () => {
+                    pierceCount = 1;
+                    collectedUpgrades.push("Perfuração");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Mãos Leves",
+                description: "Aumenta a velocidade de disparo em 20%",
+                rarity: "normal",
+                chance: 0.3,
+                accumulable: true,
+                effect: () => {
+                    lightHands = true;
+                    goodHands = false;
+                    updateShootDelay();
+                    collectedUpgrades.push("Mãos Leves");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Mãos Boas",
+                description: "Aumenta a velocidade de disparo em 30%",
+                rarity: "epico",
+                chance: 0.15,
+                accumulable: false,
+                effect: () => {
+                    goodHands = true;
+                    lightHands = false;
+                    updateShootDelay();
+                    collectedUpgrades.push("Mãos Boas");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Suplemento",
+                description: "Aumenta o dano em 15%",
+                rarity: "epico",
+                chance: 0.15,
+                accumulable: false,
+                effect: () => {
+                    suplemento = true;
+                    player.damage = (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * 1.15;
+                    collectedUpgrades.push("Suplemento");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Ricochete",
+                description: `Balas ricocheteiam para ${ricochetCount + 1} zumbi${ricochetCount + 1 > 1 ? 's' : ''} próximo${ricochetCount + 1 > 1 ? 's' : ''}`,
+                rarity: "epico",
+                chance: 0.15,
+                accumulable: true,
+                effect: () => {
+                    ricochetCount += 1;
+                    collectedUpgrades.push("Ricochete");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Balas Teleguiadas",
+                description: "Balas seguem o zumbi mais próximo",
+                rarity: "lendario",
+                chance: 0.05,
+                accumulable: false,
+                effect: () => {
+                    homingShot = true;
+                    collectedUpgrades.push("Balas Teleguiadas");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Regeneração",
+                description: "Recupera 0,5 vida por segundo",
+                rarity: "lendario",
+                chance: 0.05,
+                accumulable: false,
+                effect: () => {
+                    regen = true;
+                    collectedUpgrades.push("Regeneração");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Vampirismo",
+                description: "30% de chance de recuperar 1 vida ao matar um zumbi",
+                rarity: "lendario",
+                chance: 0.05,
+                accumulable: false,
+                effect: () => {
+                    vampirism = true;
+                    collectedUpgrades.push("Vampirismo");
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            },
+            {
+                name: "Coração de Aço",
+                description: "Aumenta a vida máxima em 30% e recupera vida total",
+                rarity: "lendario",
+                chance: 0.05,
+                accumulable: false,
+                effect: () => {
+                    steelHeart = true;
+                    player.maxHealth *= 1.3;
+                    player.health = player.maxHealth;
+                    collectedUpgrades.push("Coração de Aço");
+                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                    updateUpgradesList();
+                    restoreCanvasFocus();
+                }
+            }
+        ];
+        
+        function updateShootDelay() {
+            let baseDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
+            if (lightHands) baseDelay *= 0.8;
+            if (goodHands) baseDelay *= 0.7;
+            if (adrenalineActive) baseDelay *= 0.25;
+            shootDelay = Math.max(50, baseDelay);
+        }
+        
+        function applyInitialUpgrade() {
+            if (!hasInitialUpgrade) return;
+            const validUpgrades = availableUpgrades.filter(upgrade => 
+                upgrade.accumulable || 
+                (!upgrade.accumulable && (
+                    (upgrade.name === "Balas Teleguiadas" && !homingShot) ||
+                    (upgrade.name === "Regeneração" && !regen) ||
+                    (upgrade.name === "Vampirismo" && !vampirism) ||
+                    (upgrade.name === "Balas Elétricas" && !electricShot) ||
+                    (upgrade.name === "Mãos Leves" && !lightHands && !goodHands) ||
+                    (upgrade.name === "Mãos Boas" && !goodHands && !lightHands) ||
+                    (upgrade.name === "Suplemento" && !suplemento) ||
+                    (upgrade.name === "Coração de Aço" && !steelHeart) ||
+                    (upgrade.name === "Perfuração" && pierceCount < 1 && !collectedUpgrades.includes("Perfuração"))
+                ))
+            );
+            if (validUpgrades.length === 0) return;
+            const totalChance = validUpgrades.reduce((sum, u) => sum + u.chance, 0);
+            let random = Math.random() * totalChance;
+            let selectedUpgrade = null;
+            for (let upgrade of validUpgrades) {
                 random -= upgrade.chance;
                 if (random <= 0) {
-                    selected = upgrade;
+                    selectedUpgrade = upgrade;
                     break;
                 }
             }
-        }
-        if (selected) selectedUpgrades.push(selected);
-    }
-    selectedUpgrades.forEach((upgrade, index) => {
-        const button = document.createElement('button');
-        button.textContent = `${index + 1}. ${upgrade.name}: ${upgrade.description}`;
-        button.className = upgrade.rarity;
-        button.onclick = () => {
-            upgrade.effect();
-            upgradeMenu.style.display = 'none';
-            isPaused = false;
-            canvas.focus();
-        };
-        upgradeOptions.appendChild(button);
-    });
-}
-
-function checkLevelUp() {
-    if (xp >= xpToNextLevel) {
-        level++;
-        xp = 0;
-        xpToNextLevel = Math.round(xpToNextLevel * 1.1);
-        xpBar.style.width = '0%';
-        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-        showUpgradeMenu();
-    }
-}
-
-function resetGame() {
-    console.log('Resetando o jogo...');
-    player = { 
-        x: canvas.width / 2, 
-        y: canvas.height / 2, 
-        size: 20, 
-        speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
-        baseSpeed: 1.75, 
-        health: player.maxHealth, 
-        maxHealth: player.maxHealth, 
-        damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
-    };
-    zombies = [];
-    bullets = [];
-    bossBullets = [];
-    coins = [];
-    boss = null;
-    score = 0;
-    xp = 0;
-    level = 1;
-    xpToNextLevel = 10;
-    countdown = 0;
-    countdownStart = 0;
-    bossSpawned = false;
-    lastBossCharge = 0;
-    lastBossSpawnZombies = 0;
-    bossChargeWarning = 0;
-    diagonalShots = 0;
-    frontShots = 0;
-    homingShot = false;
-    electricShot = false;
-    pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
-    regen = false;
-    vampirism = false;
-    lightHands = false;
-    goodHands = false;
-    suplemento = false;
-    ricochetCount = 0;
-    steelHeart = false;
-    collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
-    zombieHealth = 2 * Math.pow(1.65, bosses);
-    bossDamage = 5 * Math.pow(1.65, bosses);
-    magnetActive = false;
-    magnetStart = 0;
-    magnetCooldown = 0;
-    adrenalineActive = false;
-    adrenalineStart = 0;
-    adrenalineCooldown = 0;
-    electricLines = [];
-    shootDirection = { dx: 1, dy: 0 };
-    updateUpgradesList();
-    gameOver = false;
-    isPaused = false;
-    lastSpawn = 0;
-    lastRegen = 0;
-    lastShot = 0;
-    updateShootDelay();
-    gameOverDisplay.style.display = 'none';
-    rankingDisplay.style.display = 'none';
-    shopDisplay.style.display = 'none';
-    upgradeMenu.style.display = 'none';
-    countdownDisplay.style.display = 'none';
-    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-    healthBar.style.width = '100%';
-    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-    xpBar.style.width = '0%';
-    xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-    applyInitialUpgrade();
-    canvas.focus();
-    console.log('Jogo resetado, pronto para começar.');
-}
-
-function update() {
-    if (gameOver || isPaused) return;
-    const now = Date.now();
-
-    if (countdown > 0) {
-        const elapsed = now - countdownStart;
-        const remaining = Math.ceil((3000 - elapsed) / 1000);
-        countdownDisplay.textContent = remaining;
-        countdownDisplay.style.display = 'block';
-        if (elapsed >= 3000) {
-            countdown = 0;
-            countdownDisplay.style.display = 'none';
-            spawnBoss();
-        }
-        return;
-    }
-
-    if (magnetActive && now - magnetStart >= 15000) {
-        magnetActive = false;
-    }
-    if (adrenalineActive && now - adrenalineStart >= 10000) {
-        adrenalineActive = false;
-        updateShootDelay();
-    }
-    if (magnetActive) {
-        coins = coins.filter(coin => {
-            coin.x = player.x;
-            coin.y = player.y;
-            coinCount += 1;
-            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-            saveData();
-            return false;
-        });
-    }
-
-    if (regen && now - lastRegen >= 1000) {
-        player.health = Math.min(player.maxHealth, player.health + 0.5);
-        healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-        lastRegen = now;
-    }
-
-    if ((isMobile && joystickState.shoot.active) || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
-        shoot();
-    }
-
-    electricLines = electricLines.filter(line => now - line.startTime < 500);
-
-    bullets.forEach(bullet => {
-        if (bullet.homing) {
-            const closestZombie = findClosestZombie(bullet);
-            if (closestZombie) {
-                const dx = closestZombie.x - bullet.x;
-                const dy = closestZombie.y - bullet.y;
-                const length = Math.sqrt(dx * dx + dy * dy);
-                bullet.dx = (dx / length) * 7;
-                bullet.dy = (dy / length) * 7;
+            if (selectedUpgrade) {
+                selectedUpgrade.effect();
             }
         }
-        bullet.x += bullet.dx;
-        bullet.y += bullet.dy;
-        if (bullet.electric && bullet.electricTimer !== null && now - bullet.electricTimer >= 500) {
-            bullet.electric = false;
-        }
-    });
-    bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
-
-    zombies.forEach(zombie => {
-        const dx = player.x - zombie.x;
-        const dy = player.y - zombie.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance > 0) {
-            zombie.x += (dx / distance) * zombie.speed;
-            zombie.y += (dy / distance) * zombie.speed;
-        }
-        if (distance < player.size + zombie.size) {
-            player.health -= 5;
-            zombies = zombies.filter(z => z !== zombie);
-            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            if (player.health <= 0) {
-                gameOver = true;
-                gameOverDisplay.style.display = 'block';
-                isPaused = true;
-            }
-        }
-    });
-
-    bullets.forEach((bullet, bIndex) => {
-        zombies.forEach((zombie, zIndex) => {
-            const bDistance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
-            if (bDistance < bullet.size + zombie.size) {
-                zombie.health -= bullet.damage;
-                bullet.pierce -= 1;
-                if (bullet.electric && bullet.electricTimer === null) {
-                    bullet.electricTimer = now;
+        
+        function shoot() {
+            if (isPaused || gameOver || Date.now() - lastShot < shootDelay) return;
+            lastShot = Date.now();
+            let dx = 0, dy = 0;
+            if (isMobile && joystickState.shoot.active) {
+                const length = Math.hypot(joystickState.shoot.dx, joystickState.shoot.dy);
+                if (length > 0) {
+                    dx = joystickState.shoot.dx / length;
+                    dy = joystickState.shoot.dy / length;
                 }
-                if (zombie.health <= 0) {
-                    zombies.splice(zIndex, 1);
-                    score += 1;
-                    xp += 1;
-                    if (score > 0 && score % 50 === 0 && !boss && !bossSpawned && countdown === 0) {
-                        zombies = [];
-                        countdown = 3;
-                        countdownStart = now;
-                    }
-                    if (vampirism && Math.random() < 0.3) {
-                        player.health = Math.min(player.maxHealth, player.health + 1);
-                        healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                    }
-                    spawnCoin(zombie.x, zombie.y);
-                    if (bullet.ricochet > 0) {
-                        const closestZombie = findNearbyZombie(zombie, zombie);
-                        if (closestZombie) {
-                            bullets.push({
-                                x: zombie.x,
-                                y: zombie.y,
-                                dx: (closestZombie.x - zombie.x) / Math.hypot(closestZombie.x - zombie.x, closestZombie.y - zombie.y) * 7,
-                                dy: (closestZombie.y - zombie.y) / Math.hypot(closestZombie.x - zombie.x, closestZombie.y - zombie.y) * 7,
-                                size: 5,
-                                homing: bullet.homing,
-                                electric: bullet.electric,
-                                electricTimer: bullet.electricTimer,
-                                pierce: bullet.pierce,
-                                ricochet: bullet.ricochet - 1,
-                                damage: bullet.damage
-                            });
+            } else {
+                dx = shootDirection.dx;
+                dy = shootDirection.dy;
+            }
+            const length = Math.sqrt(dx * dx + dy * dy);
+            if (length > 0) {
+                dx /= length;
+                dy /= length;
+                // Tiro principal
+                bullets.push({
+                    x: player.x,
+                    y: player.y,
+                    dx: dx * 7,
+                    dy: dy * 7,
+                    size: 5,
+                    homing: homingShot,
+                    electric: electricShot,
+                    electricTimer: null,
+                    pierce: pierceCount,
+                    ricochet: ricochetCount,
+                    damage: player.damage
+                });
+                // Balas diagonais
+                for (let i = 1; i <= diagonalShots; i++) {
+                    const angle = Math.atan2(dy, dx);
+                    const angleLeft = angle + Math.PI / 4;
+                    const angleRight = angle - Math.PI / 4;
+                    const offset = i * 10;
+                    const perpDx = -dy;
+                    const perpDy = dx;
+                    const perpLength = Math.sqrt(perpDx * perpDx + perpDy * perpDy);
+                    const normPerpDx = perpLength > 0 ? perpDx / perpLength : 0;
+                    const normPerpDy = perpLength > 0 ? perpDy / perpLength : 0;
+                    bullets.push({
+                        x: player.x + normPerpDx * offset,
+                        y: player.y + normPerpDy * offset,
+                        dx: Math.cos(angleLeft) * 7,
+                        dy: Math.sin(angleLeft) * 7,
+                        size: 5,
+                        homing: homingShot,
+                        electric: electricShot,
+                        electricTimer: null,
+                        pierce: pierceCount,
+                        ricochet: ricochetCount,
+                        damage: player.damage
+                    });
+                    bullets.push({
+                        x: player.x - normPerpDx * offset,
+                        y: player.y - normPerpDy * offset,
+                        dx: Math.cos(angleRight) * 7,
+                        dy: Math.sin(angleRight) * 7,
+                        size: 5,
+                        homing: homingShot,
+                        electric: electricShot,
+                        electricTimer: null,
+                        pierce: pierceCount,
+                        ricochet: ricochetCount,
+                        damage: player.damage
+                    });
+                }
+                // Balas frontais
+                for (let i = 1; i <= frontShots; i++) {
+                    const offset = i * 10 * (i % 2 === 0 ? -1 : 1);
+                    bullets.push({
+                        x: player.x + offset,
+                        y: player.y,
+                        dx: dx * 7,
+                        dy: dy * 7,
+                        size: 5,
+                        homing: homingShot,
+                        electric: electricShot,
+                        electricTimer: null,
+                        pierce: pierceCount,
+                        ricochet: ricochetCount,
+                        damage: player.damage
+                    });
+                }
+            }
+        }
+        
+        function selectUpgrade(index) {
+            const buttons = upgradeOptions.getElementsByTagName('button');
+            if (buttons[index]) {
+                buttons[index].click();
+            }
+        }
+        
+        function showUpgradeMenu() {
+            isPaused = true;
+            upgradeMenu.style.display = 'block';
+            upgradeOptions.innerHTML = '';
+            const validUpgrades = availableUpgrades.filter(upgrade => 
+                upgrade.accumulable || 
+                (!upgrade.accumulable && (
+                    (upgrade.name === "Balas Teleguiadas" && !homingShot) ||
+                    (upgrade.name === "Regeneração" && !regen) ||
+                    (upgrade.name === "Vampirismo" && !vampirism) ||
+                    (upgrade.name === "Balas Elétricas" && !electricShot) ||
+                    (upgrade.name === "Mãos Leves" && !lightHands && !goodHands) ||
+                    (upgrade.name === "Mãos Boas" && !goodHands && !lightHands) ||
+                    (upgrade.name === "Suplemento" && !suplemento) ||
+                    (upgrade.name === "Coração de Aço" && !steelHeart) ||
+                    (upgrade.name === "Perfuração" && pierceCount < 1 && !collectedUpgrades.includes("Perfuração"))
+                ))
+            );
+            const selectedUpgrades = [];
+            const totalChance = validUpgrades.reduce((sum, u) => sum + u.chance, 0);
+            while (selectedUpgrades.length < Math.min(3, validUpgrades.length)) {
+                let random = Math.random() * totalChance;
+                let selected = null;
+                for (let upgrade of validUpgrades) {
+                    if (!selectedUpgrades.includes(upgrade)) {
+                        random -= upgrade.chance;
+                        if (random <= 0) {
+                            selected = upgrade;
+                            break;
                         }
                     }
                 }
-                if (bullet.electric && Math.random() < 0.5) {
-                    const nearbyZombie = findNearbyZombie(zombie, zombie);
-                    if (nearbyZombie) {
-                        electricLines.push({
-                            startX: zombie.x,
-                            startY: zombie.y,
-                            endX: nearbyZombie.x,
-                            endY: nearbyZombie.y,
-                            startTime: now
-                        });
-                        nearbyZombie.health -= bullet.damage;
-                        if (nearbyZombie.health <= 0) {
-                            zombies = zombies.filter(z => z !== nearbyZombie);
+                if (selected) selectedUpgrades.push(selected);
+            }
+            selectedUpgrades.forEach((upgrade, index) => {
+                const button = document.createElement('button');
+                button.textContent = `${index + 1}. ${upgrade.name}: ${upgrade.description}`;
+                button.className = upgrade.rarity;
+                button.onclick = () => {
+                    upgrade.effect();
+                    upgradeMenu.style.display = 'none';
+                    isPaused = false;
+                    canvas.focus();
+                };
+                upgradeOptions.appendChild(button);
+            });
+        }
+        
+        function checkLevelUp() {
+            if (xp >= xpToNextLevel) {
+                level++;
+                xp = 0;
+                xpToNextLevel = Math.round(xpToNextLevel * 1.1);
+                xpBar.style.width = '0%';
+                xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                showUpgradeMenu();
+            }
+        }
+        
+        function resetGame() {
+            console.log('Resetando o jogo...');
+            player = { 
+                x: canvas.width / 2, 
+                y: canvas.height / 2, 
+                size: 20, 
+                speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
+                baseSpeed: 1.75, 
+                health: player.maxHealth, 
+                maxHealth: player.maxHealth, 
+                damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
+            };
+            zombies = [];
+            bullets = [];
+            bossBullets = [];
+            coins = [];
+            boss = null;
+            score = 0;
+            xp = 0;
+            level = 1;
+            xpToNextLevel = 10;
+            countdown = 0;
+            countdownStart = 0;
+            bossSpawned = false;
+            lastBossCharge = 0;
+            lastBossSpawnZombies = 0;
+            bossChargeWarning = 0;
+            diagonalShots = 0;
+            frontShots = 0;
+            homingShot = false;
+            electricShot = false;
+            pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
+            regen = false;
+            vampirism = false;
+            lightHands = false;
+            goodHands = false;
+            suplemento = false;
+            ricochetCount = 0;
+            steelHeart = false;
+            collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
+            zombieHealth = 2 * Math.pow(1.65, bosses);
+            bossDamage = 5 * Math.pow(1.65, bosses);
+            magnetActive = false;
+            magnetStart = 0;
+            magnetCooldown = 0;
+            adrenalineActive = false;
+            adrenalineStart = 0;
+            adrenalineCooldown = 0;
+            electricLines = [];
+            shootDirection = { dx: 1, dy: 0 };
+            updateUpgradesList();
+            gameOver = false;
+            isPaused = false;
+            lastSpawn = 0;
+            lastRegen = 0;
+            lastShot = 0;
+            updateShootDelay();
+            gameOverDisplay.style.display = 'none';
+            rankingDisplay.style.display = 'none';
+            shopDisplay.style.display = 'none';
+            upgradeMenu.style.display = 'none';
+            countdownDisplay.style.display = 'none';
+            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+            healthBar.style.width = '100%';
+            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+            xpBar.style.width = '0%';
+            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+            applyInitialUpgrade();
+            canvas.focus();
+            console.log('Jogo resetado, pronto para começar.');
+        }
+        
+        function update() {
+            if (gameOver || isPaused) return;
+            const now = Date.now();
+        
+            if (countdown > 0) {
+                const elapsed = now - countdownStart;
+                const remaining = Math.ceil((3000 - elapsed) / 1000);
+                countdownDisplay.textContent = remaining;
+                countdownDisplay.style.display = 'block';
+                if (elapsed >= 3000) {
+                    countdown = 0;
+                    countdownDisplay.style.display = 'none';
+                    spawnBoss();
+                }
+                return;
+            }
+        
+            if (magnetActive && now - magnetStart >= 15000) {
+                magnetActive = false;
+            }
+            if (adrenalineActive && now - adrenalineStart >= 10000) {
+                adrenalineActive = false;
+                updateShootDelay();
+            }
+            if (magnetActive) {
+                coins = coins.filter(coin => {
+                    coin.x = player.x;
+                    coin.y = player.y;
+                    coinCount += 1;
+                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                    saveData();
+                    return false;
+                });
+            }
+        
+            if (regen && now - lastRegen >= 1000) {
+                player.health = Math.min(player.maxHealth, player.health + 0.5);
+                healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                lastRegen = now;
+            }
+        
+            if ((isMobile && joystickState.shoot.active) || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
+                shoot();
+            }
+        
+            electricLines = electricLines.filter(line => now - line.startTime < 500);
+        
+            bullets.forEach(bullet => {
+                if (bullet.homing) {
+                    const closestZombie = findClosestZombie(bullet);
+                    if (closestZombie) {
+                        const dx = closestZombie.x - bullet.x;
+                        const dy = closestZombie.y - bullet.y;
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        bullet.dx = (dx / length) * 7;
+                        bullet.dy = (dy / length) * 7;
+                    }
+                }
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+                if (bullet.electric && bullet.electricTimer !== null && now - bullet.electricTimer >= 500) {
+                    bullet.electric = false;
+                }
+            });
+            bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
+        
+            zombies.forEach(zombie => {
+                const dx = player.x - zombie.x;
+                const dy = player.y - zombie.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > 0) {
+                    zombie.x += (dx / distance) * zombie.speed;
+                    zombie.y += (dy / distance) * zombie.speed;
+                }
+                if (distance < player.size + zombie.size) {
+                    player.health -= 5;
+                    zombies = zombies.filter(z => z !== zombie);
+                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                    if (player.health <= 0) {
+                        gameOver = true;
+                        gameOverDisplay.style.display = 'block';
+                        isPaused = true;
+                    }
+                }
+            });
+        
+            bullets.forEach((bullet, bIndex) => {
+                zombies.forEach((zombie, zIndex) => {
+                    const bDistance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
+                    if (bDistance < bullet.size + zombie.size) {
+                        zombie.health -= bullet.damage;
+                        bullet.pierce -= 1;
+                        if (bullet.electric && bullet.electricTimer === null) {
+                            bullet.electricTimer = now;
+                        }
+                        if (zombie.health <= 0) {
+                            zombies.splice(zIndex, 1);
                             score += 1;
                             xp += 1;
                             if (score > 0 && score % 50 === 0 && !boss && !bossSpawned && countdown === 0) {
@@ -1469,453 +1424,498 @@ function update() {
                                 healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
                                 healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
                             }
-                            spawnCoin(nearbyZombie.x, nearbyZombie.y);
+                            spawnCoin(zombie.x, zombie.y);
+                            if (bullet.ricochet > 0) {
+                                const closestZombie = findNearbyZombie(zombie, zombie);
+                                if (closestZombie) {
+                                    bullets.push({
+                                        x: zombie.x,
+                                        y: zombie.y,
+                                        dx: (closestZombie.x - zombie.x) / Math.hypot(closestZombie.x - zombie.x, closestZombie.y - zombie.y) * 7,
+                                        dy: (closestZombie.y - zombie.y) / Math.hypot(closestZombie.x - zombie.x, closestZombie.y - zombie.y) * 7,
+                                        size: 5,
+                                        homing: bullet.homing,
+                                        electric: bullet.electric,
+                                        electricTimer: bullet.electricTimer,
+                                        pierce: bullet.pierce,
+                                        ricochet: bullet.ricochet - 1,
+                                        damage: bullet.damage
+                                    });
+                                }
+                            }
+                        }
+                        if (bullet.electric && Math.random() < 0.5) {
+                            const nearbyZombie = findNearbyZombie(zombie, zombie);
+                            if (nearbyZombie) {
+                                electricLines.push({
+                                    startX: zombie.x,
+                                    startY: zombie.y,
+                                    endX: nearbyZombie.x,
+                                    endY: nearbyZombie.y,
+                                    startTime: now
+                                });
+                                nearbyZombie.health -= bullet.damage;
+                                if (nearbyZombie.health <= 0) {
+                                    zombies = zombies.filter(z => z !== nearbyZombie);
+                                    score += 1;
+                                    xp += 1;
+                                    if (score > 0 && score % 50 === 0 && !boss && !bossSpawned && countdown === 0) {
+                                        zombies = [];
+                                        countdown = 3;
+                                        countdownStart = now;
+                                    }
+                                    if (vampirism && Math.random() < 0.3) {
+                                        player.health = Math.min(player.maxHealth, player.health + 1);
+                                        healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                                        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                                    }
+                                    spawnCoin(nearbyZombie.x, nearbyZombie.y);
+                                }
+                            }
+                        }
+                        if (bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0)) {
+                            bullets.splice(bIndex, 1);
                         }
                     }
-                }
-                if (bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0)) {
-                    bullets.splice(bIndex, 1);
-                }
-            }
-        });
-    });
-
-    if (boss) {
-        const dx = player.x - boss.x;
-        const dy = player.y - boss.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (boss.type === 'charger') {
-            if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
-                boss.chargeWarning = true;
-                bossChargeWarning = now;
-                const length = Math.sqrt(dx * dx + dy * dy);
-                boss.chargeDx = dx / length;
-                boss.chargeDy = dy / length;
-            }
-            if (now - lastBossCharge >= 5000) {
-                boss.speed = 6;
-                boss.chargeTimer = now;
-                lastBossCharge = now;
-                boss.chargeWarning = false;
-            }
-            if (boss.chargeTimer && now - boss.chargeTimer >= 2000) {
-                boss.speed = boss.baseSpeed;
-                boss.chargeTimer = 0;
-                boss.chargeDx = 0;
-                boss.chargeDy = 0;
-            }
-        } else if (boss.type === 'shooter') {
-            if (now - boss.shootTimer >= 3000 && !boss.isStopped) {
-                boss.isStopped = true;
-                boss.speed = 0;
-                boss.shootTimer = now;
-            }
-            if (boss.isStopped && now - boss.shootTimer >= 2000) {
-                const length = Math.sqrt(dx * dx + dy * dy);
-                if (length > 0) {
-                    bossBullets.push({
-                        x: boss.x,
-                        y: boss.y,
-                        dx: (dx / length) * 7,
-                        dy: (dy / length) * 7,
-                        size: 10
-                    });
-                }
-                boss.isStopped = false;
-                boss.speed = boss.baseSpeed;
-                boss.shootTimer = now;
-            }
-        }
-        if (!boss.isStopped) {
-            if (boss.chargeTimer) {
-                boss.x += boss.chargeDx * boss.speed;
-                boss.y += boss.chargeDy * boss.speed;
-            } else {
-                boss.x += (dx / distance) * boss.speed;
-                boss.y += (dy / distance) * boss.speed;
-            }
-        }
-        if (now - lastBossSpawnZombies >= 10000) {
-            zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
-            zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
-            lastBossSpawnZombies = now;
-        }
-        if (distance < player.size + boss.size) {
-            player.health -= bossDamage;
-            healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            if (player.health <= 0) {
-                gameOver = true;
-                gameOverDisplay.style.display = 'block';
-                isPaused = true;
-            }
-        }
-        bullets.forEach((bullet, bIndex) => {
-            const bDistance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
-            if (bDistance < bullet.size + boss.size) {
-                boss.health -= bullet.damage;
-                bullet.pierce -= 1;
-                if (bullet.electric && bullet.electricTimer === null) {
-                    bullet.electricTimer = now;
-                }
-                if (bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0)) {
-                    bullets.splice(bIndex, 1);
-                }
-                if (bullet.ricochet > 0) {
-                    const closestZombie = findClosestZombie({ x: boss.x, y: boss.y });
-                    if (closestZombie && closestZombie !== boss) {
-                        bullets.push({
-                            x: boss.x,
-                            y: boss.y,
-                            dx: (closestZombie.x - boss.x) / Math.hypot(closestZombie.x - boss.x, closestZombie.y - boss.y) * 7,
-                            dy: (closestZombie.y - boss.y) / Math.hypot(closestZombie.x - boss.x, closestZombie.y - boss.y) * 7,
-                            size: 5,
-                            homing: bullet.homing,
-                            electric: bullet.electric,
-                            electricTimer: bullet.electricTimer,
-                            pierce: bullet.pierce,
-                            ricochet: bullet.ricochet - 1,
-                            damage: bullet.damage
-                        });
+                });
+            });
+        
+            if (boss) {
+                const dx = player.x - boss.x;
+                const dy = player.y - boss.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (boss.type === 'charger') {
+                    if (now - lastBossCharge >= 4000 && !boss.chargeWarning) {
+                        boss.chargeWarning = true;
+                        bossChargeWarning = now;
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        boss.chargeDx = dx / length;
+                        boss.chargeDy = dy / length;
+                    }
+                    if (now - lastBossCharge >= 5000) {
+                        boss.speed = 6;
+                        boss.chargeTimer = now;
+                        lastBossCharge = now;
+                        boss.chargeWarning = false;
+                    }
+                    if (boss.chargeTimer && now - boss.chargeTimer >= 2000) {
+                        boss.speed = boss.baseSpeed;
+                        boss.chargeTimer = 0;
+                        boss.chargeDx = 0;
+                        boss.chargeDy = 0;
+                    }
+                } else if (boss.type === 'shooter') {
+                    if (now - boss.shootTimer >= 3000 && !boss.isStopped) {
+                        boss.isStopped = true;
+                        boss.speed = 0;
+                        boss.shootTimer = now;
+                    }
+                    if (boss.isStopped && now - boss.shootTimer >= 2000) {
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        if (length > 0) {
+                            bossBullets.push({
+                                x: boss.x,
+                                y: boss.y,
+                                dx: (dx / length) * 7,
+                                dy: (dy / length) * 7,
+                                size: 10
+                            });
+                        }
+                        boss.isStopped = false;
+                        boss.speed = boss.baseSpeed;
+                        boss.shootTimer = now;
                     }
                 }
-            }
-        });
-        bossBullets.forEach((bullet, bIndex) => {
-            bullet.x += bullet.dx;
-            bullet.y += bullet.dy;
-            const pDistance = Math.sqrt((bullet.x - player.x) ** 2 + (bullet.y - player.y) ** 2);
-            if (pDistance < player.size + bullet.size) {
-                player.health -= bossDamage;
-                bossBullets.splice(bIndex, 1);
-                healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
-                healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-                if (player.health <= 0) {
-                    gameOver = true;
-                    gameOverDisplay.style.display = 'block';
-                    isPaused = true;
+                if (!boss.isStopped) {
+                    if (boss.chargeTimer) {
+                        boss.x += boss.chargeDx * boss.speed;
+                        boss.y += boss.chargeDy * boss.speed;
+                    } else {
+                        boss.x += (dx / distance) * boss.speed;
+                        boss.y += (dy / distance) * boss.speed;
+                    }
+                }
+                if (now - lastBossSpawnZombies >= 10000) {
+                    zombies.push({ x: boss.x + 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
+                    zombies.push({ x: boss.x - 50, y: boss.y, size: 20, speed: 1.5, health: zombieHealth, maxHealth: zombieHealth });
+                    lastBossSpawnZombies = now;
+                }
+                if (distance < player.size + boss.size) {
+                    player.health -= bossDamage;
+                    healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                    healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                    if (player.health <= 0) {
+                        gameOver = true;
+                        gameOverDisplay.style.display = 'block';
+                        isPaused = true;
+                    }
+                }
+                bullets.forEach((bullet, bIndex) => {
+                    const bDistance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
+                    if (bDistance < bullet.size + boss.size) {
+                        boss.health -= bullet.damage;
+                        bullet.pierce -= 1;
+                        if (bullet.electric && bullet.electricTimer === null) {
+                            bullet.electricTimer = now;
+                        }
+                        if (bullet.pierce < 0 || (bullet.electric && bullet.pierce === 0)) {
+                            bullets.splice(bIndex, 1);
+                        }
+                        if (bullet.ricochet > 0) {
+                            const closestZombie = findClosestZombie({ x: boss.x, y: boss.y });
+                            if (closestZombie && closestZombie !== boss) {
+                                bullets.push({
+                                    x: boss.x,
+                                    y: boss.y,
+                                    dx: (closestZombie.x - boss.x) / Math.hypot(closestZombie.x - boss.x, closestZombie.y - boss.y) * 7,
+                                    dy: (closestZombie.y - boss.y) / Math.hypot(closestZombie.x - boss.x, closestZombie.y - boss.y) * 7,
+                                    size: 5,
+                                    homing: bullet.homing,
+                                    electric: bullet.electric,
+                                    electricTimer: bullet.electricTimer,
+                                    pierce: bullet.pierce,
+                                    ricochet: bullet.ricochet - 1,
+                                    damage: bullet.damage
+                                });
+                            }
+                        }
+                    }
+                });
+                bossBullets.forEach((bullet, bIndex) => {
+                    bullet.x += bullet.dx;
+                    bullet.y += bullet.dy;
+                    const pDistance = Math.sqrt((bullet.x - player.x) ** 2 + (bullet.y - player.y) ** 2);
+                    if (pDistance < player.size + bullet.size) {
+                        player.health -= bossDamage;
+                        bossBullets.splice(bIndex, 1);
+                        healthBar.style.width = `${(player.health / player.maxHealth) * 100}%`;
+                        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                        if (player.health <= 0) {
+                            gameOver = true;
+                            gameOverDisplay.style.display = 'block';
+                            isPaused = true;
+                        }
+                    }
+                });
+                bossBullets = bossBullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
+                if (boss && boss.health <= 0) {
+                    const bossX = boss.x;
+                    const bossY = boss.y;
+                    bosses += 1;
+                    zombieHealth *= 1.65;
+                    bossDamage *= 1.65;
+                    score += 1;
+                    xp += 10;
+                    coinCount += 5;
+                    spawnCoin(bossX, bossY);
+                    xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
+                    xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                    checkLevelUp();
+                    saveData();
+                    boss = null;
+                    bossSpawned = false;
+                    bossBullets = [];
                 }
             }
-        });
-        bossBullets = bossBullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
-        if (boss && boss.health <= 0) {
-            const bossX = boss.x;
-            const bossY = boss.y;
-            bosses += 1;
-            zombieHealth *= 1.65;
-            bossDamage *= 1.65;
-            score += 1;
-            xp += 10;
-            coinCount += 5;
-            spawnCoin(bossX, bossY);
+        
+            coins = coins.filter(coin => {
+                const distance = Math.sqrt((player.x - coin.x) ** 2 + (player.y - coin.y) ** 2);
+                if (distance < player.size + coin.size && !magnetActive) {
+                    coinCount += 1;
+                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                    saveData();
+                    return false;
+                }
+                return true;
+            });
+        
+            spawnZombies();
             xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
             checkLevelUp();
-            saveData();
-            boss = null;
-            bossSpawned = false;
-            bossBullets = [];
         }
-    }
-
-    coins = coins.filter(coin => {
-        const distance = Math.sqrt((player.x - coin.x) ** 2 + (player.y - coin.y) ** 2);
-        if (distance < player.size + coin.size && !magnetActive) {
-            coinCount += 1;
-            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-            saveData();
-            return false;
-        }
-        return true;
-    });
-
-    spawnZombies();
-    xpBar.style.width = `${(xp / xpToNextLevel) * 100}%`;
-    xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-    checkLevelUp();
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'blue';
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'green';
-    zombies.forEach(zombie => {
-        ctx.beginPath();
-        ctx.arc(zombie.x, zombie.y, zombie.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = 'white';
-        ctx.font = '12px Arial';
-        ctx.fillText(`Vida: ${Math.round(zombie.health)}`, zombie.x - 20, zombie.y - 30);
-        ctx.fillStyle = 'green';
-    });
-    if (boss) {
-        if (boss.type === 'charger' && boss.chargeWarning) {
-            ctx.fillStyle = 'rgba(255, 165, 0, 0.3)';
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'blue';
             ctx.beginPath();
-            ctx.arc(boss.x, boss.y, boss.size + 10, 0, Math.PI * 2);
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
             ctx.fill();
-        } else if (boss.type === 'shooter' && boss.isStopped) {
-            ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
-            ctx.beginPath();
-            ctx.arc(boss.x, boss.y, boss.size + 10, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillStyle = 'green';
+            zombies.forEach(zombie => {
+                ctx.beginPath();
+                ctx.arc(zombie.x, zombie.y, zombie.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = '12px Arial';
+                ctx.fillText(`Vida: ${Math.round(zombie.health)}`, zombie.x - 20, zombie.y - 30);
+                ctx.fillStyle = 'green';
+            });
+            if (boss) {
+                if (boss.type === 'charger' && boss.chargeWarning) {
+                    ctx.fillStyle = 'rgba(255, 165, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(boss.x, boss.y, boss.size + 10, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (boss.type === 'shooter' && boss.isStopped) {
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(boss.x, boss.y, boss.size + 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.fillStyle = boss.type === 'charger' ? 'darkred' : 'purple';
+                ctx.beginPath();
+                ctx.arc(boss.x, boss.y, boss.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.fillText(`Vida: ${Math.round(boss.health)}`, boss.x - 20, boss.y - 50);
+            }
+            ctx.fillStyle = 'red';
+            bullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.fillStyle = 'green';
+            bossBullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.fillStyle = 'gold';
+            coins.forEach(coin => {
+                ctx.beginPath();
+                ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.strokeStyle = 'yellow';
+            ctx.lineWidth = 2;
+            electricLines.forEach(line => {
+                ctx.beginPath();
+                ctx.moveTo(line.startX, line.startY);
+                ctx.lineTo(line.endX, line.endY);
+                ctx.stroke();
+            });
         }
-        ctx.fillStyle = boss.type === 'charger' ? 'darkred' : 'purple';
-        ctx.beginPath();
-        ctx.arc(boss.x, boss.y, boss.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = 'white';
-        ctx.font = '16px Arial';
-        ctx.fillText(`Vida: ${Math.round(boss.health)}`, boss.x - 20, boss.y - 50);
-    }
-    ctx.fillStyle = 'red';
-    bullets.forEach(bullet => {
-        ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-    ctx.fillStyle = 'green';
-    bossBullets.forEach(bullet => {
-        ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-    ctx.fillStyle = 'gold';
-    coins.forEach(coin => {
-        ctx.beginPath();
-        ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-    ctx.strokeStyle = 'yellow';
-    ctx.lineWidth = 2;
-    electricLines.forEach(line => {
-        ctx.beginPath();
-        ctx.moveTo(line.startX, line.startY);
-        ctx.lineTo(line.endX, line.endY);
-        ctx.stroke();
-    });
-}
-
-function showRanking() {
-    savedDataLocal.ranking.push({ score, date: new Date().toLocaleString() });
-    savedDataLocal.ranking.sort((a, b) => b.score - a.score);
-    savedDataLocal.ranking = savedDataLocal.ranking.slice(0, 5);
-    saveData();
-    rankingList.innerHTML = '';
-    savedDataLocal.ranking.forEach(entry => {
-        const li = document.createElement('li');
-        li.textContent = `Pontos: ${entry.score} - ${entry.date}`;
-        rankingList.appendChild(li);
-    });
-    gameOverDisplay.style.display = 'none';
-    rankingDisplay.style.display = 'block';
-}
-
-function closeRanking() {
-    rankingDisplay.style.display = 'none';
-    if (gameOver) {
-        gameOverDisplay.style.display = 'block';
-    } else {
-        startScreen.style.display = 'block';
-    }
-    canvas.focus();
-}
-
-function showShop() {
-    shopCoins.textContent = coinCount;
-    fireRateCostDisplay.textContent = Math.round(fireRateCost);
-    healthCostDisplay.textContent = Math.round(healthCost);
-    updateWeaponButtons();
-    updateAccessoryButtons();
-    showTab('weapons');
-    gameOverDisplay.style.display = 'none';
-    shopDisplay.style.display = 'block';
-}
-
-function closeShop() {
-    shopDisplay.style.display = 'none';
-    gameOverDisplay.style.display = 'block';
-    canvas.focus();
-}
-
-function buyHealth() {
-    if (coinCount >= healthCost) {
-        coinCount -= healthCost;
-        healthUpgrades += 1;
-        player.maxHealth *= 1.2;
-        player.health = player.maxHealth;
-        healthCost *= 1.2;
-        shopCoins.textContent = coinCount;
-        healthCostDisplay.textContent = Math.round(healthCost);
-        healthBar.style.width = '100%';
-        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-        saveData();
-        alert('Vida extra comprada! Vida máxima: ' + Math.round(player.maxHealth));
-        restoreCanvasFocus();
-    } else {
-        alert('Moedas insuficientes!');
-        restoreCanvasFocus();
-    }
-}
-
-function buyFireRate() {
-    if (coinCount >= fireRateCost) {
-        coinCount -= fireRateCost;
-        fireRateUpgrades += 1;
-        fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
-        updateShootDelay();
-        shopCoins.textContent = coinCount;
-        fireRateCostDisplay.textContent = Math.round(fireRateCost);
-        saveData();
-        alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
-        restoreCanvasFocus();
-    } else {
-        alert('Moedas insuficientes!');
-        restoreCanvasFocus();
-    }
-}
-
-function buyGlock() {
-    if (!hasGlock && coinCount >= 100) {
-        coinCount -= 100;
-        hasGlock = true;
-        equippedWeapon = 'glock';
-        pierceCount = 0;
-        player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-        updateShootDelay();
-        shopCoins.textContent = coinCount;
-        updateWeaponButtons();
-        collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
-        updateUpgradesList();
-        saveData();
-        alert('Glock comprada e equipada! Atraso de tiro: ' + shootDelay + 'ms');
-        restoreCanvasFocus();
-    } else if (hasGlock && equippedWeapon !== 'glock') {
-        equippedWeapon = 'glock';
-        pierceCount = 0;
-        player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-        updateShootDelay();
-        updateWeaponButtons();
-        collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
-        updateUpgradesList();
-        saveData();
-        alert('Glock equipada! Atraso de tiro: ' + shootDelay + 'ms');
-        restoreCanvasFocus();
-    } else if (!hasGlock) {
-        alert('Moedas insuficientes!');
-        restoreCanvasFocus();
-    }
-}
-
-function buyRifle() {
-    if (!hasRifle && coinCount >= 250) {
-        coinCount -= 250;
-        hasRifle = true;
-        equippedWeapon = 'rifle';
-        pierceCount = 1;
-        player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-        updateShootDelay();
-        shopCoins.textContent = coinCount;
-        updateWeaponButtons();
-        if (!collectedUpgrades.includes("Perfuração")) {
-            collectedUpgrades.push("Perfuração");
+        
+        function showRanking() {
+            savedDataLocal.ranking.push({ score, date: new Date().toLocaleString() });
+            savedDataLocal.ranking.sort((a, b) => b.score - a.score);
+            savedDataLocal.ranking = savedDataLocal.ranking.slice(0, 5);
+            saveData();
+            rankingList.innerHTML = '';
+            savedDataLocal.ranking.forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `Pontos: ${entry.score} - ${entry.date}`;
+                rankingList.appendChild(li);
+            });
+            gameOverDisplay.style.display = 'none';
+            rankingDisplay.style.display = 'block';
         }
-        updateUpgradesList();
-        saveData();
-        alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
-        restoreCanvasFocus();
-    } else if (hasRifle && equippedWeapon !== 'rifle') {
-        equippedWeapon = 'rifle';
-        pierceCount = 1;
-        player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-        updateShootDelay();
-        updateWeaponButtons();
-        if (!collectedUpgrades.includes("Perfuração")) {
-            collectedUpgrades.push("Perfuração");
+        
+        function closeRanking() {
+            rankingDisplay.style.display = 'none';
+            if (gameOver) {
+                gameOverDisplay.style.display = 'block';
+            } else {
+                startScreen.style.display = 'block';
+            }
+            canvas.focus();
         }
-        updateUpgradesList();
-        saveData();
-        alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
-        restoreCanvasFocus();
-    } else if (!hasRifle) {
-        alert('Moedas insuficientes!');
-        restoreCanvasFocus();
-    }
-}
-
-function buyInitialUpgrade() {
-    if (!hasInitialUpgrade && coinCount >= 100) {
-        coinCount -= 100;
-        hasInitialUpgrade = true;
-        shopCoins.textContent = coinCount;
-        buyInitialUpgradeBtn.disabled = true;
-        buyInitialUpgradeBtn.textContent = "Comprado";
-        saveData();
-        alert('Upgrade Inicial comprado! Um upgrade será aplicado ao iniciar o jogo.');
-        restoreCanvasFocus();
-    } else if (!hasInitialUpgrade) {
-        alert('Moedas insuficientes!');
-        restoreCanvasFocus();
-    }
-}
-
-function buyMagnet() {
-    if (!hasMagnet && coinCount >= 1000) {
-        coinCount -= 1000;
-        hasMagnet = true;
-        equippedAccessory = 'magnet';
-        shopCoins.textContent = coinCount;
-        updateAccessoryButtons();
-        saveData();
-        alert('Imã Velho comprado e equipado! Coleta moedas por 15s, recarga em 60s.');
-        restoreCanvasFocus();
-    } else if (hasMagnet && equippedAccessory !== 'magnet') {
-        equippedAccessory = 'magnet';
-        updateAccessoryButtons();
-        saveData();
-        alert('Imã Velho equipado! Coleta moedas por 15s, recarga em 60s.');
-        restoreCanvasFocus();
-    } else if (!hasMagnet) {
-        alert('Moedas insuficientes!');
-        restoreCanvasFocus();
-    }
-}
-
-function buyAdrenaline() {
-    if (!hasAdrenaline && coinCount >= 500) {
-        coinCount -= 500;
-        hasAdrenaline = true;
-        equippedAccessory = 'adrenaline';
-        shopCoins.textContent = coinCount;
-        updateAccessoryButtons();
-        saveData();
-        alert('Adrenalina comprada e equipada! -75% tempo de disparo por 10s, recarga em 60s.');
-        restoreCanvasFocus();
-    } else if (hasAdrenaline && equippedAccessory !== 'adrenaline') {
-        equippedAccessory = 'adrenaline';
-        updateAccessoryButtons();
-        saveData();
-        alert('Adrenalina equipada! -75% tempo de disparo por 10s, recarga em 60s.');
-        restoreCanvasFocus();
-    } else if (!hasAdrenaline) {
-        alert('Moedas insuficientes!');
-        restoreCanvasFocus();
-    }
-}
-
-function gameLoop() {
-    if (!isPaused) {
-        let dx = 0, dy = 0;
-        if (isMobile && joystickState.movement.active) {
-            dx = joystickState.movement.dx / 40;
-            dy = joystickState.movement.dy / 40;
-        } else {
-            if (keys.w || keys.ArrowUp) dy -= 1;
-            if (keys.s || keys
+        
+        function showShop() {
+            shopCoins.textContent = coinCount;
+            fireRateCostDisplay.textContent = Math.round(fireRateCost);
+            healthCostDisplay.textContent = Math.round(healthCost);
+            updateWeaponButtons();
+            updateAccessoryButtons();
+            showTab('weapons');
+            gameOverDisplay.style.display = 'none';
+            shopDisplay.style.display = 'block';
+        }
+        
+        function closeShop() {
+            shopDisplay.style.display = 'none';
+            gameOverDisplay.style.display = 'block';
+            canvas.focus();
+        }
+        
+        function buyHealth() {
+            if (coinCount >= healthCost) {
+                coinCount -= healthCost;
+                healthUpgrades += 1;
+                player.maxHealth *= 1.2;
+                player.health = player.maxHealth;
+                healthCost *= 1.2;
+                shopCoins.textContent = coinCount;
+                healthCostDisplay.textContent = Math.round(healthCost);
+                healthBar.style.width = '100%';
+                healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+                saveData();
+                alert('Vida extra comprada! Vida máxima: ' + Math.round(player.maxHealth));
+                restoreCanvasFocus();
+            } else {
+                alert('Moedas insuficientes!');
+                restoreCanvasFocus();
+            }
+        }
+        
+        function buyFireRate() {
+            if (coinCount >= fireRateCost) {
+                coinCount -= fireRateCost;
+                fireRateUpgrades += 1;
+                fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
+                updateShootDelay();
+                shopCoins.textContent = coinCount;
+                fireRateCostDisplay.textContent = Math.round(fireRateCost);
+                saveData();
+                alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
+                restoreCanvasFocus();
+            } else {
+                alert('Moedas insuficientes!');
+                restoreCanvasFocus();
+            }
+        }
+        
+        function buyGlock() {
+            if (!hasGlock && coinCount >= 100) {
+                coinCount -= 100;
+                hasGlock = true;
+                equippedWeapon = 'glock';
+                pierceCount = 0;
+                player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+                updateShootDelay();
+                shopCoins.textContent = coinCount;
+                updateWeaponButtons();
+                collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
+                updateUpgradesList();
+                saveData();
+                alert('Glock comprada e equipada! Atraso de tiro: ' + shootDelay + 'ms');
+                restoreCanvasFocus();
+            } else if (hasGlock && equippedWeapon !== 'glock') {
+                equippedWeapon = 'glock';
+                pierceCount = 0;
+                player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+                updateShootDelay();
+                updateWeaponButtons();
+                collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
+                updateUpgradesList();
+                saveData();
+                alert('Glock equipada! Atraso de tiro: ' + shootDelay + 'ms');
+                restoreCanvasFocus();
+            } else if (!hasGlock) {
+                alert('Moedas insuficientes!');
+                restoreCanvasFocus();
+            }
+        }
+        
+        function buyRifle() {
+            if (!hasRifle && coinCount >= 250) {
+                coinCount -= 250;
+                hasRifle = true;
+                equippedWeapon = 'rifle';
+                pierceCount = 1;
+                player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+                updateShootDelay();
+                shopCoins.textContent = coinCount;
+                updateWeaponButtons();
+                if (!collectedUpgrades.includes("Perfuração")) {
+                    collectedUpgrades.push("Perfuração");
+                }
+                updateUpgradesList();
+                saveData();
+                alert('Rifle Velho comprado e equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
+                restoreCanvasFocus();
+            } else if (hasRifle && equippedWeapon !== 'rifle') {
+                equippedWeapon = 'rifle';
+                pierceCount = 1;
+                player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+                updateShootDelay();
+                updateWeaponButtons();
+                if (!collectedUpgrades.includes("Perfuração")) {
+                    collectedUpgrades.push("Perfuração");
+                }
+                updateUpgradesList();
+                saveData();
+                alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
+                restoreCanvasFocus();
+            } else if (!hasRifle) {
+                alert('Moedas insuficientes!');
+                restoreCanvasFocus();
+            }
+        }
+        
+        function buyInitialUpgrade() {
+            if (!hasInitialUpgrade && coinCount >= 100) {
+                coinCount -= 100;
+                hasInitialUpgrade = true;
+                shopCoins.textContent = coinCount;
+                buyInitialUpgradeBtn.disabled = true;
+                buyInitialUpgradeBtn.textContent = "Comprado";
+                saveData();
+                alert('Upgrade Inicial comprado! Um upgrade será aplicado ao iniciar o jogo.');
+                restoreCanvasFocus();
+            } else if (!hasInitialUpgrade) {
+                alert('Moedas insuficientes!');
+                restoreCanvasFocus();
+            }
+        }
+        
+        function buyMagnet() {
+            if (!hasMagnet && coinCount >= 1000) {
+                coinCount -= 1000;
+                hasMagnet = true;
+                equippedAccessory = 'magnet';
+                shopCoins.textContent = coinCount;
+                updateAccessoryButtons();
+                saveData();
+                alert('Imã Velho comprado e equipado! Coleta moedas por 15s, recarga em 60s.');
+                restoreCanvasFocus();
+            } else if (hasMagnet && equippedAccessory !== 'magnet') {
+                equippedAccessory = 'magnet';
+                updateAccessoryButtons();
+                saveData();
+                alert('Imã Velho equipado! Coleta moedas por 15s, recarga em 60s.');
+                restoreCanvasFocus();
+            } else if (!hasMagnet) {
+                alert('Moedas insuficientes!');
+                restoreCanvasFocus();
+            }
+        }
+        
+        function buyAdrenaline() {
+            if (!hasAdrenaline && coinCount >= 500) {
+                coinCount -= 500;
+                hasAdrenaline = true;
+                equippedAccessory = 'adrenaline';
+                shopCoins.textContent = coinCount;
+                updateAccessoryButtons();
+                saveData();
+                alert('Adrenalina comprada e equipada! -75% tempo de disparo por 10s, recarga em 60s.');
+                restoreCanvasFocus();
+            } else if (hasAdrenaline && equippedAccessory !== 'adrenaline') {
+                equippedAccessory = 'adrenaline';
+                updateAccessoryButtons();
+                saveData();
+                alert('Adrenalina equipada! -75% tempo de disparo por 10s, recarga em 60s.');
+                restoreCanvasFocus();
+            } else if (!hasAdrenaline) {
+                alert('Moedas insuficientes!');
+                restoreCanvasFocus();
+            }
+        }
+        
+        function gameLoop() {
+            if (!isPaused) {
+                let dx = 0, dy = 0;
+                if (isMobile && joystickState.movement.active) {
+                    dx = joystickState.movement.dx / 40;
+                    dy = joystickState.movement.dy / 40;
+                } else {
+                    if (keys.w || keys.ArrowUp) dy -= 1;
+                    if (keys.s || keys
     </script>
 </body>
 </html>
