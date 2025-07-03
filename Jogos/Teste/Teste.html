@@ -1985,10 +1985,10 @@ function gameLoop() {
             dx = joystickState.movement.dx / 40;
             dy = joystickState.movement.dy / 40;
         } else {
-            if (keys.w || keys.ArrowUp) dy -= 1;
-            if (keys.s || keys.ArrowDown) dy += 1;
-            if (keys.a || keys.ArrowLeft) dx -= 1;
-            if (keys.d || keys.ArrowRight) dx += 1;
+            if (keys.w ) dy -= 1;
+            if (keys.s ) dy += 1;
+            if (keys.a ) dx -= 1;
+            if (keys.d ) dx += 1;
         }
         const length = Math.sqrt(dx * dx + dy * dy);
         if (length > 0) {
