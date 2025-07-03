@@ -1,305 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jogo de Sobrevivência a Zumbis</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-        }
-        #gameContainer {
-            position: relative;
-            width: 1000px;
-            height: 750px;
-            max-width: 100vw;
-            max-height: 100vh;
-            aspect-ratio: 4 / 3;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        #gameCanvas {
-            background: #333;
-            width: 1000px;
-            height: 750px;
-            display: block;
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        #uiContainer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            box-sizing: border-box;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        #healthBar {
-            width: 200px;
-            height: 20px;
-            background: #555;
-            border: 2px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #health {
-            height: 100%;
-            background: #f00;
-            width: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-        #healthText {
-            position: relative;
-            z-index: 2;
-            color: white;
-            font-size: 14px;
-            text-shadow: 1px 1px 1px #000;
-        }
-        #xpBar {
-            width: 200px;
-            height: 20px;
-            background: #555;
-            border: 2px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #xp {
-            height: 100%;
-            background: #0f0;
-            width: 0%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-        #xpText {
-            position: relative;
-            z-index: 2;
-            color: white;
-            font-size: 14px;
-            text-shadow: 1px 1px 1px #000;
-        }
-        #score {
-            font-size: 16px;
-        }
-        #upgradesList {
-            font-size: 16px;
-            max-width: 300px;
-            text-align: left;
-        }
-        #countdown {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: red;
-            font-size: 48px;
-            text-shadow: 2px 2px 2px #000;
-            z-index: 10;
-        }
-        #startScreen, #gameOver, #ranking, #shop, #upgradeMenu {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #444;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 20;
-            max-width: 80%;
-        }
-        #startScreen {
-            display: block;
-        }
-        #gameOver button, #startScreen button, #ranking button, #shop button, #upgradeMenu button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        #shop button#resetAllBtn {
-            background-color: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-        #shop button#resetAllBtn:hover {
-            background-color: #cc0000;
-        }
-        #ranking ul {
-            list-style: none;
-            padding: 0;
-        }
-        .raro { background-color: green; color: white; }
-        .normal { background-color: blue; color: white; }
-        .epico { background-color: purple; color: white; }
-        .lendario { background-color: yellow; color: black; }
-        .tab-buttons {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-        .tab-button {
-            padding: 10px 20px;
-            margin: 0 5px;
-            background: #666;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-        }
-        .tab-button.active {
-            background: #888;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .joystick {
-            position: fixed;
-            bottom: 20px;
-            width: 80px;
-            height: 80px;
-            background: rgba(128, 128, 128, 0.5);
-            border-radius: 50%;
-            display: none;
-            touch-action: none;
-        }
-        #movementJoystick {
-            left: 20px;
-        }
-        #shootJoystick {
-            right: 20px;
-        }
-        .joystick-inner {
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        @media (max-width: 600px) {
-            .joystick {
-                display: block;
-            }
-            #uiContainer {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 5px;
-            }
-            #healthBar, #xpBar {
-                width: 150px;
-            }
-            #score, #upgradesList {
-                font-size: 14px;
-            }
-        }
-        @media (orientation: portrait) {
-            #startScreen::before {
-                content: "Por favor, gire o dispositivo para a orientação paisagem para uma melhor experiência.";
-                display: block;
-                color: yellow;
-                margin-bottom: 20px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div id="gameContainer">
-        <div id="uiContainer">
-            <div id="healthBar">
-                <div id="health"></div>
-                <span id="healthText">Vida: 100%</span>
-            </div>
-            <div id="xpBar">
-                <div id="xp"></div>
-                <span id="xpText">Nível 1: 0/10 XP</span>
-            </div>
-            <div id="score">Pontos: 0 | Moedas: 0</div>
-            <div id="upgradesList">Upgrades: Nenhum</div>
-        </div>
-        <div id="startScreen">
-            <h2>Jogo de Sobrevivência a Zumbis</h2>
-            <button id="startButton" onclick="startGame()">Iniciar Jogo</button><br>
-            <button onclick="showRankingFromStart()">Ver Ranking</button>
-        </div>
-        <canvas id="gameCanvas" width="1000" height="750" tabindex="0"></canvas>
-        <div id="countdown">3</div>
-        <div id="gameOver">
-            Game Over!<br>
-            <button onclick="showRanking()">Adicionar ao Ranking</button><br>
-            <button onclick="resetGame()">Recomeçar</button><br>
-            <button onclick="showShop()">Loja</button>
-        </div>
-        <div id="ranking">
-            <h2>Ranking</h2>
-            <ul id="rankingList"></ul>
-            <button onclick="closeRankin()">Fechar</button>
-        </div>
-        <div id="shop">
-            <h2>Loja</h2>
-            <p>Moedas: <span id="shopCoins">0</span></p>
-            <div class="tab-buttons">
-                <button class="tab-button active" onclick="showTab('weapons')">Armas</button>
-                <button class="tab-button" onclick="showTab('upgrades')">Upgrades</button>
-                <button class="tab-button" onclick="showTab('accessories')">Acessórios</button>
-            </div>
-            <div id="weapons" class="tab-content active">
-                <p>Glock (100 moedas, 1.2s, 2 Dano): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
-                <p>Rifle Velho (250 moedas, 1s, 2 Dano, +1 Perfuração): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
-            </div>
-            <div id="upgrades" class="tab-content">
-                <p>Vida Extra (<span id="healthCost">50</span> moedas): <button id="buyHealthBtn" onclick="buyHealth()">Comprar</button></p>
-                <p>Tiro Rápido (<span id="fireRateCost">200</span> moedas): <button id="buyFireRateBtn" onclick="buyFireRate()">Comprar</button></p>
-                <p>Upgrade Inicial (100 moedas): <button id="buyInitialUpgradeBtn" onclick="buyInitialUpgrade()">Comprar</button></p>
-                <p><button id="resetAllBtn" onclick="resetAll()">Resetar Tudo</button></p>
-            </div>
-            <div id="accessories" class="tab-content">
-                <p>Imã Velho (1000 moedas, coleta moedas por 15s, recarga 60s): <button id="buyMagnetBtn" onclick="buyMagnet()">Comprar</button></p>
-                <p>Adrenalina (500 moedas, -75% tempo de disparo por 10s, recarga 60s): <button id="buyAdrenalineBtn" onclick="buyAdrenaline()">Comprar</button></p>
-            </div>
-            <button onclick="closeShop()">Fechar</button>
-        </div>
-        <div id="upgradeMenu">
-            <h2>Subiu de Nível!</h2>
-            <p>Escolha um upgrade (1, 2 ou 3):</p>
-            <div id="upgradeOptions"></div>
-        </div>
-        <div id="movementJoystick" class="joystick"><div class="joystick-inner"></div></div>
-        <div id="shootJoystick" class="joystick"><div class="joystick-inner"></div></div>
-    </div>
-
-    <script>
-      const canvas = document.getElementById('gameCanvas');
+const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('score');
 const startScreen = document.getElementById('startScreen');
@@ -386,6 +85,8 @@ let adrenalineActive = false;
 let adrenalineStart = 0;
 let adrenalineCooldown = 0;
 let electricLines = [];
+// Direção padrão para tiros (inicialmente para a direita)
+let shootDirection = { dx: 1, dy: 0 };
 
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 const joystickState = {
@@ -479,6 +180,12 @@ document.addEventListener('keydown', (e) => {
     if (upgradeMenu.style.display === 'block' && ['1', '2', '3'].includes(normalizedKey)) {
         selectUpgrade(parseInt(normalizedKey) - 1);
     }
+    // Atualizar a direção dos tiros com base nas setas
+    // Setas do teclado controlam a direção dos tiros
+    if (normalizedKey === 'ArrowUp') shootDirection = { dx: 0, dy: -1 };
+    if (normalizedKey === 'ArrowDown') shootDirection = { dx: 0, dy: 1 };
+    if (normalizedKey === 'ArrowLeft') shootDirection = { dx: -1, dy: 0 };
+    if (normalizedKey === 'ArrowRight') shootDirection = { dx: 1, dy: 0 };
 });
 
 document.addEventListener('keyup', (e) => {
@@ -491,6 +198,8 @@ document.addEventListener('keyup', (e) => {
 
 canvas.addEventListener('click', () => {
     canvas.focus();
+    // Em desktops, clicar no canvas dispara um tiro na direção atual
+    if (!isMobile && !isPaused && !gameOver) shoot();
 });
 
 if (isMobile) {
@@ -1033,8 +742,71 @@ function buyAdrenaline() {
     }
 }
 
+// Função para disparar balas na direção definida pelas setas (ou joystick de tiro em dispositivos móveis)
+function shoot() {
+    if (isPaused || gameOver || Date.now() - lastShot < shootDelay) return;
+    lastShot = Date.now();
+    let dx, dy;
+    if (isMobile && joystickState.shoot.active) {
+        dx = joystickState.shoot.dx;
+        dy = joystickState.shoot.dy;
+    } else {
+        dx = shootDirection.dx;
+        dy = shootDirection.dy;
+    }
+    const length = Math.sqrt(dx * dx + dy * dy) || 1; // Evita divisão por zero
+    bullets.push({
+        x: player.x,
+        y: player.y,
+        dx: dx / length,
+        dy: dy / length,
+        speed: 10,
+        damage: player.damage,
+        pierce: pierceCount
+    });
+    // Suporte a upgrades de disparos diagonais e frontais
+    if (diagonalShots > 0) {
+        for (let i = 1; i <= diagonalShots; i++) {
+            const angle = Math.PI / 4 * i;
+            bullets.push({
+                x: player.x,
+                y: player.y,
+                dx: Math.cos(angle) * (dx / length) - Math.sin(angle) * (dy / length),
+                dy: Math.sin(angle) * (dx / length) + Math.cos(angle) * (dy / length),
+                speed: 10,
+                damage: player.damage,
+                pierce: pierceCount
+            });
+            bullets.push({
+                x: player.x,
+                y: player.y,
+                dx: Math.cos(-angle) * (dx / length) - Math.sin(-angle) * (dy / length),
+                dy: Math.sin(-angle) * (dx / length) + Math.cos(-angle) * (dy / length),
+                speed: 10,
+                damage: player.damage,
+                pierce: pierceCount
+            });
+        }
+    }
+    if (frontShots > 0) {
+        for (let i = 1; i <= frontShots; i++) {
+            bullets.push({
+                x: player.x,
+                y: player.y,
+                dx: dx / length,
+                dy: dy / length,
+                speed: 10,
+                damage: player.damage,
+                pierce: pierceCount
+            });
+        }
+    }
+}
+
 function gameLoop() {
-    console.log('gameLoop executando, isPaused:', isPaused);
+    // Controla o movimento do jogador (WASD) e chama a função de disparo
+    // WASD: Controla o movimento do jogador (cima, baixo, esquerda, direita)
+    // Setas: Controlam a direção dos tiros (definida em shootDirection)
     if (!isPaused) {
         let dx = 0, dy = 0;
         if (isMobile && joystickState.movement.active) {
@@ -1042,10 +814,11 @@ function gameLoop() {
             dy = joystickState.movement.dy / 40;
             console.log('Joystick movement:', { dx, dy });
         } else {
-            if (keys.w || keys.ArrowUp) dy -= 1;
-            if (keys.s || keys.ArrowDown) dy += 1;
-            if (keys.a || keys.ArrowLeft) dx -= 1;
-            if (keys.d || keys.ArrowRight) dx += 1;
+            // Apenas WASD controla o movimento
+            if (keys.w) dy -= 1;
+            if (keys.s) dy += 1;
+            if (keys.a) dx -= 1;
+            if (keys.d) dx += 1;
             console.log('Keyboard movement:', { dx, dy });
         }
         const length = Math.sqrt(dx * dx + dy * dy);
@@ -1055,6 +828,11 @@ function gameLoop() {
         }
         player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x + dx));
         player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y + dy));
+
+        // Chama a função de disparo automaticamente se uma direção de tiro estiver definida
+        if ((keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight || (isMobile && joystickState.shoot.active)) && !isPaused && !gameOver) {
+            shoot();
+        }
 
         update();
         draw();
@@ -1080,6 +858,7 @@ function resetGame() {
     lastShot = 0;
     lastSpawn = 0;
     lastRegen = 0;
+    shootDirection = { dx: 1, dy: 0 }; // Resetar direção de tiro
     scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
     healthBar.style.width = '100%';
     healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
@@ -1155,6 +934,58 @@ function update() {
         }
     }
 
+    // Atualizar balas
+    bullets = bullets.filter(bullet => {
+        bullet.x += bullet.dx * bullet.speed;
+        bullet.y += bullet.dy * bullet.speed;
+        // Verificar colisão com zumbis
+        zombies = zombies.filter(zombie => {
+            const distance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
+            if (distance < bullet.size + zombie.size) {
+                zombie.health -= bullet.damage;
+                if (zombie.health <= 0) {
+                    score += 10;
+                    xp += 5;
+                    spawnCoin(zombie.x, zombie.y);
+                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                    if (xp >= xpToNextLevel) {
+                        level++;
+                        xp = 0;
+                        xpToNextLevel *= 1.5;
+                        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+                        isPaused = true;
+                        upgradeMenu.style.display = 'block';
+                        // Mostrar opções de upgrade
+                        const available = availableUpgrades.filter(u => u.accumulable || !collectedUpgrades.includes(u.name));
+                        upgradeOptions.innerHTML = available.slice(0, 3).map((u, i) => `<button onclick="selectUpgrade(${i})">${u.name}: ${u.description}</button>`).join('');
+                    }
+                    return false;
+                }
+                bullet.pierce--;
+                if (bullet.pierce < 0) return false;
+            }
+            return true;
+        });
+        // Verificar colisão com chefe
+        if (boss) {
+            const distance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
+            if (distance < bullet.size + boss.size) {
+                boss.health -= bullet.damage;
+                if (boss.health <= 0) {
+                    score += 50;
+                    bosses++;
+                    boss = null;
+                    bossSpawned = false;
+                    spawnCoin(boss.x, boss.y);
+                    scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+                }
+                bullet.pierce--;
+                if (bullet.pierce < 0) return false;
+            }
+        }
+        return bullet.x >= 0 && bullet.x <= canvas.width && bullet.y >= 0 && bullet.y <= canvas.height;
+    });
+
     // Atualizar moedas
     coins = coins.filter(coin => {
         const distance = Math.sqrt((player.x - coin.x) ** 2 + (player.y - coin.y) ** 2);
@@ -1209,6 +1040,14 @@ function draw() {
         ctx.fillStyle = 'yellow';
         ctx.beginPath();
         ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Desenhar balas
+    bullets.forEach(bullet => {
+        ctx.fillStyle = 'yellow';
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, bullet.size || 5, 0, Math.PI * 2);
         ctx.fill();
     });
 }
@@ -1340,6 +1179,3 @@ function selectUpgrade(index) {
 }
 
 requestAnimationFrame(gameLoop);
-    </script>
-</body>
-</html>
