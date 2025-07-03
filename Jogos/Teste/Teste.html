@@ -481,7 +481,6 @@
             if (upgradeMenu.style.display === 'block' && ['1', '2', '3'].includes(normalizedKey)) {
                 selectUpgrade(parseInt(normalizedKey) - 1);
             }
-            // Atualizar a direção dos tiros com base nas setas
             // Setas do teclado controlam a direção dos tiros
             if (normalizedKey === 'ArrowUp') shootDirection = { dx: 0, dy: -1 };
             if (normalizedKey === 'ArrowDown') shootDirection = { dx: 0, dy: 1 };
@@ -1056,6 +1055,7 @@
                 dy = shootDirection.dy;
             }
             const length = Math.sqrt(dx * dx + dy * dy) || 1; // Evita divisão por zero
+            // Criar bala principal com tamanho definido
             bullets.push({
                 x: player.x,
                 y: player.y,
@@ -1063,9 +1063,10 @@
                 dy: dy / length,
                 speed: 10,
                 damage: player.damage,
-                pierce: pierceCount
+                pierce: pierceCount,
+                size: 5 // Tamanho da bala para colisão
             });
-            // Suporte a upgrades de disparos diagonais e frontais
+            // Suporte a upgrades de disparos diagonais
             if (diagonalShots > 0) {
                 for (let i = 1; i <= diagonalShots; i++) {
                     const angle = Math.PI / 4 * i;
@@ -1076,7 +1077,8 @@
                         dy: Math.sin(angle) * (dx / length) + Math.cos(angle) * (dy / length),
                         speed: 10,
                         damage: player.damage,
-                        pierce: pierceCount
+                        pierce: pierceCount,
+                        size: 5
                     });
                     bullets.push({
                         x: player.x,
@@ -1085,10 +1087,12 @@
                         dy: Math.sin(-angle) * (dx / length) + Math.cos(-angle) * (dy / length),
                         speed: 10,
                         damage: player.damage,
-                        pierce: pierceCount
+                        pierce: pierceCount,
+                        size: 5
                     });
                 }
             }
+            // Suporte a upgrades de disparos frontais
             if (frontShots > 0) {
                 for (let i = 1; i <= frontShots; i++) {
                     bullets.push({
@@ -1098,7 +1102,8 @@
                         dy: dy / length,
                         speed: 10,
                         damage: player.damage,
-                        pierce: pierceCount
+                        pierce: pierceCount,
+                        size: 5
                     });
                 }
             }
@@ -1235,16 +1240,19 @@
                 }
             }
         
-            // Atualizar balas
+            // Atualizar balas e colisões
             bullets = bullets.filter(bullet => {
                 bullet.x += bullet.dx * bullet.speed;
                 bullet.y += bullet.dy * bullet.speed;
+        
                 // Verificar colisão com zumbis
-                zombies = zombies.filter(zombie => {
+                for (let i = zombies.length - 1; i >= 0; i--) {
+                    const zombie = zombies[i];
                     const distance = Math.sqrt((bullet.x - zombie.x) ** 2 + (bullet.y - zombie.y) ** 2);
-                    if (distance < bullet.size + zombie.size) {
+                    if (distance < (bullet.size || 5) + zombie.size) {
                         zombie.health -= bullet.damage;
                         if (zombie.health <= 0) {
+                            zombies.splice(i, 1); // Remove zumbi
                             score += 10;
                             xp += 5;
                             spawnCoin(zombie.x, zombie.y);
@@ -1256,21 +1264,19 @@
                                 xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
                                 isPaused = true;
                                 upgradeMenu.style.display = 'block';
-                                // Mostrar opções de upgrade
                                 const available = availableUpgrades.filter(u => u.accumulable || !collectedUpgrades.includes(u.name));
                                 upgradeOptions.innerHTML = available.slice(0, 3).map((u, i) => `<button onclick="selectUpgrade(${i})">${u.name}: ${u.description}</button>`).join('');
                             }
-                            return false;
                         }
                         bullet.pierce--;
-                        if (bullet.pierce < 0) return false;
+                        if (bullet.pierce < 0) return false; // Remove bala se não pode mais perfurar
                     }
-                    return true;
-                });
+                }
+        
                 // Verificar colisão com chefe
                 if (boss) {
                     const distance = Math.sqrt((bullet.x - boss.x) ** 2 + (bullet.y - boss.y) ** 2);
-                    if (distance < bullet.size + boss.size) {
+                    if (distance < (bullet.size || 5) + boss.size) {
                         boss.health -= bullet.damage;
                         if (boss.health <= 0) {
                             score += 50;
@@ -1284,6 +1290,8 @@
                         if (bullet.pierce < 0) return false;
                     }
                 }
+        
+                // Remover balas que saem do canvas
                 return bullet.x >= 0 && bullet.x <= canvas.width && bullet.y >= 0 && bullet.y <= canvas.height;
             });
         
