@@ -372,6 +372,7 @@
         let steelHeart = false;
         let hasGlock = false;
         let hasRifle = false;
+        let hasSMG = false;
         let equippedWeapon = 'none';
         let hasInitialUpgrade = false;
         let collectedUpgrades = [];
@@ -402,6 +403,7 @@
             fireRateUpgrades: 0,
             hasGlock: false,
             hasRifle: false,
+            hasSMG: false,
             equippedWeapon: 'none',
             hasInitialUpgrade: false,
             speedUpgrades: 0,
@@ -597,6 +599,7 @@
                 fireRateUpgrades: fireRateUpgrades,
                 hasGlock: hasGlock,
                 hasRifle: hasRifle,
+                hasSMG: hasSMG,
                 equippedWeapon: equippedWeapon,
                 hasInitialUpgrade: hasInitialUpgrade,
                 speedUpgrades: speedUpgrades,
@@ -620,6 +623,10 @@
             if (hasRifle) {
                 buyRifleBtn.textContent = equippedWeapon === 'rifle' ? 'Equipado' : 'Equipar';
                 buyRifleBtn.disabled = equippedWeapon === 'rifle';
+            }
+            if (hasSMG) {
+            buySMGBtn.textContent = equippedWeapon === 'smg' ? 'Equipado' : 'Equipar';
+            buySMGBtn.disabled = equippedWeapon === 'smg';
             } else {
                 buyRifleBtn.textContent = 'Comprar';
                 buyRifleBtn.disabled = false;
@@ -1658,77 +1665,76 @@
             });
         }
 
-        function resetGame() {
-            console.log('Resetando o jogo...');
-            player = { 
-                x: canvas.width / 2, 
-                y: canvas.height / 2, 
-                size: 20, 
-                speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
-                baseSpeed: 1.75, 
-                health: player.maxHealth, 
-                maxHealth: player.maxHealth, 
-                damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
-            };
-            zombies = [];
-            bullets = [];
-            bossBullets = [];
-            coins = [];
-            boss = null;
-            score = 0;
-            xp = 0;
-            level = 1;
-            xpToNextLevel = 10;
-            countdown = 0;
-            countdownStart = 0;
-            bossSpawned = false;
-            lastBossCharge = 0;
-            lastBossSpawnZombies = 0;
-            bossChargeWarning = 0;
-            diagonalShots = 0;
-            frontShots = 0;
-            homingShot = false;
-            electricShot = false;
-            pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
-            regen = false;
-            vampirism = false;
-            lightHands = false;
-            goodHands = false;
-            suplemento = false;
-            ricochetCount = 0;
-            steelHeart = false;
-            collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
-            zombieHealth = 2 * Math.pow(1.65, bosses);
-            bossDamage = 5 * Math.pow(1.65, bosses);
-            magnetActive = false;
-            magnetStart = 0;
-            magnetCooldown = 0;
-            adrenalineActive = false;
-            adrenalineStart = 0;
-            adrenalineCooldown = 0;
-            electricLines = [];
-            updateUpgradesList();
-            gameOver = false;
-            isPaused = false;
-            lastSpawn = 0;
-            lastRegen = 0;
-            lastShot = 0;
-            updateShootDelay();
-            gameOverDisplay.style.display = 'none';
-            rankingDisplay.style.display = 'none';
-            shopDisplay.style.display = 'none';
-            upgradeMenu.style.display = 'none';
-            countdownDisplay.style.display = 'none';
-            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-            healthBar.style.width = '100%';
-            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            xpBar.style.width = '0%';
-            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-            applyInitialUpgrade();
-            canvas.focus();
-            console.log('Jogo resetado, pronto para começar.');
-        }
-
+           function resetGame() {
+        console.log('Resetando o jogo...');
+        player = { 
+            x: canvas.width / 2, 
+            y: canvas.height / 2, 
+            size: 20, 
+            speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
+            baseSpeed: 1.75, 
+            health: player.maxHealth, 
+            maxHealth: player.maxHealth, 
+            damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : equippedWeapon === 'smg' ? 1.5 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
+        };
+        zombies = [];
+        bullets = [];
+        bossBullets = [];
+        coins = [];
+        boss = null;
+        score = 0;
+        xp = 0;
+        level = 1;
+        xpToNextLevel = 10;
+        countdown = 0;
+        countdownStart = 0;
+        bossSpawned = false;
+        lastBossCharge = 0;
+        lastBossSpawnZombies = 0;
+        bossChargeWarning = 0;
+        diagonalShots = 0;
+        frontShots = 0;
+        homingShot = false;
+        electricShot = false;
+        pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
+        regen = false;
+        vampirism = false;
+        lightHands = false;
+        goodHands = false;
+        suplemento = false;
+        ricochetCount = 0;
+        steelHeart = false;
+        collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
+        zombieHealth = 2 * Math.pow(1.65, bosses);
+        bossDamage = 5 * Math.pow(1.65, bosses);
+        magnetActive = false;
+        magnetStart = 0;
+        magnetCooldown = 0;
+        adrenalineActive = false;
+        adrenalineStart = 0;
+        adrenalineCooldown = 0;
+        electricLines = [];
+        updateUpgradesList();
+        gameOver = false;
+        isPaused = false;
+        lastSpawn = 0;
+        lastRegen = 0;
+        lastShot = 0;
+        updateShootDelay();
+        gameOverDisplay.style.display = 'none';
+        rankingDisplay.style.display = 'none';
+        shopDisplay.style.display = 'none';
+        upgradeMenu.style.display = 'none';
+        countdownDisplay.style.display = 'none';
+        scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+        healthBar.style.width = '100%';
+        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+        xpBar.style.width = '0%';
+        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+        applyInitialUpgrade();
+        canvas.focus();
+        console.log('Jogo resetado, pronto para começar.');
+    }
         function showRanking() {
             savedDataLocal.ranking.push({ score, date: new Date().toLocaleString() });
             savedDataLocal.ranking.sort((a, b) => b.score - a.score);
