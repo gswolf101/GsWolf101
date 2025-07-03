@@ -276,6 +276,7 @@
             <div id="weapons" class="tab-content active">
                 <p>Glock (100 moedas, 1.2s, 2 Dano): <button id="buyGlockBtn" onclick="buyGlock()">Comprar</button></p>
                 <p>Rifle Velho (250 moedas, 1s, 2 Dano, +1 Perfuração): <button id="buyRifleBtn" onclick="buyRifle()">Comprar</button></p>
+                <p>SMG Velha (3500 moedas, 0.5s, 1.5 Dano): <button id="buySMGBtn" onclick="buySMG()">Comprar</button></p>
             </div>
             <div id="upgrades" class="tab-content">
                 <p>Vida Extra (<span id="healthCost">50</span> moedas): <button id="buyHealthBtn" onclick="buyHealth()">Comprar</button></p>
@@ -371,6 +372,7 @@
         let steelHeart = false;
         let hasGlock = false;
         let hasRifle = false;
+        let hasSMG = false;
         let equippedWeapon = 'none';
         let hasInitialUpgrade = false;
         let collectedUpgrades = [];
@@ -401,6 +403,7 @@
             fireRateUpgrades: 0,
             hasGlock: false,
             hasRifle: false,
+            hasSMG: false,
             equippedWeapon: 'none',
             hasInitialUpgrade: false,
             speedUpgrades: 0,
@@ -416,6 +419,7 @@
         fireRateUpgrades = savedDataLocal.fireRateUpgrades || 0;
         hasGlock = savedDataLocal.hasGlock || false;
         hasRifle = savedDataLocal.hasRifle || false;
+        hasSMG = savedDataLocal.hasSMG || false;
         equippedWeapon = savedDataLocal.equippedWeapon || 'none';
         hasInitialUpgrade = savedDataLocal.hasInitialUpgrade || false;
         speedUpgrades = savedDataLocal.speedUpgrades || 0;
@@ -596,6 +600,7 @@
                 fireRateUpgrades: fireRateUpgrades,
                 hasGlock: hasGlock,
                 hasRifle: hasRifle,
+                hasSMG: hasSMG,
                 equippedWeapon: equippedWeapon,
                 hasInitialUpgrade: hasInitialUpgrade,
                 speedUpgrades: speedUpgrades,
@@ -619,6 +624,10 @@
             if (hasRifle) {
                 buyRifleBtn.textContent = equippedWeapon === 'rifle' ? 'Equipado' : 'Equipar';
                 buyRifleBtn.disabled = equippedWeapon === 'rifle';
+            }
+            if (hasSMG) {
+            buySMGBtn.textContent = equippedWeapon === 'smg' ? 'Equipado' : 'Equipar';
+            buySMGBtn.disabled = equippedWeapon === 'smg';
             } else {
                 buyRifleBtn.textContent = 'Comprar';
                 buyRifleBtn.disabled = false;
@@ -666,6 +675,7 @@
                 speedUpgrades = 0;
                 hasGlock = false;
                 hasRifle = false;
+                hasSMG = false;
                 equippedWeapon = 'none';
                 hasInitialUpgrade = false;
                 healthCost = 50;
@@ -1044,11 +1054,12 @@
         ];
 
         function updateShootDelay() {
-            let baseDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
+            let baseDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : equippedWeapon === 'smg' ? 500 : 2000;
+            baseDelay -= fireRateUpgrades * 50; // Reduz 50ms por upgrade de Tiro Rápido
             if (lightHands) baseDelay *= 0.8;
             if (goodHands) baseDelay *= 0.7;
             if (adrenalineActive) baseDelay *= 0.25;
-            shootDelay = Math.max(50, baseDelay);
+            shootDelay = Math.max(50, baseDelay); // Garante mínimo de 50ms
         }
 
         function applyInitialUpgrade() {
@@ -1298,6 +1309,11 @@
                     lastRegen = now;
                 }
             }
+
+            if ((isMobile && joystickState.shoot.active) || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) {
+                shoot();
+            }
+
             electricLines = electricLines.filter(line => now - line.startTime < 500);
 
             bullets.forEach(bullet => {
@@ -1652,77 +1668,76 @@
             });
         }
 
-        function resetGame() {
-            console.log('Resetando o jogo...');
-            player = { 
-                x: canvas.width / 2, 
-                y: canvas.height / 2, 
-                size: 20, 
-                speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
-                baseSpeed: 1.75, 
-                health: player.maxHealth, 
-                maxHealth: player.maxHealth, 
-                damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
-            };
-            zombies = [];
-            bullets = [];
-            bossBullets = [];
-            coins = [];
-            boss = null;
-            score = 0;
-            xp = 0;
-            level = 1;
-            xpToNextLevel = 10;
-            countdown = 0;
-            countdownStart = 0;
-            bossSpawned = false;
-            lastBossCharge = 0;
-            lastBossSpawnZombies = 0;
-            bossChargeWarning = 0;
-            diagonalShots = 0;
-            frontShots = 0;
-            homingShot = false;
-            electricShot = false;
-            pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
-            regen = false;
-            vampirism = false;
-            lightHands = false;
-            goodHands = false;
-            suplemento = false;
-            ricochetCount = 0;
-            steelHeart = false;
-            collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
-            zombieHealth = 2 * Math.pow(1.65, bosses);
-            bossDamage = 5 * Math.pow(1.65, bosses);
-            magnetActive = false;
-            magnetStart = 0;
-            magnetCooldown = 0;
-            adrenalineActive = false;
-            adrenalineStart = 0;
-            adrenalineCooldown = 0;
-            electricLines = [];
-            updateUpgradesList();
-            gameOver = false;
-            isPaused = false;
-            lastSpawn = 0;
-            lastRegen = 0;
-            lastShot = 0;
-            updateShootDelay();
-            gameOverDisplay.style.display = 'none';
-            rankingDisplay.style.display = 'none';
-            shopDisplay.style.display = 'none';
-            upgradeMenu.style.display = 'none';
-            countdownDisplay.style.display = 'none';
-            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-            healthBar.style.width = '100%';
-            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-            xpBar.style.width = '0%';
-            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-            applyInitialUpgrade();
-            canvas.focus();
-            console.log('Jogo resetado, pronto para começar.');
-        }
-
+           function resetGame() {
+        console.log('Resetando o jogo...');
+        player = { 
+            x: canvas.width / 2, 
+            y: canvas.height / 2, 
+            size: 20, 
+            speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
+            baseSpeed: 1.75, 
+            health: player.maxHealth, 
+            maxHealth: player.maxHealth, 
+            damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : equippedWeapon === 'smg' ? 1.5 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
+        };
+        zombies = [];
+        bullets = [];
+        bossBullets = [];
+        coins = [];
+        boss = null;
+        score = 0;
+        xp = 0;
+        level = 1;
+        xpToNextLevel = 10;
+        countdown = 0;
+        countdownStart = 0;
+        bossSpawned = false;
+        lastBossCharge = 0;
+        lastBossSpawnZombies = 0;
+        bossChargeWarning = 0;
+        diagonalShots = 0;
+        frontShots = 0;
+        homingShot = false;
+        electricShot = false;
+        pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
+        regen = false;
+        vampirism = false;
+        lightHands = false;
+        goodHands = false;
+        suplemento = false;
+        ricochetCount = 0;
+        steelHeart = false;
+        collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
+        zombieHealth = 2 * Math.pow(1.65, bosses);
+        bossDamage = 5 * Math.pow(1.65, bosses);
+        magnetActive = false;
+        magnetStart = 0;
+        magnetCooldown = 0;
+        adrenalineActive = false;
+        adrenalineStart = 0;
+        adrenalineCooldown = 0;
+        electricLines = [];
+        updateUpgradesList();
+        gameOver = false;
+        isPaused = false;
+        lastSpawn = 0;
+        lastRegen = 0;
+        lastShot = 0;
+        updateShootDelay();
+        gameOverDisplay.style.display = 'none';
+        rankingDisplay.style.display = 'none';
+        shopDisplay.style.display = 'none';
+        upgradeMenu.style.display = 'none';
+        countdownDisplay.style.display = 'none';
+        scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+        healthBar.style.width = '100%';
+        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+        xpBar.style.width = '0%';
+        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+        applyInitialUpgrade();
+        canvas.focus();
+        console.log('Jogo resetado, pronto para começar.');
+    }
         function showRanking() {
             savedDataLocal.ranking.push({ score, date: new Date().toLocaleString() });
             savedDataLocal.ranking.sort((a, b) => b.score - a.score);
@@ -1795,7 +1810,7 @@
                 shopCoins.textContent = coinCount;
                 fireRateCostDisplay.textContent = Math.round(fireRateCost);
                 saveData();
-                alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
+                alert(`Tiro rápido comprado! (Total de compras: ${fireRateUpgrades}) Atraso de tiro: ${shootDelay}ms`);
                 restoreCanvasFocus();
             } else {
                 alert('Moedas insuficientes!');
@@ -1843,7 +1858,7 @@
         player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
         updateShootDelay();
         shopCoins.textContent = coinCount;
-        updateWeaponButtons();
+        updateWeaponButtons(); // Garante que os botões sejam atualizados
         if (!collectedUpgrades.includes("Perfuração")) {
             collectedUpgrades.push("Perfuração");
         }
@@ -1856,7 +1871,7 @@
         pierceCount = 1;
         player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
         updateShootDelay();
-        updateWeaponButtons();
+        updateWeaponButtons(); // Garante que os botões sejam atualizados
         if (!collectedUpgrades.includes("Perfuração")) {
             collectedUpgrades.push("Perfuração");
         }
@@ -1865,6 +1880,39 @@
         alert('Rifle Velho equipado! Atraso de tiro: ' + shootDelay + 'ms, +1 Perfuração');
         restoreCanvasFocus();
     } else if (!hasRifle) {
+        alert('Moedas insuficientes!');
+        restoreCanvasFocus();
+    }
+}
+
+        function buySMG() {
+    if (!hasSMG && coinCount >= 3500) {
+        coinCount -= 3500;
+        hasSMG = true;
+        equippedWeapon = 'smg';
+        basespeed = 0.5;
+        pierceCount = 0;
+        player.damage = 1.5 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+        updateShootDelay();
+        shopCoins.textContent = coinCount;
+        updateWeaponButtons();
+        collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
+        updateUpgradesList();
+        saveData();
+        alert('SMG Velha comprada e equipada! Atraso de tiro: ' + shootDelay + 'ms');
+        restoreCanvasFocus();
+    } else if (hasSMG && equippedWeapon !== 'smg') {
+        equippedWeapon = 'smg';
+        pierceCount = 0;
+        player.damage = 1.5 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
+        updateShootDelay();
+        updateWeaponButtons();
+        collectedUpgrades = collectedUpgrades.filter(u => u !== 'Perfuração');
+        updateUpgradesList();
+        saveData();
+        alert('SMG Velha equipada! Atraso de tiro: ' + shootDelay + 'ms');
+        restoreCanvasFocus();
+    } else if (!hasSMG) {
         alert('Moedas insuficientes!');
         restoreCanvasFocus();
     }
@@ -1937,10 +1985,10 @@ function gameLoop() {
             dx = joystickState.movement.dx / 40;
             dy = joystickState.movement.dy / 40;
         } else {
-            if (keys.w || keys.ArrowUp) dy -= 1;
-            if (keys.s || keys.ArrowDown) dy += 1;
-            if (keys.a || keys.ArrowLeft) dx -= 1;
-            if (keys.d || keys.ArrowRight) dx += 1;
+            if (keys.w ) dy -= 1;
+            if (keys.s ) dy += 1;
+            if (keys.a ) dx -= 1;
+            if (keys.d ) dx += 1;
         }
         const length = Math.sqrt(dx * dx + dy * dy);
         if (length > 0) {
