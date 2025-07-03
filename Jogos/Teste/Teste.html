@@ -1054,11 +1054,12 @@
         ];
 
         function updateShootDelay() {
-            let baseDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
+            let baseDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : equippedWeapon === 'smg' ? 500 : 2000;
+            baseDelay -= fireRateUpgrades * 50; // Reduz 50ms por upgrade de Tiro Rápido
             if (lightHands) baseDelay *= 0.8;
             if (goodHands) baseDelay *= 0.7;
             if (adrenalineActive) baseDelay *= 0.25;
-            shootDelay = Math.max(50, baseDelay);
+            shootDelay = Math.max(50, baseDelay); // Garante mínimo de 50ms
         }
 
         function applyInitialUpgrade() {
@@ -1809,7 +1810,7 @@
                 shopCoins.textContent = coinCount;
                 fireRateCostDisplay.textContent = Math.round(fireRateCost);
                 saveData();
-                alert('Tiro rápido comprado! Atraso de tiro: ' + shootDelay + 'ms');
+                alert(`Tiro rápido comprado! (Total de compras: ${fireRateUpgrades}) Atraso de tiro: ${shootDelay}ms`);
                 restoreCanvasFocus();
             } else {
                 alert('Moedas insuficientes!');
@@ -1857,7 +1858,7 @@
         player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
         updateShootDelay();
         shopCoins.textContent = coinCount;
-        updateWeaponButtons();
+        updateWeaponButtons(); // Garante que os botões sejam atualizados
         if (!collectedUpgrades.includes("Perfuração")) {
             collectedUpgrades.push("Perfuração");
         }
@@ -1870,7 +1871,7 @@
         pierceCount = 1;
         player.damage = 2 * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
         updateShootDelay();
-        updateWeaponButtons();
+        updateWeaponButtons(); // Garante que os botões sejam atualizados
         if (!collectedUpgrades.includes("Perfuração")) {
             collectedUpgrades.push("Perfuração");
         }
