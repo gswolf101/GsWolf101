@@ -260,14 +260,6 @@
             <button onclick="resetGame()">Recomeçar</button><br>
             <button onclick="showShop()">Loja</button>
         </div>
-
-        <div id="gameOverDisplay" style="display: none;">
-            <h2>Fim de Jogo</h2>
-            <p id="finalScore">Pontuação Final: 0</p>
-            <button onclick="resetGame()">Recomeçar</button>
-            <button onclick="showRanking()">Ver Ranking</button>
-            <button onclick="showShop()">Loja</button>
-        </div>
         <div id="ranking">
             <h2>Ranking</h2>
             <ul id="rankingList"></ul>
@@ -419,7 +411,6 @@
             bosses: 0,
             hasMagnet: false,
             hasAdrenaline: false,
-            hasSmokeBomb: false,
             equippedAccessory: 'none',
             ranking: []
         };
@@ -436,17 +427,14 @@
         bosses = savedDataLocal.bosses || 0;
         hasMagnet = savedDataLocal.hasMagnet || false;
         hasAdrenaline = savedDataLocal.hasAdrenaline || false;
-        hasSmokeBomb = savedDataLocal.hasSmokeBomb || false;
         equippedAccessory = savedDataLocal.equippedAccessory || 'none';
         player.maxHealth = 10 * Math.pow(1.2, healthUpgrades);
         player.health = player.maxHealth;
         player.speed = player.baseSpeed * Math.pow(1.05, speedUpgrades);
         fireRateCost = 200 * Math.pow(1.15, fireRateUpgrades);
-        shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : equippedWeapon === 'smg' ? 500 : 2000 - fireRateUpgrades * 50;
+        shootDelay = equippedWeapon === 'glock' ? 1200 : equippedWeapon === 'rifle' ? 1000 : 2000 - fireRateUpgrades * 50;
         shootDelay = Math.max(50, shootDelay);
-        player.damage = (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : equippedWeapon === 'smg' ? 1.5 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1);
-        zombieHealth = 2 * Math.pow(1.65, bosses); // Recalcular com bosses carregado
-        bossDamage = 5 * Math.pow(1.65, bosses); // Recalcular com bosses carregado
+        player.damage = equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : 1;
         fireRateCostDisplay.textContent = Math.round(fireRateCost);
         healthCostDisplay.textContent = Math.round(healthCost);
         healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
@@ -617,7 +605,7 @@
                 hasInitialUpgrade: hasInitialUpgrade,
                 speedUpgrades: speedUpgrades,
                 healthCost: healthCost,
-                bosses: bosses, // Salvar bosses (0 após game over/reset)
+                bosses: bosses, // Salvar o valor de bosses (0 após game over)
                 hasMagnet: hasMagnet,
                 hasAdrenaline: hasAdrenaline,
                 hasSmokeBomb: hasSmokeBomb,
@@ -1722,8 +1710,8 @@
             steelHeart = false;
             collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
             bosses = 0; // Resetar o multiplicador de bosses
-            zombieHealth = 2 * Math.pow(1.65, bosses); // Recalcular com bosses = 0
-            bossDamage = 5 * Math.pow(1.65, bosses); // Recalcular com bosses = 0
+            zombieHealth = 2;
+            bossDamage = 5;
             magnetActive = false;
             magnetStart = 0;
             magnetCooldown = 0;
@@ -1754,7 +1742,7 @@
             xpBar.style.width = '0%';
             xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
             applyInitialUpgrade();
-            saveData(); // Salvar estado com bosses = 0
+            saveData(); // Salvar o estado com bosses = 0
             canvas.focus();
             console.log('Jogo resetado, pronto para começar.');
         }
