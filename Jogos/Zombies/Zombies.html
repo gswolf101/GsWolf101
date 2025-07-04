@@ -605,9 +605,10 @@
                 hasInitialUpgrade: hasInitialUpgrade,
                 speedUpgrades: speedUpgrades,
                 healthCost: healthCost,
-                bosses: bosses,
+                bosses: bosses, // Salvar o valor de bosses (0 após game over)
                 hasMagnet: hasMagnet,
                 hasAdrenaline: hasAdrenaline,
+                hasSmokeBomb: hasSmokeBomb,
                 equippedAccessory: equippedAccessory,
                 ranking: savedDataLocal.ranking
             }));
@@ -1668,76 +1669,100 @@
             });
         }
 
-           function resetGame() {
-        console.log('Resetando o jogo...');
-        player = { 
-            x: canvas.width / 2, 
-            y: canvas.height / 2, 
-            size: 20, 
-            speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
-            baseSpeed: 1.75, 
-            health: player.maxHealth, 
-            maxHealth: player.maxHealth, 
-            damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : equippedWeapon === 'smg' ? 1.5 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
-        };
-        zombies = [];
-        bullets = [];
-        bossBullets = [];
-        coins = [];
-        boss = null;
-        score = 0;
-        xp = 0;
-        level = 1;
-        xpToNextLevel = 10;
-        countdown = 0;
-        countdownStart = 0;
-        bossSpawned = false;
-        lastBossCharge = 0;
-        lastBossSpawnZombies = 0;
-        bossChargeWarning = 0;
-        diagonalShots = 0;
-        frontShots = 0;
-        homingShot = false;
-        electricShot = false;
-        pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
-        regen = false;
-        vampirism = false;
-        lightHands = false;
-        goodHands = false;
-        suplemento = false;
-        ricochetCount = 0;
-        steelHeart = false;
-        collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
-        zombieHealth = 2 * Math.pow(1.65, bosses);
-        bossDamage = 5 * Math.pow(1.65, bosses);
-        magnetActive = false;
-        magnetStart = 0;
-        magnetCooldown = 0;
-        adrenalineActive = false;
-        adrenalineStart = 0;
-        adrenalineCooldown = 0;
-        electricLines = [];
-        updateUpgradesList();
-        gameOver = false;
-        isPaused = false;
-        lastSpawn = 0;
-        lastRegen = 0;
-        lastShot = 0;
-        updateShootDelay();
-        gameOverDisplay.style.display = 'none';
-        rankingDisplay.style.display = 'none';
-        shopDisplay.style.display = 'none';
-        upgradeMenu.style.display = 'none';
-        countdownDisplay.style.display = 'none';
-        scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
-        healthBar.style.width = '100%';
-        healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
-        xpBar.style.width = '0%';
-        xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
-        applyInitialUpgrade();
-        canvas.focus();
-        console.log('Jogo resetado, pronto para começar.');
-    }
+        function resetGame() {
+            console.log('Resetando o jogo...');
+            player = { 
+                x: canvas.width / 2, 
+                y: canvas.height / 2, 
+                size: 20, 
+                speed: player.baseSpeed * Math.pow(1.05, speedUpgrades), 
+                baseSpeed: 1.75, 
+                health: player.maxHealth, 
+                maxHealth: player.maxHealth, 
+                damage: (equippedWeapon === 'glock' || equippedWeapon === 'rifle' ? 2 : equippedWeapon === 'smg' ? 1.5 : 1) * Math.pow(1.05, damageUpgrades) * (suplemento ? 1.15 : 1) 
+            };
+            zombies = [];
+            bullets = [];
+            bossBullets = [];
+            coins = [];
+            boss = null;
+            score = 0;
+            xp = 0;
+            level = 1;
+            xpToNextLevel = 10;
+            countdown = 0;
+            countdownStart = 0;
+            bossSpawned = false;
+            lastBossCharge = 0;
+            lastBossSpawnZombies = 0;
+            bossChargeWarning = 0;
+            diagonalShots = 0;
+            frontShots = 0;
+            homingShot = false;
+            electricShot = false;
+            pierceCount = equippedWeapon === 'rifle' ? 1 : 0;
+            regen = false;
+            vampirism = false;
+            lightHands = false;
+            goodHands = false;
+            suplemento = false;
+            ricochetCount = 0;
+            steelHeart = false;
+            collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
+            bosses = 0; // Resetar o multiplicador de bosses
+            zombieHealth = 2;
+            bossDamage = 5;
+            magnetActive = false;
+            magnetStart = 0;
+            magnetCooldown = 0;
+            adrenalineActive = false;
+            adrenalineStart = 0;
+            adrenalineCooldown = 0;
+            smokeBombActive = false;
+            smokeBombStart = 0;
+            smokeBombCooldown = 0;
+            playerImmune = false;
+            playerTransparent = false;
+            electricLines = [];
+            updateUpgradesList();
+            gameOver = false;
+            isPaused = false;
+            lastSpawn = 0;
+            lastRegen = 0;
+            lastShot = 0;
+            updateShootDelay();
+            gameOverDisplay.style.display = 'none';
+            rankingDisplay.style.display = 'none';
+            shopDisplay.style.display = 'none';
+            upgradeMenu.style.display = 'none';
+            countdownDisplay.style.display = 'none';
+            scoreDisplay.textContent = `Pontos: ${score} | Moedas: ${coinCount}`;
+            healthBar.style.width = '100%';
+            healthText.textContent = `Vida: ${Math.round((player.health / player.maxHealth) * 100)}%`;
+            xpBar.style.width = '0%';
+            xpText.textContent = `Nível ${level}: ${xp}/${xpToNextLevel} XP`;
+            applyInitialUpgrade();
+            saveData(); // Salvar o estado com bosses = 0
+            canvas.focus();
+            console.log('Jogo resetado, pronto para começar.');
+        }
+        function gameOver() {
+            gameOver = true;
+            isPaused = true;
+            bosses = 0; // Resetar o contador de bosses
+            zombieHealth = 2 * Math.pow(1.65, bosses); // Recalcular vida dos zumbis
+            bossDamage = 5 * Math.pow(1.65, bosses); // Recalcular dano do boss
+            saveData(); // Salvar o estado com bosses = 0
+            gameOverDisplay.style.display = 'block';
+            finalScore.textContent = `Pontuação Final: ${score}`;
+            const playerName = prompt('Digite seu nome para o ranking:');
+            if (playerName) {
+                savedDataLocal.ranking.push({ name: playerName, score: score });
+                savedDataLocal.ranking.sort((a, b) => b.score - a.score);
+                savedDataLocal.ranking = savedDataLocal.ranking.slice(0, 10);
+                localStorage.setItem('zombieGameData', JSON.stringify(savedDataLocal));
+            }
+        }
         function showRanking() {
             savedDataLocal.ranking.push({ score, date: new Date().toLocaleString() });
             savedDataLocal.ranking.sort((a, b) => b.score - a.score);
