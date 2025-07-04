@@ -1710,8 +1710,8 @@
             steelHeart = false;
             collectedUpgrades = equippedWeapon === 'rifle' ? ['Perfuração'] : [];
             bosses = 0; // Resetar o multiplicador de bosses
-            zombieHealth = 2;
-            bossDamage = 5;
+            zombieHealth = 2 * Math.pow(1.65, bosses); // Recalcular com bosses = 0
+            bossDamage = 5 * Math.pow(1.65, bosses); // Recalcular com bosses = 0
             magnetActive = false;
             magnetStart = 0;
             magnetCooldown = 0;
