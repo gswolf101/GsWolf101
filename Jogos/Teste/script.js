@@ -23,7 +23,7 @@ let enemies = [];
 let projectiles = [];
 let bosses = [];
 let keys = {};
-let mouse = { x: 0, y: 0, down: false, charge: 0, lastShot: 0 };
+let mouse = { x: canvas.width / 2, y: canvas.height / 2, down: false, charge: 0, lastShot: 0 };
 let gameLoop;
 let lastTime = 0;
 let bossActive = false;
@@ -39,17 +39,18 @@ const weapons = {
 };
 
 const upgrades = [
-    { name: 'Dano Extra', rarity: 'common', effect: () => player.weapon === 'bow' ? weapons.bow.damage += 0.5 : null },
-    { name: 'Vida Extra', rarity: 'rare', effect: () => player.maxHealth *= 1.1 },
-    { name: 'Tiro Rápido', rarity: 'epic', effect: () => Object.values(weapons).forEach(w => w.cooldown *= 0.9) },
-    { name: 'Regeneração', rarity: 'legendary', effect: () => setInterval(() => player.health = Math.min(player.health + 1, player.maxHealth), 5000) },
-    { name: 'Dano Crítico', rarity: 'mythic', effect: () => Math.random() < 0.2 ? 2 : 1 }
+    { name: 'Dano Extra', rarity: 'common', effect: () => { if (player.weapon === 'bow') weapons.bow.damage += 0.5; } },
+    { name: 'Vida Extra', rarity: 'rare', effect: () => { player.maxHealth *= 1.1; player.health = player.maxHealth; } },
+    { name: 'Tiro Rápido', rarity: 'epic', effect: () => { Object.values(weapons).forEach(w => { if (w.cooldown) w.cooldown *= 0.9; }); } },
+    { name: 'Regeneração', rarity: 'legendary', effect: () => { setInterval(() => player.health = Math.min(player.health + 1, player.maxHealth), 5000); } },
+    { name: 'Dano Crítico', rarity: 'mythic', effect: () => { projectiles.forEach(p => p.damage *= Math.random() < 0.2 ? 2 : 1); } }
 ];
 
 function startGame() {
     document.getElementById('start-screen').style.display = 'none';
     document.getElementById('game-screen').style.display = 'block';
     gameState = 'playing';
+    lastTime = performance.now();
     gameLoop = requestAnimationFrame(update);
     spawnEnemy();
 }
@@ -152,7 +153,7 @@ function update(time) {
 
     // Atualizar barras de status
     document.getElementById('health').textContent = Math.round(player.health);
-    document.getElementById('xp').textContent = player.xp;
+    document.getElementById('xp).textContent = player.xp;
     document.getElementById('xp-needed').textContent = player.xpNeeded;
     document.getElementById('coins').textContent = player.coins;
     document.getElementById('score').textContent = player.score;
@@ -187,7 +188,8 @@ function update(time) {
 
     // Atualizar e desenhar projéteis
     projectiles.forEach(projectile => {
-        projectile.x += projectile.speed;
+        projectile.x += projectile.dx;
+        projectile.y += projectile.dy;
         ctx.fillStyle = 'yellow';
         ctx.fillRect(projectile.x, projectile.y, 10, 5);
     });
@@ -256,8 +258,13 @@ function showUpgrades() {
     document.getElementById('upgrade-screen').style.display = 'block';
     const options = document.getElementById('upgrade-options');
     options.innerHTML = '';
+    
+    // Selecionar 3 upgrades aleatórios
+    const availableUpgrades = [...upgrades];
     for (let i = 0; i < 3; i++) {
-        const upgrade = upgrades[Math.floor(Math.random() * upgrades.length)];
+        if (availableUpgrades.length === 0) break;
+        const randomIndex = Math.floor(Math.random() * availableUpgrades.length);
+        const upgrade = availableUpgrades.splice(randomIndex, 1)[0];
         const button = document.createElement('button');
         button.textContent = `${upgrade.name} (${upgrade.rarity})`;
         button.onclick = () => {
@@ -265,6 +272,7 @@ function showUpgrades() {
             document.getElementById('upgrade-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             gameState = 'playing';
+            gameLoop = requestAnimationFrame(update);
         };
         options.appendChild(button);
     }
@@ -298,7 +306,7 @@ canvas.addEventListener('mousemove', e => {
     mouse.y = e.clientY - rect.top;
 });
 canvas.addEventListener('mousedown', e => {
-    if (e.button === 0) { // Verifica clique com botão esquerdo
+    if (e.button === 0) {
         mouse.down = true;
         if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
             shoot();
@@ -335,13 +343,12 @@ canvas.addEventListener('touchend', e => {
 });
 
 function shoot() {
-    if (Date.now() - mouse.lastShot < (weapons[player.weapon].cooldown || 0)) return; // Evita disparos durante cooldown
+    if (Date.now() - mouse.lastShot < (weapons[player.weapon].cooldown || 0)) return;
     const damage = player.weapon === 'bow' ? Math.ceil(mouse.charge * 2) + 1 : weapons[player.weapon].damage;
     const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
     projectiles.push({
         x: player.x,
         y: player.y,
-        speed: 10,
         dx: Math.cos(angle) * 10,
         dy: Math.sin(angle) * 10,
         damage: damage
