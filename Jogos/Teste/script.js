@@ -140,10 +140,10 @@ function update(time) {
     lastTime = time;
 
     // Movimento do jogador
-    if (keys['w'] && player.y > 0) player.y -= 5;
-    if (keys['s'] && player.y < canvas.height) player.y += 5;
-    if (keys['a'] && player.x > 0) player.x -= 5;
-    if (keys['d'] && player.x < canvas.width / 2) player.x += 5;
+    if (keys['w'] && player.y > 10) player.y -= 5;
+    if (keys['s'] && player.y < canvas.height - 10) player.y += 5;
+    if (keys['a'] && player.x > 10) player.x -= 5;
+    if (keys['d'] && player.x < canvas.width / 2 - 10) player.x += 5;
 
     // Carregamento do tiro
     if (mouse.down && player.weapon === 'bow') {
@@ -158,20 +158,31 @@ function update(time) {
     document.getElementById('score').textContent = player.score;
 
     const cooldownBar = document.getElementById('cooldown-bar');
-    const cooldownProgress = (time - mouse.lastShot) / weapons[player.weapon].cooldown;
+    const cooldownProgress = (time - mouse.lastShot) / (weapons[player.weapon].cooldown || 1000);
     cooldownBar.style.backgroundColor = cooldownProgress > 0.75 ? 'red' : cooldownProgress > 0.5 ? 'yellow' : 'green';
     cooldownBar.style.width = `${100 * (1 - cooldownProgress)}px`;
 
     // Desenhar
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Jogador redondo
     ctx.fillStyle = 'blue';
-    ctx.fillRect(player.x, player.y, 20, 20);
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, 10, 0, Math.PI * 2);
+    ctx.fill();
 
     // Atualizar e desenhar inimigos
     enemies.forEach(enemy => {
-        enemy.x -= enemy.speed;
+        // Movimento na direção do jogador
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > 0) {
+            enemy.x += (dx / distance) * enemy.speed;
+            enemy.y += (dy / distance) * enemy.speed;
+        }
         ctx.fillStyle = 'red';
-        ctx.fillRect(enemy.x, enemy.y, 20, 20);
+        ctx.fillRect(enemy.x - 10, enemy.y - 10, 20, 20);
     });
 
     // Atualizar e desenhar projéteis
@@ -201,7 +212,7 @@ function update(time) {
 
     // Atualizar bosses
     bosses.forEach(boss => {
-        // Comportamento do boss
+        // Comportamento do boss (a ser implementado)
     });
 
     // Spawn de inimigos
@@ -279,21 +290,44 @@ function saveGame() {
     localStorage.setItem('player', JSON.stringify(player));
 }
 
-document.addEventListener('keydown', e => keys[e.key] = true);
-document.addEventListener('keyup', e => keys[e.key] = false);
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
     mouse.x = e.clientX - rect.left;
     mouse.y = e.clientY - rect.top;
 });
-canvas.addEventListener('mousedown', () => {
+canvas.addEventListener('mousedown', e => {
+    if (e.button === 0) { // Verifica clique com botão esquerdo
+        mouse.down = true;
+        if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
+            shoot();
+        }
+    }
+});
+canvas.addEventListener('mouseup', e => {
+    if (e.button === 0 && player.weapon === 'bow' && mouse.down) {
+        shoot();
+    }
+    mouse.down = false;
+    mouse.charge = 0;
+});
+
+// Suporte a toque para dispositivos móveis
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = touch.clientX - rect.left;
+    mouse.y = touch.clientY - rect.top;
     mouse.down = true;
-    if (player.weapon !== 'bow' && Date.now() - mouse.lastShot > weapons[player.weapon].cooldown) {
+    if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
         shoot();
     }
 });
-canvas.addEventListener('mouseup', () => {
-    if (player.weapon === 'bow') {
+canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    if (player.weapon === 'bow' && mouse.down) {
         shoot();
     }
     mouse.down = false;
@@ -301,11 +335,15 @@ canvas.addEventListener('mouseup', () => {
 });
 
 function shoot() {
+    if (Date.now() - mouse.lastShot < (weapons[player.weapon].cooldown || 0)) return; // Evita disparos durante cooldown
     const damage = player.weapon === 'bow' ? Math.ceil(mouse.charge * 2) + 1 : weapons[player.weapon].damage;
+    const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
     projectiles.push({
-        x: player.x + 20,
+        x: player.x,
         y: player.y,
         speed: 10,
+        dx: Math.cos(angle) * 10,
+        dy: Math.sin(angle) * 10,
         damage: damage
     });
     mouse.lastShot = Date.now();
