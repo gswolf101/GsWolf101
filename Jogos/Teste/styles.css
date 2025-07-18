@@ -15,6 +15,7 @@ body {
 
 #gameCanvas {
     border: 2px solid white;
+    background-color: #333;
 }
 
 #stats {
@@ -33,6 +34,7 @@ body {
     background: rgba(0, 0, 0, 0.9);
     padding: 20px;
     border: 2px solid white;
+    z-index: 10;
 }
 
 .button-container {
@@ -46,10 +48,15 @@ button {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
-    width: 150px; /* Largura fixa para alinhamento */
+    width: 150px;
 }
 
 #reset-button {
     background-color: red;
     color: white;
+}
+
+#upgrade-options button {
+    width: 200px;
+    margin: 5px;
 }
