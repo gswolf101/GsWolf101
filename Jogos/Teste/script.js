@@ -1,13 +1,18 @@
-// Garantir que o canvas esteja disponível antes de executar o código
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM carregado');
     const canvas = document.getElementById('gameCanvas');
     if (!canvas) {
-        console.error('Canvas não encontrado!');
+        console.error('Canvas não encontrado! Verifique o ID "gameCanvas" no HTML.');
         return;
     }
     const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('Contexto 2D do canvas não pôde ser obtido!');
+        return;
+    }
     canvas.width = 800;
     canvas.height = 600;
+    console.log('Canvas encontrado, configurando contexto');
 
     let gameState = 'start';
     let player = {
@@ -30,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let bosses = [];
     let keys = {};
     let mouse = { x: canvas.width / 2, y: canvas.height / 2, down: false, charge: 0, lastShot: 0 };
-    let gameLoop;
+    let gameLoop = null;
     let lastTime = 0;
     let bossActive = false;
     let ranking = JSON.parse(localStorage.getItem('ranking')) || [];
@@ -54,8 +59,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startGame() {
         console.log('startGame chamado');
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'block';
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        if (!startScreen || !gameScreen) {
+            console.error('Elementos start-screen ou game-screen não encontrados!');
+            return;
+        }
+        startScreen.style.display = 'none';
+        gameScreen.style.display = 'block';
         gameState = 'playing';
         lastTime = performance.now();
         enemies = [];
@@ -64,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bossActive = false;
         setupEventListeners();
         console.log('Iniciando game loop');
+        if (gameLoop) cancelAnimationFrame(gameLoop); // Cancelar qualquer loop anterior
         gameLoop = requestAnimationFrame(update);
         spawnEnemy();
     }
@@ -90,11 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleMouseMove(e) {
         const rect = canvas.getBoundingClientRect();
         mouse.x = e.clientX - rect.left;
-        mouse.y = e.clientY - rect.top;
+        mouse.y = e.clientY - rect.top sessao
     }
 
     function handleMouseDown(e) {
         if (e.button === 0) {
+            console.log('Mouse down detectado');
             mouse.down = true;
             if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
                 shoot();
@@ -104,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleMouseUp(e) {
         if (e.button === 0 && player.weapon === 'bow' && mouse.down) {
+            console.log('Mouse up detectado, atirando com arco');
             shoot();
         }
         mouse.down = false;
@@ -118,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mouse.y = touch.clientY - rect.top;
         mouse.down = true;
         if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
+            console.log('Toque detectado, atirando');
             shoot();
         }
     }
@@ -125,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleTouchEnd(e) {
         e.preventDefault();
         if (player.weapon === 'bow' && mouse.down) {
+            console.log('Fim do toque, atirando com arco');
             shoot();
         }
         mouse.down = false;
@@ -140,21 +156,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showShop() {
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('shop-screen').style.display = 'block';
+        const startScreen = document.getElementById('start-screen');
+        const shopScreen = document.getElementById('shop-screen');
+        if (!startScreen || !shopScreen) {
+            console.error('Elementos start-screen ou shop-screen não encontrados!');
+            return;
+        }
+        startScreen.style.display = 'none';
+        shopScreen.style.display = 'block';
         updateShop();
     }
 
     function showRanking() {
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('ranking-screen').style.display = 'block';
+        const startScreen = document.getElementById('start-screen');
+        const rankingScreen = document.getElementById('ranking-screen');
+        if (!startScreen weirdo !rankingScreen) {
+            console.error('Elementos start-screen ou ranking-screen não encontrados!');
+            return;
+        }
+        startScreen.style.display = 'none';
+        rankingScreen.style.display = 'block';
         updateRanking();
     }
 
     function backToStart() {
-        document.getElementById('shop-screen').style.display = 'none';
-        document.getElementById('ranking-screen').style.display = 'none';
-        document.getElementById('start-screen').style.display = 'block';
+        const shopScreen = document.getElementById('shop-screen');
+        const rankingScreen = document.getElementById('ranking-screen');
+        const startScreen = document.getElementById('start-screen');
+        if (!shopScreen || !rankingScreen || !startScreen) {
+            console.error('Elementos shop-screen, ranking-screen ou start-screen não encontrados!');
+            return;
+        }
+        shopScreen.style.display = 'none';
+        rankingScreen.style.display = 'none';
+        startScreen.style.display = 'block';
     }
 
     function resetGame() {
@@ -205,12 +240,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateShop() {
-        document.getElementById('health-cost').textContent = Math.round(10 * Math.pow(1.1, player.healthUpgrade));
-        document.getElementById('coin-cost').textContent = Math.round(10 * Math.pow(1.25, player.coinMultiplier - 1));
+        const healthCost = document.getElementById('health-cost');
+        const coinCost = document.getElementById('coin-cost');
+        if (!healthCost || !coinCost) {
+            console.error('Elementos health-cost ou coin-cost não encontrados!');
+            return;
+        }
+        healthCost.textContent = Math.round(10 * Math.pow(1.1, player.healthUpgrade));
+        coinCost.textContent = Math.round(10 * Math.pow(1.25, player.coinMultiplier - 1));
     }
 
     function updateRanking() {
         const rankingList = document.getElementById('ranking-list');
+        if (!rankingList) {
+            console.error('Elemento ranking-list não encontrado!');
+            return;
+        }
         rankingList.innerHTML = '';
         ranking.sort((a, b) => b.score - a.score).slice(0, 10).forEach(entry => {
             const li = document.createElement('li');
@@ -240,13 +285,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Atualizar barras de status
-        document.getElementById('health').textContent = Math.round(player.health);
-        document.getElementById('xp').textContent = player.xp;
-        document.getElementById('xp-needed').textContent = player.xpNeeded;
-        document.getElementById('coins').textContent = player.coins;
-        document.getElementById('score').textContent = player.score;
-
+        const health = document.getElementById('health');
+        const xp = document.getElementById('xp');
+        const xpNeeded = document.getElementById('xp-needed');
+        const coins = document.getElementById('coins');
+        const score = document.getElementById('score');
         const cooldownBar = document.getElementById('cooldown-bar');
+        if (!health || !xp || !xpNeeded || !coins || !score || !cooldownBar) {
+            console.error('Um ou mais elementos de status não encontrados!');
+            return;
+        }
+        health.textContent = Math.round(player.health);
+        xp.textContent = player.xp;
+        xpNeeded.textContent = player.xpNeeded;
+        coins.textContent = player.coins;
+        score.textContent = player.score;
+
         const cooldownProgress = (time - mouse.lastShot) / (weapons[player.weapon].cooldown || 1000);
         cooldownBar.style.backgroundColor = cooldownProgress > 0.75 ? 'red' : cooldownProgress > 0.5 ? 'yellow' : 'green';
         cooldownBar.style.width = `${100 * (1 - cooldownProgress)}px`;
@@ -336,18 +390,28 @@ document.addEventListener('DOMContentLoaded', () => {
         player.level++;
         player.xp = 0;
         player.xpNeeded *= 1.2;
+        console.log('Subiu de nível, chamando showUpgrades');
         showUpgrades();
     }
 
     function showUpgrades() {
         console.log('Exibindo upgrades');
         gameState = 'upgrade';
-        document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('upgrade-screen').style.display = 'block';
+        const gameScreen = document.getElementById('game-screen');
+        const upgradeScreen = document.getElementById('upgrade-screen');
+        if (!gameScreen || !upgradeScreen) {
+            console.error('Elementos game-screen ou upgrade-screen não encontrados!');
+            return;
+        }
+        gameScreen.style.display = 'none';
+        upgradeScreen.style.display = 'block';
         const options = document.getElementById('upgrade-options');
+        if (!options) {
+            console.error('Elemento upgrade-options não encontrado!');
+            return;
+        }
         options.innerHTML = '';
 
-        // Selecionar 3 upgrades aleatórios
         const availableUpgrades = [...upgrades];
         for (let i = 0; i < 3; i++) {
             if (availableUpgrades.length === 0) break;
@@ -358,8 +422,8 @@ document.addEventListener('DOMContentLoaded', () => {
             button.onclick = () => {
                 console.log(`Upgrade selecionado: ${upgrade.name}`);
                 upgrade.effect();
-                document.getElementById('upgrade-screen').style.display = 'none';
-                document.getElementById('game-screen').style.display = 'block';
+                upgradeScreen.style.display = 'none';
+                gameScreen.style.display = 'block';
                 gameState = 'playing';
                 gameLoop = requestAnimationFrame(update);
             };
@@ -369,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function gameOver() {
         console.log('Game over');
-        cancelAnimationFrame(gameLoop);
+        if (gameLoop) cancelAnimationFrame(gameLoop);
         ranking.push({ score: player.score });
         localStorage.setItem('ranking', JSON.stringify(ranking));
         player.health = player.maxHealth;
@@ -379,8 +443,14 @@ document.addEventListener('DOMContentLoaded', () => {
         projectiles = [];
         bosses = [];
         bossActive = false;
-        document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('start-screen').style.display = 'block';
+        const gameScreen = document.getElementById('game-screen');
+        const startScreen = document.getElementById('start-screen');
+        if (!gameScreen || !startScreen) {
+            console.error('Elementos game-screen ou start-screen não encontrados!');
+            return;
+        }
+        gameScreen.style.display = 'none';
+        startScreen.style.display = 'block';
         gameState = 'start';
     }
 
