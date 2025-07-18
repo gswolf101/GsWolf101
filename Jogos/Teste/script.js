@@ -51,8 +51,86 @@ function startGame() {
     document.getElementById('game-screen').style.display = 'block';
     gameState = 'playing';
     lastTime = performance.now();
+    enemies = [];
+    projectiles = [];
+    bosses = [];
+    bossActive = false;
+    // Inicializar eventos (caso não estejam registrados)
+    setupEventListeners();
     gameLoop = requestAnimationFrame(update);
     spawnEnemy();
+}
+
+function setupEventListeners() {
+    // Remover listeners anteriores para evitar duplicatas
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mousedown', handleMouseDown);
+    canvas.removeEventListener('mouseup', handleMouseUp);
+    canvas.removeEventListener('touchstart', handleTouchStart);
+    canvas.removeEventListener('touchend', handleTouchEnd);
+    document.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('keyup', handleKeyUp);
+
+    // Adicionar novos listeners
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('touchstart', handleTouchStart);
+    canvas.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+}
+
+function handleMouseMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+}
+
+function handleMouseDown(e) {
+    if (e.button === 0) {
+        mouse.down = true;
+        if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
+            shoot();
+        }
+    }
+}
+
+function handleMouseUp(e) {
+    if (e.button === 0 && player.weapon === 'bow' && mouse.down) {
+        shoot();
+    }
+    mouse.down = false;
+    mouse.charge = 0;
+}
+
+function handleTouchStart(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = touch.clientX - rect.left;
+    mouse.y = touch.clientY - rect.top;
+    mouse.down = true;
+    if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
+        shoot();
+    }
+}
+
+function handleTouchEnd(e) {
+    e.preventDefault();
+    if (player.weapon === 'bow' && mouse.down) {
+        shoot();
+    }
+    mouse.down = false;
+    mouse.charge = 0;
+}
+
+function handleKeyDown(e) {
+    keys[e.key.toLowerCase()] = true;
+}
+
+function handleKeyUp(e) {
+    keys[e.key.toLowerCase()] = false;
 }
 
 function showShop() {
@@ -153,7 +231,7 @@ function update(time) {
 
     // Atualizar barras de status
     document.getElementById('health').textContent = Math.round(player.health);
-    document.getElementById('xp).textContent = player.xp;
+    document.getElementById('xp').textContent = player.xp;
     document.getElementById('xp-needed').textContent = player.xpNeeded;
     document.getElementById('coins').textContent = player.coins;
     document.getElementById('score').textContent = player.score;
@@ -174,7 +252,6 @@ function update(time) {
 
     // Atualizar e desenhar inimigos
     enemies.forEach(enemy => {
-        // Movimento na direção do jogador
         const dx = player.x - enemy.x;
         const dy = player.y - enemy.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -258,7 +335,7 @@ function showUpgrades() {
     document.getElementById('upgrade-screen').style.display = 'block';
     const options = document.getElementById('upgrade-options');
     options.innerHTML = '';
-    
+
     // Selecionar 3 upgrades aleatórios
     const availableUpgrades = [...upgrades];
     for (let i = 0; i < 3; i++) {
@@ -297,50 +374,6 @@ function gameOver() {
 function saveGame() {
     localStorage.setItem('player', JSON.stringify(player));
 }
-
-document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-canvas.addEventListener('mousemove', e => {
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-});
-canvas.addEventListener('mousedown', e => {
-    if (e.button === 0) {
-        mouse.down = true;
-        if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
-            shoot();
-        }
-    }
-});
-canvas.addEventListener('mouseup', e => {
-    if (e.button === 0 && player.weapon === 'bow' && mouse.down) {
-        shoot();
-    }
-    mouse.down = false;
-    mouse.charge = 0;
-});
-
-// Suporte a toque para dispositivos móveis
-canvas.addEventListener('touchstart', e => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = touch.clientX - rect.left;
-    mouse.y = touch.clientY - rect.top;
-    mouse.down = true;
-    if (player.weapon !== 'bow' && Date.now() - mouse.lastShot >= (weapons[player.weapon].cooldown || 1000)) {
-        shoot();
-    }
-});
-canvas.addEventListener('touchend', e => {
-    e.preventDefault();
-    if (player.weapon === 'bow' && mouse.down) {
-        shoot();
-    }
-    mouse.down = false;
-    mouse.charge = 0;
-});
 
 function shoot() {
     if (Date.now() - mouse.lastShot < (weapons[player.weapon].cooldown || 0)) return;
