@@ -96,11 +96,11 @@
             x: 100,
             y: 100,
             radius: 20,
-            speed: 3, // Velocidade inicial aumentada de 2 para 3
+            speed: 3,
             speedIncrease: 0.0005,
-            vx: 0, // Velocidade no eixo x para deslizamento
-            vy: 0, // Velocidade no eixo y para deslizamento
-            friction: 0.95 // Fricção para suavizar o deslizamento
+            vx: 0,
+            vy: 0,
+            friction: 0.95
         };
         const coins = [];
         const coinRadius = 10;
@@ -108,14 +108,15 @@
         let score = 0;
         let lastCoinSpawn = 0;
         let gameState = 'start'; // 'start', 'playing', 'gameover'
-        let rankings = JSON.parse(localStorage.getItem('rankings')) || [];
+        // Usar uma chave específica para este jogo no localStorage
+        let rankings = JSON.parse(localStorage.getItem('survivalGameRankings')) || [];
 
         // Atualizar ranking
         function updateRanking(name, score) {
             rankings.push({ name: name || 'Anônimo', score });
-            rankings.sort((a, b) => b.score - a.score); // Ordenar do maior para o menor
+            rankings.sort((a, b) => b.score - a.score);
             rankings = rankings.slice(0, 5); // Manter apenas os 5 melhores
-            localStorage.setItem('rankings', JSON.stringify(rankings));
+            localStorage.setItem('survivalGameRankings', JSON.stringify(rankings));
             displayRanking();
         }
 
@@ -167,7 +168,7 @@
             const name = playerNameInput.value.trim();
             updateRanking(name, score);
             playerNameInput.value = '';
-            submitScoreButton.disabled = true; // Desativar após registrar
+            submitScoreButton.disabled = true;
         });
 
         // Reiniciar jogo
@@ -179,7 +180,7 @@
             score = 0;
             scoreDisplay.textContent = `Pontuação: ${score}`;
             resetGame();
-            submitScoreButton.disabled = false; // Reativar botão de registrar
+            submitScoreButton.disabled = false;
         });
 
         // Resetar estado do jogo
@@ -207,11 +208,11 @@
             const dy = player.y - enemy.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance > 0) {
-                const ax = (dx / distance) * enemy.speed; // Aceleração
+                const ax = (dx / distance) * enemy.speed;
                 const ay = (dy / distance) * enemy.speed;
-                enemy.vx += ax * 0.1; // Suavizar com inércia
+                enemy.vx += ax * 0.1;
                 enemy.vy += ay * 0.1;
-                enemy.vx *= enemy.friction; // Aplicar fricção
+                enemy.vx *= enemy.friction;
                 enemy.vy *= enemy.friction;
                 enemy.x += enemy.vx;
                 enemy.y += enemy.vy;
