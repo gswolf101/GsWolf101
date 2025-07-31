@@ -53,6 +53,15 @@
             font-size: 16px;
             margin-top: 10px;
         }
+        #pauseMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: #fff;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -63,6 +72,7 @@
     </div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <div id="scoreDisplay">Pontuação: 0</div>
+    <div id="pauseMessage">Jogo Pausado</div>
     <div id="gameOverScreen">
         <h1>Game Over</h1>
         <h3>Sua Pontuação: <span id="finalScore"></span></h3>
@@ -77,6 +87,7 @@
         const scoreDisplay = document.getElementById('scoreDisplay');
         const startScreen = document.getElementById('startScreen');
         const gameOverScreen = document.getElementById('gameOverScreen');
+        const pauseMessage = document.getElementById('pauseMessage');
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
         const submitScoreButton = document.getElementById('submitScoreButton');
@@ -97,7 +108,8 @@
             y: 100,
             radius: 20,
             speed: 3,
-            speedIncrease: 0.0005,
+            speedIncrease: 0.001,
+            maxSpeed: 6,
             vx: 0,
             vy: 0,
             friction: 0.95
@@ -107,15 +119,15 @@
         const coinSpawnInterval = 2000;
         let score = 0;
         let lastCoinSpawn = 0;
-        let gameState = 'start'; // 'start', 'playing', 'gameover'
-        // Usar uma chave específica para este jogo no localStorage
+        let gameState = 'start'; // 'start', 'playing', 'paused', 'gameover'
         let rankings = JSON.parse(localStorage.getItem('survivalGameRankings')) || [];
+        let isCursorInCanvas = true; // Estado do cursor
 
         // Atualizar ranking
         function updateRanking(name, score) {
             rankings.push({ name: name || 'Anônimo', score });
             rankings.sort((a, b) => b.score - a.score);
-            rankings = rankings.slice(0, 5); // Manter apenas os 5 melhores
+            rankings = rankings.slice(0, 5);
             localStorage.setItem('survivalGameRankings', JSON.stringify(rankings));
             displayRanking();
         }
@@ -133,6 +145,20 @@
             player.y = e.clientY - rect.top + player.offsetY;
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+            if (gameState === 'paused' && isCursorInCanvas) {
+                gameState = 'playing';
+                pauseMessage.style.display = 'none';
+            }
+            isCursorInCanvas = true;
+        });
+
+        // Detectar quando o cursor sai do canvas
+        canvas.addEventListener('mouseleave', () => {
+            if (gameState === 'playing') {
+                gameState = 'paused';
+                pauseMessage.style.display = 'block';
+                isCursorInCanvas = false;
+            }
         });
 
         // Função para gerar moeda
@@ -194,6 +220,8 @@
             enemy.speed = 3;
             coins.length = 0;
             lastCoinSpawn = 0;
+            isCursorInCanvas = true;
+            pauseMessage.style.display = 'none';
         }
 
         // Loop principal do jogo
@@ -217,7 +245,7 @@
                 enemy.x += enemy.vx;
                 enemy.y += enemy.vy;
             }
-            enemy.speed += enemy.speedIncrease;
+            enemy.speed = Math.min(enemy.speed + enemy.speedIncrease, enemy.maxSpeed);
 
             // Geração de moedas
             if (timestamp - lastCoinSpawn > coinSpawnInterval) {
@@ -240,6 +268,7 @@
                 scoreDisplay.style.display = 'none';
                 gameOverScreen.classList.add('active');
                 finalScoreDisplay.textContent = score;
+                pauseMessage.style.display = 'none';
             }
 
             // Desenhar no canvas
