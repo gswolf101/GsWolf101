@@ -101,7 +101,6 @@
             x: 400,
             y: 300,
             radius: 20
-            // offsetY removido para centralizar o jogador no cursor
         };
         const enemy = {
             x: 100,
@@ -109,10 +108,10 @@
             radius: 20,
             speed: 3,
             speedIncrease: 0.001,
-            maxSpeed: 6,
+            maxSpeed: 9, // Aumentado em 50% (de 6 para 9)
             vx: 0,
             vy: 0,
-            friction: 0.95
+            friction: 0.98 // Aumentado de 0.95 para 0.98 para mais deslize
         };
         const coins = [];
         const coinRadius = 10;
@@ -142,7 +141,7 @@
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             player.x = e.clientX - rect.left;
-            player.y = e.clientY - rect.top; // Cursor no centro do jogador
+            player.y = e.clientY - rect.top;
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
             if (gameState === 'paused' && isCursorInCanvas) {
@@ -246,6 +245,22 @@
                 enemy.y += enemy.vy;
             }
             enemy.speed = Math.min(enemy.speed + enemy.speedIncrease, enemy.maxSpeed);
+
+            // Ricochete nas bordas
+            if (enemy.x - enemy.radius < 0) {
+                enemy.x = enemy.radius;
+                enemy.vx = -enemy.vx; // Inverter velocidade horizontal
+            } else if (enemy.x + enemy.radius > canvas.width) {
+                enemy.x = canvas.width - enemy.radius;
+                enemy.vx = -enemy.vx;
+            }
+            if (enemy.y - enemy.radius < 0) {
+                enemy.y = enemy.radius;
+                enemy.vy = -enemy.vy; // Inverter velocidade vertical
+            } else if (enemy.y + enemy.radius > canvas.height) {
+                enemy.y = canvas.height - enemy.radius;
+                enemy.vy = -enemy.vy;
+            }
 
             // Geração de moedas
             if (timestamp - lastCoinSpawn > coinSpawnInterval) {
