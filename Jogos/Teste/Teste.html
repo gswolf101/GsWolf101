@@ -11,82 +11,128 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background-color: #000;
             flex-direction: column;
+            font-family: Arial, sans-serif;
+            color: #fff;
         }
         #gameCanvas {
-            border: 2px solid #333;
-            background-color: #fff;
+            border: 2px solid #fff;
+            background-color: #000;
+            display: none;
         }
-        #score {
-            font-family: Arial, sans-serif;
+        #startScreen, #gameOverScreen {
+            text-align: center;
+            display: none;
+        }
+        #startScreen.active, #gameOverScreen.active {
+            display: block;
+        }
+        #scoreDisplay {
             font-size: 24px;
             margin-top: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #ccc;
+        }
+        #ranking {
+            margin-top: 20px;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
+    <div id="startScreen" class="active">
+        <h1>Jogo de Sobrevivência</h1>
+        <button id="startButton">Iniciar</button>
+        <div id="startRanking" class="ranking"></div>
+    </div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="score">Pontuação: 0</div>
+    <div id="scoreDisplay">Pontuação: 0</div>
+    <div id="gameOverScreen">
+        <h1>Game Over</h1>
+        <h3>Sua Pontuação: <span id="finalScore"></span></h3>
+        <button id="restartButton">Jogar Novamente</button>
+        <div id="gameOverRanking" class="ranking"></div>
+    </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('score');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const startRanking = document.getElementById('startRanking');
+        const gameOverRanking = document.getElementById('gameOverRanking');
 
-        // Configurações do jogador
+        // Configurações do jogo
         const player = {
             x: 400,
             y: 300,
             radius: 20,
-            speed: 5
+            offsetY: 50 // Jogador fica abaixo do cursor
         };
-
-        // Configurações da bola inimiga
         const enemy = {
             x: 100,
             y: 100,
             radius: 20,
             speed: 2,
-            speedIncrease: 0.0005 // Incremento de velocidade por frame
+            speedIncrease: 0.0005
         };
-
-        // Configurações das moedas
         const coins = [];
         const coinRadius = 10;
-        const coinSpawnInterval = 2000; // 2 segundos
+        const coinSpawnInterval = 2000;
         let score = 0;
         let lastCoinSpawn = 0;
+        let gameState = 'start'; // 'start', 'playing', 'gameover'
+        let rankings = JSON.parse(localStorage.getItem('rankings')) || [];
 
-        // Controles do jogador
-        const keys = {
-            ArrowUp: false,
-            ArrowDown: false,
-            ArrowLeft: false,
-            ArrowRight: false
-        };
-
-        // Event listeners para teclas
-        document.addEventListener('keydown', (e) => {
-            if (e.key in keys) {
-                keys[e.key] = true;
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key in keys) {
-                keys[e.key] = false;
-            }
-        });
-
-        // Função para gerar uma moeda em posição aleatória
-        function spawnCoin() {
-            if (coins.length >= 2) return; // Limite de 2 moedas
-            const x = Math.random() * (canvas.width - 2 * coinRadius) + coinRadius;
-            const y = Math.random() * (canvas.heightция - 2 * coinRadius) + coinRadius;
-            coins.push({ x, y, radius: coinRadius });
+        // Atualizar ranking
+        function updateRanking(score) {
+            rankings.push(score);
+            rankings.sort((a, b) => b - a); // Ordenar do maior para o menor
+            rankings = rankings.slice(0, 5); // Manter apenas os 5 melhores
+            localStorage.setItem('rankings', JSON.stringify(rankings));
+            displayRanking();
         }
 
-        // Função para verificar colisão entre dois círculos
+        // Exibir ranking
+        function displayRanking() {
+            startRanking.innerHTML = '<h3>Ranking</h3><ol>' + rankings.map(s => `<li>${s}</li>`).join('') + '</ol>';
+            gameOverRanking.innerHTML = startRanking.innerHTML;
+        }
+
+        // Movimento do jogador com o cursor
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            player.x = e.clientX - rect.left;
+            player.y = e.clientY - rect.top + player.offsetY;
+            // Garantir que o jogador fique dentro do canvas
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+        });
+
+        // Função para gerar moeda
+        function spawnCoin(timestamp) {
+            if (coins.length >= 2) return;
+            const x = Math.random() * (canvas.width - 2 * coinRadius) + coinRadius;
+            const y = Math.random() * (canvas.height - 2 * coinRadius) + coinRadius;
+            coins.push({ x, y, radius: coinRadius });
+            lastCoinSpawn = timestamp;
+        }
+
+        // Função de colisão
         function checkCollision(x1, y1, r1, x2, y2, r2) {
             const dx = x1 - x2;
             const dy = y1 - y2;
@@ -94,15 +140,48 @@
             return distance < r1 + r2;
         }
 
-        // Função principal do jogo
-        function gameLoop(timestamp) {
-            // Movimento do jogador
-            if (keys.ArrowUp && player.y - player.radius > 0) player.y -= player.speed;
-            if (keys.ArrowDown && player.y + player.radius < canvas.height) player.y += player.speed;
-            if (keys.ArrowLeft && player.x - player.radius > 0) player.x -= player.speed;
-            if (keys.ArrowRight && player.x + player.radius < canvas.width) player.x += player.speed;
+        // Iniciar jogo
+        startButton.addEventListener('click', () => {
+            gameState = 'playing';
+            startScreen.classList.remove('active');
+            canvas.style.display = 'block';
+            scoreDisplay.style.display = 'block';
+            score = 0;
+            scoreDisplay.textContent = `Pontuação: ${score}`;
+            player.x = 400;
+            player.y = 300;
+            enemy.x = 100;
+            enemy.y = 100;
+            enemy.speed = 2;
+            coins.length = 0;
+            lastCoinSpawn = 0;
+        });
 
-            // Movimento da bola inimiga (persegue o jogador)
+        // Reiniciar jogo
+        restartButton.addEventListener('click', () => {
+            gameState = 'playing';
+            gameOverScreen.classList.remove('active');
+            canvas.style.display = 'block';
+            scoreDisplay.style.display = 'block';
+            score = 0;
+            scoreDisplay.textContent = `Pontuação: ${score}`;
+            player.x = 400;
+            player.y = 300;
+            enemy.x = 100;
+            enemy.y = 100;
+            enemy.speed = 2;
+            coins.length = 0;
+            lastCoinSpawn = 0;
+        });
+
+        // Loop principal do jogo
+        function gameLoop(timestamp) {
+            if (gameState !== 'playing') {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            // Movimento do inimigo
             const dx = player.x - enemy.x;
             const dy = player.y - enemy.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -110,35 +189,30 @@
                 enemy.x += (dx / distance) * enemy.speed;
                 enemy.y += (dy / distance) * enemy.speed;
             }
-            enemy.speed += enemy.speedIncrease; // Aumenta a velocidade gradualmente
+            enemy.speed += enemy.speedIncrease;
 
             // Geração de moedas
             if (timestamp - lastCoinSpawn > coinSpawnInterval) {
-                spawnCoin();
-                lastCoinSpawn = timestamp;
+                spawnCoin(timestamp);
             }
 
             // Verificar colisão com moedas
             for (let i = coins.length - 1; i >= 0; i--) {
                 if (checkCollision(player.x, player.y, player.radius, coins[i].x, coins[i].y, coins[i].radius)) {
-                    coins.splice(i, 1); // Remove a moeda coletada
-                    score += 1; // Incrementa a pontuação
+                    coins.splice(i, 1);
+                    score += 1;
                     scoreDisplay.textContent = `Pontuação: ${score}`;
                 }
             }
 
-            // Verificar colisão com inimigo (game over)
+            // Verificar colisão com inimigo
             if (checkCollision(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.radius)) {
-                alert(`Game Over! Sua pontuação: ${score}`);
-                // Reiniciar o jogo
-                player.x = 400;
-                player.y = 300;
-                enemy.x = 100;
-                enemy.y = 100;
-                enemy.speed = 2;
-                score = 0;
-                coins.length = 0;
-                scoreDisplay.textContent = `Pontuação: ${score}`;
+                gameState = 'gameover';
+                canvas.style.display = 'none';
+                scoreDisplay.style.display = 'none';
+                gameOverScreen.classList.add('active');
+                finalScoreDisplay.textContent = score;
+                updateRanking(score);
             }
 
             // Desenhar no canvas
@@ -147,7 +221,7 @@
             // Desenhar jogador
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'blue';
+            ctx.fillStyle = '#fff';
             ctx.fill();
             ctx.closePath();
 
@@ -170,7 +244,8 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Iniciar o jogo
+        // Inicializar ranking e loop
+        displayRanking();
         requestAnimationFrame(gameLoop);
     </script>
 </body>
