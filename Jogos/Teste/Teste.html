@@ -100,8 +100,8 @@
         const player = {
             x: 400,
             y: 300,
-            radius: 20,
-            offsetY: 50 // Jogador fica abaixo do cursor
+            radius: 20
+            // offsetY removido para centralizar o jogador no cursor
         };
         const enemy = {
             x: 100,
@@ -121,7 +121,7 @@
         let lastCoinSpawn = 0;
         let gameState = 'start'; // 'start', 'playing', 'paused', 'gameover'
         let rankings = JSON.parse(localStorage.getItem('survivalGameRankings')) || [];
-        let isCursorInCanvas = true; // Estado do cursor
+        let isCursorInCanvas = true;
 
         // Atualizar ranking
         function updateRanking(name, score) {
@@ -142,7 +142,7 @@
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             player.x = e.clientX - rect.left;
-            player.y = e.clientY - rect.top + player.offsetY;
+            player.y = e.clientY - rect.top; // Cursor no centro do jogador
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
             if (gameState === 'paused' && isCursorInCanvas) {
