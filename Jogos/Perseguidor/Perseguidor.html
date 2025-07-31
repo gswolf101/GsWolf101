@@ -24,6 +24,8 @@
         #startScreen, #gameOverScreen {
             text-align: center;
             display: none;
+            position: relative; /* Para posicionar o botão Voltar */
+            width: 800px; /* Alinhar com o tamanho do canvas */
         }
         #startScreen.active, #gameOverScreen.active {
             display: block;
@@ -43,6 +45,13 @@
         }
         button:hover {
             background-color: #ccc;
+        }
+        #backButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 16px;
+            padding: 8px 16px;
         }
         #ranking {
             margin-top: 20px;
@@ -66,6 +75,7 @@
 </head>
 <body>
     <div id="startScreen" class="active">
+        <button id="backButton">Voltar</button>
         <h1>Jogo de Sobrevivência</h1>
         <button id="startButton">Iniciar</button>
         <div id="startRanking" class="ranking"></div>
@@ -74,6 +84,7 @@
     <div id="scoreDisplay">Pontuação: 0</div>
     <div id="pauseMessage">Jogo Pausado</div>
     <div id="gameOverScreen">
+        <button id="backButtonGameOver">Voltar</button>
         <h1>Game Over</h1>
         <h3>Sua Pontuação: <span id="finalScore"></span></h3>
         <input id="playerName" type="text" placeholder="Digite seu nome" maxlength="10">
@@ -91,6 +102,8 @@
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
         const submitScoreButton = document.getElementById('submitScoreButton');
+        const backButton = document.getElementById('backButton');
+        const backButtonGameOver = document.getElementById('backButtonGameOver');
         const playerNameInput = document.getElementById('playerName');
         const finalScoreDisplay = document.getElementById('finalScore');
         const startRanking = document.getElementById('startRanking');
@@ -106,9 +119,9 @@
             x: 100,
             y: 100,
             radius: 20,
-            speed: 7, // Velocidade inicial aumentada para 7
-            speedIncrease: 0.0005, // Reduzido para retardar a progressão
-            maxSpeed: 12, // Limite máximo aumentado para 12
+            speed: 7,
+            speedIncrease: 0.0005,
+            maxSpeed: 12,
             vx: 0,
             vy: 0,
             friction: 0.98
@@ -158,6 +171,14 @@
                 pauseMessage.style.display = 'block';
                 isCursorInCanvas = false;
             }
+        });
+
+        // Botão Voltar
+        backButton.addEventListener('click', () => {
+            window.location.href = '../CentralJogos.html';
+        });
+        backButtonGameOver.addEventListener('click', () => {
+            window.location.href = '../CentralJogos.html';
         });
 
         // Função para gerar moeda
@@ -216,7 +237,7 @@
             enemy.y = 100;
             enemy.vx = 0;
             enemy.vy = 0;
-            enemy.speed = 7; // Resetar para a nova velocidade inicial
+            enemy.speed = 7;
             coins.length = 0;
             lastCoinSpawn = 0;
             isCursorInCanvas = true;
@@ -251,7 +272,7 @@
                 enemy.x = enemy.radius;
                 enemy.vx = -enemy.vx;
             } else if (enemy.x + enemy.radius > canvas.width) {
-                enemy.x = canvas.width - enemy.radius;
+                enemy.x = canvas.width - player.radius;
                 enemy.vx = -enemy.vx;
             }
             if (enemy.y - enemy.radius < 0) {
