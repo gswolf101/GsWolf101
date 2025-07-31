@@ -3,55 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo de Tiro com Arco</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Jogo de Sobrevivência</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            flex-direction: column;
+        }
+        #gameCanvas {
+            border: 2px solid #333;
+            background-color: #fff;
+        }
+        #score {
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <div id="start-screen">
-        <h1>Jogo de Tiro com Arco</h1>
-        <div class="button-container">
-            <button onclick="startGame()">Começar</button>
-            <button onclick="showShop()">Loja</button>
-            <button onclick="showRanking()">Ranking</button>
-            <button id="reset-button" onclick="resetGame()">Resetar Jogo</button>
-        </div>
-    </div>
-    <div id="shop-screen" style="display: none;">
-        <h2>Loja</h2>
-        <div id="upgrades">
-            <button onclick="buyUpgrade('health')">Melhorar Vida (Custo: <span id="health-cost">10</span>)</button>
-            <button onclick="buyUpgrade('coin')">Melhorar Moedas (Custo: <span id="coin-cost">10</span>)</button>
-        </div>
-        <div id="weapons">
-            <h3>Armas</h3>
-            <button onclick="buyWeapon('crossbow')">Crossbow (Custo: 50)</button>
-            <button onclick="buyWeapon('oldPistol')">Pistola Velha (Custo: 100)</button>
-            <button onclick="buyWeapon('pistol')">Pistola (Custo: 150)</button>
-            <button onclick="buyWeapon('oldRifle')">Rifle Antigo (Custo: 200)</button>
-            <button onclick="buyWeapon('rifle')">Rifle (Custo: 250)</button>
-        </div>
-        <button onclick="backToStart()">Voltar</button>
-    </div>
-    <div id="ranking-screen" style="display: none;">
-        <h2>Ranking</h2>
-        <ul id="ranking-list"></ul>
-        <button onclick="backToStart()">Voltar</button>
-    </div>
-    <div id="game-screen" style="display: none;">
-        <canvas id="gameCanvas"></canvas>
-        <div id="stats">
-            <div>Vida: <span id="health">100</span></div>
-            <div>Experiência: <span id="xp">0</span>/<span id="xp-needed">10</span></div>
-            <div>Moedas: <span id="coins">0</span></div>
-            <div>Pontos: <span id="score">0</span></div>
-            <div id="cooldown-bar" style="background-color: red; width: 100px; height: 10px;"></div>
-        </div>
-        <div id="upgrade-screen" style="display: none;">
-            <h2>Escolha um Upgrade</h2>
-            <div id="upgrade-options"></div>
-        </div>
-    </div>
-    <script src="script.js"></script>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="score">Pontuação: 0</div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+
+        // Configurações do jogador
+        const player = {
+            x: 400,
+            y: 300,
+            radius: 20,
+            speed: 5
+        };
+
+        // Configurações da bola inimiga
+        const enemy = {
+            x: 100,
+            y: 100,
+            radius: 20,
+            speed: 2,
+            speedIncrease: 0.0005 // Incremento de velocidade por frame
+        };
+
+        // Configurações das moedas
+        const coins = [];
+        const coinRadius = 10;
+        const coinSpawnInterval = 2000; // 2 segundos
+        let score = 0;
+        let lastCoinSpawn = 0;
+
+        // Controles do jogador
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+
+        // Event listeners para teclas
+        document.addEventListener('keydown', (e) => {
+            if (e.key in keys) {
+                keys[e.key] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key in keys) {
+                keys[e.key] = false;
+            }
+        });
+
+        // Função para gerar uma moeda em posição aleatória
+        function spawnCoin() {
+            if (coins.length >= 2) return; // Limite de 2 moedas
+            const x = Math.random() * (canvas.width - 2 * coinRadius) + coinRadius;
+            const y = Math.random() * (canvas.heightция - 2 * coinRadius) + coinRadius;
+            coins.push({ x, y, radius: coinRadius });
+        }
+
+        // Função para verificar colisão entre dois círculos
+        function checkCollision(x1, y1, r1, x2, y2, r2) {
+            const dx = x1 - x2;
+            const dy = y1 - y2;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            return distance < r1 + r2;
+        }
+
+        // Função principal do jogo
+        function gameLoop(timestamp) {
+            // Movimento do jogador
+            if (keys.ArrowUp && player.y - player.radius > 0) player.y -= player.speed;
+            if (keys.ArrowDown && player.y + player.radius < canvas.height) player.y += player.speed;
+            if (keys.ArrowLeft && player.x - player.radius > 0) player.x -= player.speed;
+            if (keys.ArrowRight && player.x + player.radius < canvas.width) player.x += player.speed;
+
+            // Movimento da bola inimiga (persegue o jogador)
+            const dx = player.x - enemy.x;
+            const dy = player.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > 0) {
+                enemy.x += (dx / distance) * enemy.speed;
+                enemy.y += (dy / distance) * enemy.speed;
+            }
+            enemy.speed += enemy.speedIncrease; // Aumenta a velocidade gradualmente
+
+            // Geração de moedas
+            if (timestamp - lastCoinSpawn > coinSpawnInterval) {
+                spawnCoin();
+                lastCoinSpawn = timestamp;
+            }
+
+            // Verificar colisão com moedas
+            for (let i = coins.length - 1; i >= 0; i--) {
+                if (checkCollision(player.x, player.y, player.radius, coins[i].x, coins[i].y, coins[i].radius)) {
+                    coins.splice(i, 1); // Remove a moeda coletada
+                    score += 1; // Incrementa a pontuação
+                    scoreDisplay.textContent = `Pontuação: ${score}`;
+                }
+            }
+
+            // Verificar colisão com inimigo (game over)
+            if (checkCollision(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.radius)) {
+                alert(`Game Over! Sua pontuação: ${score}`);
+                // Reiniciar o jogo
+                player.x = 400;
+                player.y = 300;
+                enemy.x = 100;
+                enemy.y = 100;
+                enemy.speed = 2;
+                score = 0;
+                coins.length = 0;
+                scoreDisplay.textContent = `Pontuação: ${score}`;
+            }
+
+            // Desenhar no canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar jogador
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            ctx.closePath();
+
+            // Desenhar inimigo
+            ctx.beginPath();
+            ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+            ctx.closePath();
+
+            // Desenhar moedas
+            coins.forEach(coin => {
+                ctx.beginPath();
+                ctx.arc(coin.x, coin.y, coin.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'gold';
+                ctx.fill();
+                ctx.closePath();
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Iniciar o jogo
+        requestAnimationFrame(gameLoop);
+    </script>
 </body>
 </html>
-
