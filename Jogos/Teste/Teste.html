@@ -48,6 +48,11 @@
             margin-top: 20px;
             font-size: 16px;
         }
+        input {
+            padding: 8px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -61,6 +66,8 @@
     <div id="gameOverScreen">
         <h1>Game Over</h1>
         <h3>Sua Pontuação: <span id="finalScore"></span></h3>
+        <input id="playerName" type="text" placeholder="Digite seu nome" maxlength="10">
+        <button id="submitScoreButton">Registrar Pontuação</button>
         <button id="restartButton">Jogar Novamente</button>
         <div id="gameOverRanking" class="ranking"></div>
     </div>
@@ -72,6 +79,8 @@
         const gameOverScreen = document.getElementById('gameOverScreen');
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
+        const submitScoreButton = document.getElementById('submitScoreButton');
+        const playerNameInput = document.getElementById('playerName');
         const finalScoreDisplay = document.getElementById('finalScore');
         const startRanking = document.getElementById('startRanking');
         const gameOverRanking = document.getElementById('gameOverRanking');
@@ -87,8 +96,11 @@
             x: 100,
             y: 100,
             radius: 20,
-            speed: 2,
-            speedIncrease: 0.0005
+            speed: 3, // Velocidade inicial aumentada de 2 para 3
+            speedIncrease: 0.0005,
+            vx: 0, // Velocidade no eixo x para deslizamento
+            vy: 0, // Velocidade no eixo y para deslizamento
+            friction: 0.95 // Fricção para suavizar o deslizamento
         };
         const coins = [];
         const coinRadius = 10;
@@ -99,9 +111,9 @@
         let rankings = JSON.parse(localStorage.getItem('rankings')) || [];
 
         // Atualizar ranking
-        function updateRanking(score) {
-            rankings.push(score);
-            rankings.sort((a, b) => b - a); // Ordenar do maior para o menor
+        function updateRanking(name, score) {
+            rankings.push({ name: name || 'Anônimo', score });
+            rankings.sort((a, b) => b.score - a.score); // Ordenar do maior para o menor
             rankings = rankings.slice(0, 5); // Manter apenas os 5 melhores
             localStorage.setItem('rankings', JSON.stringify(rankings));
             displayRanking();
@@ -109,7 +121,7 @@
 
         // Exibir ranking
         function displayRanking() {
-            startRanking.innerHTML = '<h3>Ranking</h3><ol>' + rankings.map(s => `<li>${s}</li>`).join('') + '</ol>';
+            startRanking.innerHTML = '<h3>Ranking</h3><ol>' + rankings.map(r => `<li>${r.name}: ${r.score}</li>`).join('') + '</ol>';
             gameOverRanking.innerHTML = startRanking.innerHTML;
         }
 
@@ -118,7 +130,6 @@
             const rect = canvas.getBoundingClientRect();
             player.x = e.clientX - rect.left;
             player.y = e.clientY - rect.top + player.offsetY;
-            // Garantir que o jogador fique dentro do canvas
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
         });
@@ -148,13 +159,15 @@
             scoreDisplay.style.display = 'block';
             score = 0;
             scoreDisplay.textContent = `Pontuação: ${score}`;
-            player.x = 400;
-            player.y = 300;
-            enemy.x = 100;
-            enemy.y = 100;
-            enemy.speed = 2;
-            coins.length = 0;
-            lastCoinSpawn = 0;
+            resetGame();
+        });
+
+        // Registrar pontuação
+        submitScoreButton.addEventListener('click', () => {
+            const name = playerNameInput.value.trim();
+            updateRanking(name, score);
+            playerNameInput.value = '';
+            submitScoreButton.disabled = true; // Desativar após registrar
         });
 
         // Reiniciar jogo
@@ -165,14 +178,22 @@
             scoreDisplay.style.display = 'block';
             score = 0;
             scoreDisplay.textContent = `Pontuação: ${score}`;
+            resetGame();
+            submitScoreButton.disabled = false; // Reativar botão de registrar
+        });
+
+        // Resetar estado do jogo
+        function resetGame() {
             player.x = 400;
             player.y = 300;
             enemy.x = 100;
             enemy.y = 100;
-            enemy.speed = 2;
+            enemy.vx = 0;
+            enemy.vy = 0;
+            enemy.speed = 3;
             coins.length = 0;
             lastCoinSpawn = 0;
-        });
+        }
 
         // Loop principal do jogo
         function gameLoop(timestamp) {
@@ -181,13 +202,19 @@
                 return;
             }
 
-            // Movimento do inimigo
+            // Movimento do inimigo com deslizamento
             const dx = player.x - enemy.x;
             const dy = player.y - enemy.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance > 0) {
-                enemy.x += (dx / distance) * enemy.speed;
-                enemy.y += (dy / distance) * enemy.speed;
+                const ax = (dx / distance) * enemy.speed; // Aceleração
+                const ay = (dy / distance) * enemy.speed;
+                enemy.vx += ax * 0.1; // Suavizar com inércia
+                enemy.vy += ay * 0.1;
+                enemy.vx *= enemy.friction; // Aplicar fricção
+                enemy.vy *= enemy.friction;
+                enemy.x += enemy.vx;
+                enemy.y += enemy.vy;
             }
             enemy.speed += enemy.speedIncrease;
 
@@ -212,7 +239,6 @@
                 scoreDisplay.style.display = 'none';
                 gameOverScreen.classList.add('active');
                 finalScoreDisplay.textContent = score;
-                updateRanking(score);
             }
 
             // Desenhar no canvas
