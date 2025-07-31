@@ -106,12 +106,12 @@
             x: 100,
             y: 100,
             radius: 20,
-            speed: 3,
-            speedIncrease: 0.001,
-            maxSpeed: 9, // Aumentado em 50% (de 6 para 9)
+            speed: 7, // Velocidade inicial aumentada para 7
+            speedIncrease: 0.0005, // Reduzido para retardar a progressão
+            maxSpeed: 12, // Limite máximo aumentado para 12
             vx: 0,
             vy: 0,
-            friction: 0.98 // Aumentado de 0.95 para 0.98 para mais deslize
+            friction: 0.98
         };
         const coins = [];
         const coinRadius = 10;
@@ -216,7 +216,7 @@
             enemy.y = 100;
             enemy.vx = 0;
             enemy.vy = 0;
-            enemy.speed = 3;
+            enemy.speed = 7; // Resetar para a nova velocidade inicial
             coins.length = 0;
             lastCoinSpawn = 0;
             isCursorInCanvas = true;
@@ -249,14 +249,14 @@
             // Ricochete nas bordas
             if (enemy.x - enemy.radius < 0) {
                 enemy.x = enemy.radius;
-                enemy.vx = -enemy.vx; // Inverter velocidade horizontal
+                enemy.vx = -enemy.vx;
             } else if (enemy.x + enemy.radius > canvas.width) {
                 enemy.x = canvas.width - enemy.radius;
                 enemy.vx = -enemy.vx;
             }
             if (enemy.y - enemy.radius < 0) {
                 enemy.y = enemy.radius;
-                enemy.vy = -enemy.vy; // Inverter velocidade vertical
+                enemy.vy = -enemy.vy;
             } else if (enemy.y + enemy.radius > canvas.height) {
                 enemy.y = canvas.height - enemy.radius;
                 enemy.vy = -enemy.vy;
