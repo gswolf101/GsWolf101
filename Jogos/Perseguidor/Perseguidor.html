@@ -123,8 +123,9 @@
         let score = 0;
         let lastCoinSpawn = 0;
         let gameState = 'start'; // 'start', 'playing', 'gameover'
-
         let rankings = JSON.parse(localStorage.getItem('survivalGameRankings')) || [];
+        let cursorX = 400; // Armazenar a posição do cursor
+        let cursorY = 300;
 
         // Atualizar ranking
         function updateRanking(name, score) {
@@ -144,10 +145,17 @@
         // Movimento do jogador com o cursor
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
-            player.x = e.clientX - rect.left;
-            player.y = e.clientY - rect.top;
-            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+            cursorX = e.clientX - rect.left;
+            cursorY = e.clientY - rect.top;
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, cursorX));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, cursorY));
+        });
+
+        // Capturar movimento do cursor fora do canvas
+        document.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            cursorX = e.clientX - rect.left;
+            cursorY = e.clientY - rect.top;
         });
 
         // Botão Voltar
@@ -251,6 +259,8 @@
         function resetGame() {
             player.x = 400;
             player.y = 300;
+            cursorX = 400;
+            cursorY = 300;
             enemies.length = 0;
             enemies.push({
                 x: 100,
@@ -281,8 +291,8 @@
 
             // Movimento dos inimigos com deslizamento
             enemies.forEach(enemy => {
-                const dx = player.x - enemy.x;
-                const dy = player.y - enemy.y;
+                const dx = cursorX - enemy.x; // Perseguir o cursor, mesmo fora do canvas
+                const dy = cursorY - enemy.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 if (distance > 0) {
                     const ax = (dx / distance) * enemy.speed;
