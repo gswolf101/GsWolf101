@@ -24,8 +24,8 @@
         #startScreen, #gameOverScreen {
             text-align: center;
             display: none;
-            position: relative; /* Para posicionar o botão Voltar */
-            width: 800px; /* Alinhar com o tamanho do canvas */
+            position: relative;
+            width: 800px;
         }
         #startScreen.active, #gameOverScreen.active {
             display: block;
@@ -46,7 +46,7 @@
         button:hover {
             background-color: #ccc;
         }
-        #backButton {
+        #backButton, #backButtonGameOver {
             position: absolute;
             top: 10px;
             left: 10px;
@@ -62,15 +62,6 @@
             font-size: 16px;
             margin-top: 10px;
         }
-        #pauseMessage {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 32px;
-            color: #fff;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -82,7 +73,6 @@
     </div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <div id="scoreDisplay">Pontuação: 0</div>
-    <div id="pauseMessage">Jogo Pausado</div>
     <div id="gameOverScreen">
         <button id="backButtonGameOver">Voltar</button>
         <h1>Game Over</h1>
@@ -98,7 +88,6 @@
         const scoreDisplay = document.getElementById('scoreDisplay');
         const startScreen = document.getElementById('startScreen');
         const gameOverScreen = document.getElementById('gameOverScreen');
-        const pauseMessage = document.getElementById('pauseMessage');
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
         const submitScoreButton = document.getElementById('submitScoreButton');
@@ -115,25 +104,27 @@
             y: 300,
             radius: 20
         };
-        const enemy = {
-            x: 100,
-            y: 100,
-            radius: 20,
-            speed: 2,
-            speedIncrease: 0.00025,
-            maxSpeed: 12,
-            vx: 0,
-            vy: 0,
-            friction: 0.98
-        };
+        const enemies = [
+            {
+                x: 100,
+                y: 100,
+                radius: 20,
+                speed: 7,
+                speedIncrease: 0.0005,
+                maxSpeed: 12,
+                vx: 0,
+                vy: 0,
+                friction: 0.98
+            }
+        ];
         const coins = [];
         const coinRadius = 10;
         const coinSpawnInterval = 2000;
         let score = 0;
         let lastCoinSpawn = 0;
-        let gameState = 'start'; // 'start', 'playing', 'paused', 'gameover'
+        let gameState = 'start'; // 'start', 'playing', 'gameover'
+
         let rankings = JSON.parse(localStorage.getItem('survivalGameRankings')) || [];
-        let isCursorInCanvas = true;
 
         // Atualizar ranking
         function updateRanking(name, score) {
@@ -157,20 +148,6 @@
             player.y = e.clientY - rect.top;
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-            if (gameState === 'paused' && isCursorInCanvas) {
-                gameState = 'playing';
-                pauseMessage.style.display = 'none';
-            }
-            isCursorInCanvas = true;
-        });
-
-        // Detectar quando o cursor sai do canvas
-        canvas.addEventListener('mouseleave', () => {
-            if (gameState === 'playing') {
-                gameState = 'paused';
-                pauseMessage.style.display = 'block';
-                isCursorInCanvas = false;
-            }
         });
 
         // Botão Voltar
@@ -196,6 +173,47 @@
             const dy = y1 - y2;
             const distance = Math.sqrt(dx * dx + dy * dy);
             return distance < r1 + r2;
+        }
+
+        // Função para ricochete entre inimigos
+        function handleEnemyCollision(enemy1, enemy2) {
+            const dx = enemy1.x - enemy2.x;
+            const dy = enemy1.y - enemy2.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < enemy1.radius + enemy2.radius) {
+                // Inverter velocidades para simular ricochete
+                const tempVx = enemy1.vx;
+                const tempVy = enemy1.vy;
+                enemy1.vx = enemy2.vx;
+                enemy1.vy = enemy2.vy;
+                enemy2.vx = tempVx;
+                enemy2.vy = tempVy;
+
+                // Ajustar posições para evitar sobreposição
+                const overlap = (enemy1.radius + enemy2.radius - distance) / 2;
+                const angle = Math.atan2(dy, dx);
+                enemy1.x += overlap * Math.cos(angle);
+                enemy1.y += overlap * Math.sin(angle);
+                enemy2.x -= overlap * Math.cos(angle);
+                enemy2.y -= overlap * Math.sin(angle);
+            }
+        }
+
+        // Adicionar segundo perseguidor
+        function spawnSecondEnemy() {
+            if (enemies.length < 2) {
+                enemies.push({
+                    x: canvas.width - 100,
+                    y: canvas.height - 100,
+                    radius: 20,
+                    speed: 7,
+                    speedIncrease: 0.0005,
+                    maxSpeed: 12,
+                    vx: 0,
+                    vy: 0,
+                    friction: 0.98
+                });
+            }
         }
 
         // Iniciar jogo
@@ -233,15 +251,20 @@
         function resetGame() {
             player.x = 400;
             player.y = 300;
-            enemy.x = 100;
-            enemy.y = 100;
-            enemy.vx = 0;
-            enemy.vy = 0;
-            enemy.speed = 7;
+            enemies.length = 0;
+            enemies.push({
+                x: 100,
+                y: 100,
+                radius: 20,
+                speed: 7,
+                speedIncrease: 0.0005,
+                maxSpeed: 12,
+                vx: 0,
+                vy: 0,
+                friction: 0.98
+            });
             coins.length = 0;
             lastCoinSpawn = 0;
-            isCursorInCanvas = true;
-            pauseMessage.style.display = 'none';
         }
 
         // Loop principal do jogo
@@ -251,36 +274,48 @@
                 return;
             }
 
-            // Movimento do inimigo com deslizamento
-            const dx = player.x - enemy.x;
-            const dy = player.y - enemy.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance > 0) {
-                const ax = (dx / distance) * enemy.speed;
-                const ay = (dy / distance) * enemy.speed;
-                enemy.vx += ax * 0.1;
-                enemy.vy += ay * 0.1;
-                enemy.vx *= enemy.friction;
-                enemy.vy *= enemy.friction;
-                enemy.x += enemy.vx;
-                enemy.y += enemy.vy;
+            // Adicionar segundo perseguidor na pontuação 30
+            if (score >= 30 && enemies.length < 2) {
+                spawnSecondEnemy();
             }
-            enemy.speed = Math.min(enemy.speed + enemy.speedIncrease, enemy.maxSpeed);
 
-            // Ricochete nas bordas
-            if (enemy.x - enemy.radius < 0) {
-                enemy.x = enemy.radius;
-                enemy.vx = -enemy.vx;
-            } else if (enemy.x + enemy.radius > canvas.width) {
-                enemy.x = canvas.width - player.radius;
-                enemy.vx = -enemy.vx;
-            }
-            if (enemy.y - enemy.radius < 0) {
-                enemy.y = enemy.radius;
-                enemy.vy = -enemy.vy;
-            } else if (enemy.y + enemy.radius > canvas.height) {
-                enemy.y = canvas.height - enemy.radius;
-                enemy.vy = -enemy.vy;
+            // Movimento dos inimigos com deslizamento
+            enemies.forEach(enemy => {
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > 0) {
+                    const ax = (dx / distance) * enemy.speed;
+                    const ay = (dy / distance) * enemy.speed;
+                    enemy.vx += ax * 0.1;
+                    enemy.vy += ay * 0.1;
+                    enemy.vx *= enemy.friction;
+                    enemy.vy *= enemy.friction;
+                    enemy.x += enemy.vx;
+                    enemy.y += enemy.vy;
+                }
+                enemy.speed = Math.min(enemy.speed + enemy.speedIncrease, enemy.maxSpeed);
+
+                // Ricochete nas bordas
+                if (enemy.x - enemy.radius < 0) {
+                    enemy.x = enemy.radius;
+                    enemy.vx = -enemy.vx;
+                } else if (enemy.x + enemy.radius > canvas.width) {
+                    enemy.x = canvas.width - enemy.radius;
+                    enemy.vx = -enemy.vx;
+                }
+                if (enemy.y - enemy.radius < 0) {
+                    enemy.y = enemy.radius;
+                    enemy.vy = -enemy.vy;
+                } else if (enemy.y + enemy.radius > canvas.height) {
+                    enemy.y = canvas.height - enemy.radius;
+                    enemy.vy = -enemy.vy;
+                }
+            });
+
+            // Verificar colisão entre inimigos
+            if (enemies.length > 1) {
+                handleEnemyCollision(enemies[0], enemies[1]);
             }
 
             // Geração de moedas
@@ -297,14 +332,16 @@
                 }
             }
 
-            // Verificar colisão com inimigo
-            if (checkCollision(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.radius)) {
-                gameState = 'gameover';
-                canvas.style.display = 'none';
-                scoreDisplay.style.display = 'none';
-                gameOverScreen.classList.add('active');
-                finalScoreDisplay.textContent = score;
-                pauseMessage.style.display = 'none';
+            // Verificar colisão com inimigos
+            for (let enemy of enemies) {
+                if (checkCollision(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.radius)) {
+                    gameState = 'gameover';
+                    canvas.style.display = 'none';
+                    scoreDisplay.style.display = 'none';
+                    gameOverScreen.classList.add('active');
+                    finalScoreDisplay.textContent = score;
+                    break;
+                }
             }
 
             // Desenhar no canvas
@@ -317,12 +354,14 @@
             ctx.fill();
             ctx.closePath();
 
-            // Desenhar inimigo
-            ctx.beginPath();
-            ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'red';
-            ctx.fill();
-            ctx.closePath();
+            // Desenhar inimigos
+            enemies.forEach(enemy => {
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'red';
+                ctx.fill();
+                ctx.closePath();
+            });
 
             // Desenhar moedas
             coins.forEach(coin => {
