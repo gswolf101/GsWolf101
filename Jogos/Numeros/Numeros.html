@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Números</title>
+    <title>Jogo de Adivinhar o Número</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,10 +11,10 @@
         <h1>Adivinhe o Número</h1>
         <p>Tente adivinhar o número secreto entre 1 e 100!</p>
         <input type="number" id="guessInput" placeholder="Digite seu palpite" min="1" max="100">
-        <button onclick="checkGuess()">Enviar Palpite</button>
+        <button id="guessButton">Enviar Palpite</button>
         <p id="message"></p>
         <p id="attempts">Tentativas: 0</p>
-        <button onclick="restartGame()" id="restartButton" style="display: none;">Jogar Novamente</button>
+        <button id="restartButton" style="display: none;">Jogar Novamente</button>
     </div>
     <script src="script.js"></script>
 </body>
