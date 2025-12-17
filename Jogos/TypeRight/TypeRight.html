@@ -15,6 +15,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            position: relative;
         }
         #game-container {
             border: 3px solid white;
@@ -118,7 +119,6 @@
             font-size: 16px;
             width: 90%;
         }
-        #shop button:hover { background: #ccc; }
         #main-menu {
             text-align: center;
             margin-top: 15vh;
@@ -137,9 +137,9 @@
             cursor: pointer;
             font-size: 24px;
         }
-        #main-menu button:hover { background: #ccc; }
+        /* Botão Voltar fora do jogo, canto superior esquerdo da tela */
         #back-button {
-            position: absolute;
+            position: fixed;
             top: 15px;
             left: 15px;
             padding: 10px 20px;
@@ -149,7 +149,7 @@
             border-radius: 8px;
             cursor: pointer;
             display: none;
-            z-index: 10;
+            z-index: 20;
         }
         #back-button:hover { background: rgba(255, 255, 255, 0.4); }
         #version {
@@ -174,8 +174,6 @@
         <div id="score">Pontos: 0</div>
         <div id="highscore">Recorde: 0</div>
 
-        <button id="back-button" onclick="backToMenu()">Voltar</button> <!-- abacate -->
-
         <div id="shop">
             <h2>Loja de Melhorias</h2>
             <p>Pontos disponíveis: <span id="shop-score">0</span></p>
@@ -192,7 +190,10 @@
         <input type="text" id="input" autocomplete="off" placeholder="Digite a palavra aqui...">
     </div>
 
-    <div id="version">V1.4</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
+    <!-- Botão Voltar fora do quadrado -->
+    <button id="back-button" onclick="backToMenu()">Voltar</button> <!-- abacate -->
+
+    <div id="version">V1.5</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -211,7 +212,6 @@
         const highscoreDiv = document.getElementById('highscore');
         const backButton = document.getElementById('back-button');
 
-        // Redimensionar canvas
         function resizeCanvas() {
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
@@ -255,15 +255,10 @@
                 word: word,
                 typed: ''
             };
-            const dx = player.x - enemy.x;
-            const dy = player.y - enemy.y;
-            const dist = Math.hypot(dx, dy) || 1;
-            enemy.vx = (dx / dist) * enemy.speed;
-            enemy.vy = (dy / dist) * enemy.speed;
             enemies.push(enemy);
         }
 
-        function updateEnemyDirections() {
+        function updateDirections() {
             enemies.forEach(enemy => {
                 const dx = player.x - enemy.x;
                 const dy = player.y - enemy.y;
@@ -274,13 +269,11 @@
         }
 
         function drawPlayer() {
-            // Corpo
             ctx.fillStyle = player.color;
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
             ctx.fill();
 
-            // Detalhe (nave)
             ctx.fillStyle = '#00ffff';
             ctx.beginPath();
             ctx.moveTo(player.x, player.y - player.size / 2);
@@ -292,32 +285,24 @@
 
         function drawEnemies() {
             enemies.forEach(enemy => {
-                // Inimigo vermelho
                 ctx.fillStyle = 'red';
                 ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
 
-                // Palavra
                 ctx.font = 'bold 16px Arial';
                 ctx.textAlign = 'center';
-
+                ctx.fillStyle = 'white';
                 const typed = enemy.typed;
                 const remain = enemy.word.substring(typed.length);
-                const fullText = typed + remain;
-                const fullWidth = ctx.measureText(fullText).width;
-                const startX = enemy.x - fullWidth / 2;
                 const yText = enemy.y - enemy.size/2 - 10;
 
-                ctx.textAlign = 'left';
-                if (typed.length > 0) {
+                if (typed) {
                     ctx.fillStyle = '#00ff00';
-                    ctx.fillText(typed, startX, yText);
+                    ctx.fillText(typed, enemy.x, yText);
+                    ctx.fillStyle = 'white';
                     const typedWidth = ctx.measureText(typed).width;
-                    ctx.fillStyle = 'white';
-                    ctx.fillText(remain, startX + typedWidth, yText);
+                    ctx.fillText(remain, enemy.x + typedWidth / 2, yText);
                 } else {
-                    ctx.textAlign = 'center';
-                    ctx.fillStyle = 'white';
-                    ctx.fillText(fullText, enemy.x, yText);
+                    ctx.fillText(enemy.word, enemy.x, yText);
                 }
             });
         }
@@ -328,11 +313,6 @@
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
                 ctx.fill();
-                // Brilho
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-                ctx.fill();
             });
         }
 
@@ -341,32 +321,26 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            updateEnemyDirections();
+            updateDirections();
 
-            // Mover inimigos
             enemies = enemies.filter(enemy => {
                 enemy.x += enemy.vx;
                 enemy.y += enemy.vy;
 
-                const distToPlayer = Math.hypot(enemy.x - player.x, enemy.y - player.y);
-                if (distToPlayer < player.size / 2 + enemy.size / 2) {
+                const dist = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+                if (dist < player.size / 2 + enemy.size / 2) {
                     healthPercent -= 20;
                     updateHealth();
-                    if (healthPercent <= 0) {
-                        healthPercent = 0;
-                        endGame();
-                    }
+                    if (healthPercent <= 0) endGame();
                     return false;
                 }
-                return enemy.y < canvas.height + 100;
+                return true;
             });
 
-            // Mover projéteis
             projectiles = projectiles.filter(proj => {
                 proj.x += proj.vx;
                 proj.y += proj.vy;
-
-                if (proj.x < -50 || proj.x > canvas.width + 50 || proj.y < -50 || proj.y > canvas.height + 50) return false;
+                if (proj.y < -50) return false;
 
                 for (let i = enemies.length - 1; i >= 0; i--) {
                     const e = enemies[i];
@@ -383,7 +357,6 @@
                 return true;
             });
 
-            // Desenhar tudo
             drawPlayer();
             drawEnemies();
             drawProjectiles();
@@ -408,7 +381,7 @@
         function shootAt(enemy) {
             const dx = enemy.x - player.x;
             const dy = enemy.y - (player.y - 30);
-            const dist = Math.hypot(dx, dy) || 1; // evita divisão por zero
+            const dist = Math.hypot(dx, dy) || 1;
             const speed = upgrades.projectileSpeed;
             projectiles.push({
                 x: player.x,
@@ -435,8 +408,8 @@
             highscoreDiv.style.display = 'block';
             backButton.style.display = 'block';
 
-            // Resetar valores
-            resizeCanvas(); // Garante posição correta do jogador
+            resizeCanvas(); // Atualiza posição do jogador
+
             enemies = [];
             projectiles = [];
             score = 0;
@@ -450,10 +423,17 @@
             currentWordDisplay.innerHTML = '';
             input.focus();
 
-            createEnemy(); // Cria um inimigo imediatamente
-            createEnemy(); // Cria outro para teste
+            // Desenho inicial imediato
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
 
-            enemyInterval = setInterval(createEnemy, 1500);
+            // Cria inimigos iniciais
+            createEnemy();
+            createEnemy();
+
+            enemyInterval = setInterval(createEnemy, 2000);
+
+            // Inicia o loop de animação
             requestAnimationFrame(updateGame);
         }
 
@@ -484,7 +464,6 @@
             }
         }
 
-        // Sistema de digitação
         input.addEventListener('input', () => {
             const typed = input.value.toLowerCase().trim();
             let matched = null;
@@ -496,13 +475,10 @@
                 }
             }
 
-            // Limpa typed de todos, exceto o matched
             enemies.forEach(e => e.typed = e === matched ? typed : '');
 
             if (matched) {
-                currentWordDisplay.innerHTML = 
-                    '<span style="color:#00ff00;">' + typed + '</span>' + 
-                    matched.word.substring(typed.length);
+                currentWordDisplay.innerHTML = '<span style="color:#00ff00;">' + typed + '</span>' + matched.word.substring(typed.length);
 
                 if (typed === matched.word.toLowerCase()) {
                     shootAt(matched);
@@ -515,7 +491,6 @@
             }
         });
 
-        // Início no menu
         backToMenu();
     </script>
 </body>
