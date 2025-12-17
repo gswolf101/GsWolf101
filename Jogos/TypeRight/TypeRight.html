@@ -192,7 +192,7 @@
         <input type="text" id="input" autocomplete="off" placeholder="Digite a palavra aqui...">
     </div>
 
-    <div id="version">V1.3</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
+    <div id="version">V1.4</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -251,10 +251,15 @@
                 x: Math.random() * (canvas.width - 100) + 50,
                 y: 50,
                 size: 50,
-                speed: 0.6,
+                speed: 0.8,
                 word: word,
                 typed: ''
             };
+            const dx = player.x - enemy.x;
+            const dy = player.y - enemy.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            enemy.vx = (dx / dist) * enemy.speed;
+            enemy.vy = (dy / dist) * enemy.speed;
             enemies.push(enemy);
         }
 
@@ -262,14 +267,9 @@
             enemies.forEach(enemy => {
                 const dx = player.x - enemy.x;
                 const dy = player.y - enemy.y;
-                const dist = Math.hypot(dx, dy);
-                if (dist > 5) {
-                    enemy.vx = (dx / dist) * enemy.speed;
-                    enemy.vy = (dy / dist) * enemy.speed;
-                } else {
-                    enemy.vx = 0;
-                    enemy.vy = 0;
-                }
+                const dist = Math.hypot(dx, dy) || 1;
+                enemy.vx = (dx / dist) * enemy.speed;
+                enemy.vy = (dy / dist) * enemy.speed;
             });
         }
 
@@ -297,23 +297,27 @@
                 ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
 
                 // Palavra
-                ctx.fillStyle = 'white';
                 ctx.font = 'bold 16px Arial';
                 ctx.textAlign = 'center';
 
                 const typed = enemy.typed;
                 const remain = enemy.word.substring(typed.length);
+                const fullText = typed + remain;
+                const fullWidth = ctx.measureText(fullText).width;
+                const startX = enemy.x - fullWidth / 2;
+                const yText = enemy.y - enemy.size/2 - 10;
 
-                let yText = enemy.y - enemy.size/2 - 10;
-
+                ctx.textAlign = 'left';
                 if (typed.length > 0) {
                     ctx.fillStyle = '#00ff00';
-                    ctx.fillText(typed, enemy.x, yText);
-                    ctx.fillStyle = 'white';
+                    ctx.fillText(typed, startX, yText);
                     const typedWidth = ctx.measureText(typed).width;
-                    ctx.fillText(remain, enemy.x + typedWidth / 2, yText);
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(remain, startX + typedWidth, yText);
                 } else {
-                    ctx.fillText(enemy.word, enemy.x, yText);
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(fullText, enemy.x, yText);
                 }
             });
         }
@@ -341,8 +345,8 @@
 
             // Mover inimigos
             enemies = enemies.filter(enemy => {
-                enemy.x += enemy.vx || 0;
-                enemy.y += enemy.vy || 0;
+                enemy.x += enemy.vx;
+                enemy.y += enemy.vy;
 
                 const distToPlayer = Math.hypot(enemy.x - player.x, enemy.y - player.y);
                 if (distToPlayer < player.size / 2 + enemy.size / 2) {
@@ -446,8 +450,11 @@
             currentWordDisplay.innerHTML = '';
             input.focus();
 
-            updateGame();
-            enemyInterval = setInterval(createEnemy, 2800);
+            createEnemy(); // Cria um inimigo imediatamente
+            createEnemy(); // Cria outro para teste
+
+            enemyInterval = setInterval(createEnemy, 1500);
+            requestAnimationFrame(updateGame);
         }
 
         function backToMenu() {
