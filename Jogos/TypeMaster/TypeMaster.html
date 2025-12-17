@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Treino de Digitação</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #game-container {
+            border: 2px solid white;
+            position: relative;
+            width: 80vw;
+            height: 80vh;
+            max-width: 800px;
+            max-height: 600px;
+            background-color: black;
+            overflow: hidden;
+        }
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+        #input {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+            text-align: center;
+        }
+        #health-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 200px;
+            height: 20px;
+            border: 1px solid white;
+            background-color: red;
+        }
+        #health {
+            height: 100%;
+            background-color: green;
+            width: 100%; /* Inicial 100% */
+        }
+        #shop {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 1px solid white;
+            text-align: center;
+        }
+        #shop button {
+            margin: 10px;
+            padding: 10px;
+            background: white;
+            color: black;
+            border: none;
+            cursor: pointer;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="canvas"></canvas>
+        <input type="text" id="input" autocomplete="off">
+        <div id="health-bar"><div id="health"></div></div>
+        <div id="score">Pontos: 0</div>
+        <div id="shop">
+            <h2>Loja</h2>
+            <p>Pontos: <span id="shop-score">0</span></p>
+            <button onclick="buyUpgrade('damage')">Aumentar Dano (100 pontos)</button>
+            <button onclick="buyUpgrade('health')">Aumentar Vida Máxima (200 pontos)</button>
+            <button onclick="buyUpgrade('speed')">Aumentar Velocidade de Projétil (150 pontos)</button>
+            <button onclick="startGame()">Voltar ao Jogo</button>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const input = document.getElementById('input');
+        const health = document.getElementById('health');
+        const scoreElem = document.getElementById('score');
+        const shop = document.getElementById('shop');
+        const shopScore = document.getElementById('shop-score');
+
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+
+        let player = { x: canvas.width / 2, y: canvas.height - 50, size: 20, color: 'blue' };
+        let enemies = [];
+        let projectiles = [];
+        let words = ['casa', 'gato', 'cachorro', 'computador', 'javascript', 'html', 'digitar', 'jogo', 'inimigo', 'projétil'];
+        let healthPercent = 100;
+        let maxHealth = 100;
+        let score = 0;
+        let gameOver = false;
+        let upgrades = { damage: 20, projectileSpeed: 5, maxHealth: 100 };
+
+        function getRandomWord() {
+            return words[Math.floor(Math.random() * words.length)];
+        }
+
+        function createEnemy() {
+            const word = getRandomWord();
+            enemies.push({
+                x: Math.random() * (canvas.width - 50) + 25,
+                y: 0,
+                size: 30,
+                color: 'red',
+                speed: 1,
+                word: word,
+                currentWord: word
+            });
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x - player.size / 2, player.y, player.size, player.size);
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x - enemy.size / 2, enemy.y, enemy.size, enemy.size);
+                ctx.fillStyle = 'white';
+                ctx.font = '12px Arial';
+                ctx.fillText(enemy.currentWord, enemy.x - ctx.measureText(enemy.currentWord).width / 2, enemy.y - 10);
+            });
+        }
+
+        function drawProjectiles() {
+            projectiles.forEach(proj => {
+                ctx.fillStyle = 'yellow';
+                ctx.fillRect(proj.x, proj.y, 5, 5);
+            });
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Atualizar inimigos
+            enemies.forEach(enemy => {
+                enemy.y += enemy.speed;
+                if (enemy.y > canvas.height - 50) {
+                    healthPercent -= 10;
+                    updateHealth();
+                    enemies = enemies.filter(e => e !== enemy);
+                    if (healthPercent <= 0) {
+                        endGame();
+                    }
+                }
+            });
+
+            // Atualizar projéteis
+            projectiles.forEach(proj => {
+                proj.y -= upgrades.projectileSpeed;
+                enemies.forEach(enemy => {
+                    if (proj.y < enemy.y + enemy.size && proj.y > enemy.y &&
+                        proj.x > enemy.x - enemy.size / 2 && proj.x < enemy.x + enemy.size / 2) {
+                        projectiles = projectiles.filter(p => p !== proj);
+                        enemy.size -= upgrades.damage;
+                        if (enemy.size <= 0) {
+                            enemies = enemies.filter(e => e !== enemy);
+                            score += 10;
+                            updateScore();
+                        }
+                    }
+                });
+            });
+
+            drawPlayer();
+            drawEnemies();
+            drawProjectiles();
+
+            requestAnimationFrame(update);
+        }
+
+        function updateHealth() {
+            health.style.width = `${healthPercent}%`;
+        }
+
+        function updateScore() {
+            scoreElem.innerText = `Pontos: ${score}`;
+        }
+
+        function shootProjectile(targetEnemy) {
+            projectiles.push({ x: player.x, y: player.y, target: targetEnemy });
+        }
+
+        function endGame() {
+            gameOver = true;
+            input.disabled = true;
+            shop.style.display = 'block';
+            shopScore.innerText = score;
+        }
+
+        function startGame() {
+            gameOver = false;
+            input.disabled = false;
+            shop.style.display = 'none';
+            enemies = [];
+            projectiles = [];
+            healthPercent = upgrades.maxHealth;
+            updateHealth();
+            input.focus();
+            update();
+            setInterval(createEnemy, 2000);
+        }
+
+        function buyUpgrade(type) {
+            let cost = 0;
+            if (type === 'damage') cost = 100;
+            else if (type === 'health') cost = 200;
+            else if (type === 'speed') cost = 150;
+
+            if (score >= cost) {
+                score -= cost;
+                shopScore.innerText = score;
+                if (type === 'damage') upgrades.damage += 10;
+                else if (type === 'health') {
+                    upgrades.maxHealth += 20;
+                    maxHealth = upgrades.maxHealth;
+                }
+                else if (type === 'speed') upgrades.projectileSpeed += 1;
+            }
+        }
+
+        input.addEventListener('input', (e) => {
+            const typed = e.target.value.toLowerCase();
+            enemies.forEach(enemy => {
+                if (typed === enemy.word.toLowerCase()) {
+                    shootProjectile(enemy);
+                    e.target.value = '';
+                    enemy.currentWord = ''; // Remove a palavra temporariamente para indicar acerto
+                } else if (enemy.word.toLowerCase().startsWith(typed)) {
+                    enemy.currentWord = enemy.word.substring(typed.length);
+                } else {
+                    e.target.value = '';
+                }
+            });
+        });
+
+        // Iniciar o jogo
+        startGame();
+        setInterval(createEnemy, 2000);
+        update();
+    </script>
+</body>
+</html>
