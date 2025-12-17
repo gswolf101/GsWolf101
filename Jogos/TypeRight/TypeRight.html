@@ -31,6 +31,7 @@
         #canvas {
             width: 100%;
             height: 100%;
+            display: block;
         }
         #typing-area {
             width: 90vw;
@@ -103,9 +104,11 @@
             text-align: center;
             box-shadow: 0 0 30px white;
             z-index: 10;
+            width: 80%;
+            max-width: 500px;
         }
         #shop button {
-            margin: 10px;
+            margin: 8px;
             padding: 12px 20px;
             background: white;
             color: black;
@@ -113,15 +116,17 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            width: 90%;
         }
         #shop button:hover { background: #ccc; }
         #main-menu {
             text-align: center;
-            margin-top: 10vh;
+            margin-top: 15vh;
         }
         #main-menu h1 {
             font-size: 56px;
             margin-bottom: 40px;
+            text-shadow: 0 0 10px #00ffff;
         }
         #main-menu button {
             padding: 15px 40px;
@@ -178,17 +183,16 @@
             <button onclick="buyUpgrade('health')">+ Vida Máxima (200 pts)</button>
             <button onclick="buyUpgrade('speed')">+ Vel. Projétil (150 pts)</button>
             <br><br>
-            <button onclick="backToMenu()" style="padding:15px 30px; font-size:18px;">Voltar ao Menu</button>
+            <button onclick="backToMenu()">Voltar ao Menu</button>
         </div>
     </div>
 
-    <!-- Área de digitação FORA do canvas -->
     <div id="typing-area">
         <div id="current-word"></div>
         <input type="text" id="input" autocomplete="off" placeholder="Digite a palavra aqui...">
     </div>
 
-    <div id="version">V1.2</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
+    <div id="version">V1.3</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -207,6 +211,7 @@
         const highscoreDiv = document.getElementById('highscore');
         const backButton = document.getElementById('back-button');
 
+        // Redimensionar canvas
         function resizeCanvas() {
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
@@ -216,10 +221,10 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        let player = { x: canvas.width / 2, y: canvas.height - 80, size: 40, color: '#00aaff' };
+        let player = { x: 0, y: 0, size: 50, color: '#00aaff' };
         let enemies = [];
         let projectiles = [];
-        const words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria', 'tecla', 'palavra', 'velocidade'];
+        const words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria', 'palavra', 'velocidade', 'tiro', 'defesa'];
 
         let healthPercent = 100;
         let score = 0;
@@ -230,8 +235,8 @@
         let enemyInterval;
 
         let upgrades = {
-            damage: 30,
-            projectileSpeed: 10,
+            damage: 35,
+            projectileSpeed: 12,
             maxHealth: 100
         };
 
@@ -243,61 +248,72 @@
             if (!gameActive) return;
             const word = getRandomWord();
             const enemy = {
-                x: Math.random() * (canvas.width - 80) + 40,
-                y: 40,
-                size: 40,
-                speed: 0.5,
+                x: Math.random() * (canvas.width - 100) + 50,
+                y: 50,
+                size: 50,
+                speed: 0.6,
                 word: word,
                 typed: ''
             };
-            // Direção para o jogador
-            updateEnemyDirection(enemy);
             enemies.push(enemy);
         }
 
-        function updateEnemyDirection(enemy) {
-            const dx = player.x - enemy.x;
-            const dy = player.y - enemy.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist > 0) {
-                enemy.vx = (dx / dist) * enemy.speed;
-                enemy.vy = (dy / dist) * enemy.speed;
-            }
+        function updateEnemyDirections() {
+            enemies.forEach(enemy => {
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 5) {
+                    enemy.vx = (dx / dist) * enemy.speed;
+                    enemy.vy = (dy / dist) * enemy.speed;
+                } else {
+                    enemy.vx = 0;
+                    enemy.vy = 0;
+                }
+            });
         }
 
         function drawPlayer() {
+            // Corpo
             ctx.fillStyle = player.color;
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
             ctx.fill();
+
+            // Detalhe (nave)
             ctx.fillStyle = '#00ffff';
             ctx.beginPath();
             ctx.moveTo(player.x, player.y - player.size / 2);
-            ctx.lineTo(player.x - 18, player.y - 8);
-            ctx.lineTo(player.x + 18, player.y - 8);
+            ctx.lineTo(player.x - 20, player.y - 10);
+            ctx.lineTo(player.x + 20, player.y - 10);
             ctx.closePath();
             ctx.fill();
         }
 
         function drawEnemies() {
             enemies.forEach(enemy => {
+                // Inimigo vermelho
                 ctx.fillStyle = 'red';
                 ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
 
+                // Palavra
                 ctx.fillStyle = 'white';
-                ctx.font = '14px Arial';
+                ctx.font = 'bold 16px Arial';
                 ctx.textAlign = 'center';
+
                 const typed = enemy.typed;
                 const remain = enemy.word.substring(typed.length);
 
-                if (typed) {
+                let yText = enemy.y - enemy.size/2 - 10;
+
+                if (typed.length > 0) {
                     ctx.fillStyle = '#00ff00';
-                    ctx.fillText(typed, enemy.x, enemy.y - enemy.size/2 - 15);
+                    ctx.fillText(typed, enemy.x, yText);
                     ctx.fillStyle = 'white';
-                    const offsetX = ctx.measureText(typed).width / 2;
-                    ctx.fillText(remain, enemy.x + offsetX, enemy.y - enemy.size/2 - 15);
+                    const typedWidth = ctx.measureText(typed).width;
+                    ctx.fillText(remain, enemy.x + typedWidth / 2, yText);
                 } else {
-                    ctx.fillText(enemy.word, enemy.x, enemy.y - enemy.size/2 - 15);
+                    ctx.fillText(enemy.word, enemy.x, yText);
                 }
             });
         }
@@ -306,45 +322,53 @@
             projectiles.forEach(p => {
                 ctx.fillStyle = '#ffff00';
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                // Brilho
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
                 ctx.fill();
             });
         }
 
         function updateGame() {
             if (!gameActive) return;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Atualiza direção dos inimigos (jogador pode se mover no futuro)
-            enemies.forEach(updateEnemyDirection);
+            updateEnemyDirections();
 
-            // Move inimigos
+            // Mover inimigos
             enemies = enemies.filter(enemy => {
-                enemy.x += enemy.vx;
-                enemy.y += enemy.vy;
+                enemy.x += enemy.vx || 0;
+                enemy.y += enemy.vy || 0;
 
                 const distToPlayer = Math.hypot(enemy.x - player.x, enemy.y - player.y);
                 if (distToPlayer < player.size / 2 + enemy.size / 2) {
                     healthPercent -= 20;
                     updateHealth();
-                    if (healthPercent <= 0) endGame();
+                    if (healthPercent <= 0) {
+                        healthPercent = 0;
+                        endGame();
+                    }
                     return false;
                 }
                 return enemy.y < canvas.height + 100;
             });
 
-            // Move e colide projéteis
+            // Mover projéteis
             projectiles = projectiles.filter(proj => {
                 proj.x += proj.vx;
                 proj.y += proj.vy;
 
-                if (proj.x < 0 || proj.x > canvas.width || proj.y < 0 || proj.y > canvas.height) return false;
+                if (proj.x < -50 || proj.x > canvas.width + 50 || proj.y < -50 || proj.y > canvas.height + 50) return false;
 
-                for (let i = 0; i < enemies.length; i++) {
+                for (let i = enemies.length - 1; i >= 0; i--) {
                     const e = enemies[i];
-                    if (Math.hypot(proj.x - e.x, proj.y - e.y) < e.size / 2 + 7) {
+                    if (Math.hypot(proj.x - e.x, proj.y - e.y) < e.size / 2 + 8) {
                         e.size -= upgrades.damage;
-                        if (e.size <= 10) {
+                        if (e.size <= 15) {
                             enemies.splice(i, 1);
                             score += 20;
                             updateScore();
@@ -355,6 +379,7 @@
                 return true;
             });
 
+            // Desenhar tudo
             drawPlayer();
             drawEnemies();
             drawProjectiles();
@@ -378,8 +403,8 @@
 
         function shootAt(enemy) {
             const dx = enemy.x - player.x;
-            const dy = (enemy.y) - (player.y - 30);
-            const dist = Math.hypot(dx, dy);
+            const dy = enemy.y - (player.y - 30);
+            const dist = Math.hypot(dx, dy) || 1; // evita divisão por zero
             const speed = upgrades.projectileSpeed;
             projectiles.push({
                 x: player.x,
@@ -406,20 +431,23 @@
             highscoreDiv.style.display = 'block';
             backButton.style.display = 'block';
 
-            gameActive = true;
+            // Resetar valores
+            resizeCanvas(); // Garante posição correta do jogador
             enemies = [];
             projectiles = [];
             score = 0;
             healthPercent = upgrades.maxHealth;
             updateHealth();
             updateScore();
+
+            gameActive = true;
             input.disabled = false;
             input.value = '';
             currentWordDisplay.innerHTML = '';
             input.focus();
 
             updateGame();
-            enemyInterval = setInterval(createEnemy, 3000);
+            enemyInterval = setInterval(createEnemy, 2800);
         }
 
         function backToMenu() {
@@ -443,13 +471,13 @@
             if (score >= cost) {
                 score -= cost;
                 shopScore.innerText = score;
-                if (type === 'damage') upgrades.damage += 10;
-                if (type === 'health') upgrades.maxHealth += 30;
-                if (type === 'speed') upgrades.projectileSpeed += 2;
+                if (type === 'damage') upgrades.damage += 15;
+                if (type === 'health') upgrades.maxHealth += 40;
+                if (type === 'speed') upgrades.projectileSpeed += 3;
             }
         }
 
-        // Digitação
+        // Sistema de digitação
         input.addEventListener('input', () => {
             const typed = input.value.toLowerCase().trim();
             let matched = null;
@@ -461,7 +489,8 @@
                 }
             }
 
-            enemies.forEach(e => e.typed = (e === matched ? typed : ''));
+            // Limpa typed de todos, exceto o matched
+            enemies.forEach(e => e.typed = e === matched ? typed : '');
 
             if (matched) {
                 currentWordDisplay.innerHTML = 
@@ -472,16 +501,14 @@
                     shootAt(matched);
                     input.value = '';
                     currentWordDisplay.innerHTML = '';
-                    matched.typed = '';
                 }
             } else {
                 input.value = '';
                 currentWordDisplay.innerHTML = '';
-                enemies.forEach(e => e.typed = '');
             }
         });
 
-        // Início
+        // Início no menu
         backToMenu();
     </script>
 </body>
