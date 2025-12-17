@@ -33,7 +33,7 @@
             width: 100%;
             height: 100%;
             display: block;
-            background-color: #000011; /* Fundo azul escuro para ver melhor */
+            background-color: #000011;
         }
         #typing-area {
             width: 90vw;
@@ -157,7 +157,7 @@
     <div id="main-menu">
         <button id="menu-back-button" onclick="window.location.href='https://gswolf101.github.io/GsWolf101/Jogos/CentralJogos.html'">Voltar</button>
         <h1>TypeRight</h1>
-        <button onclick="startGame()">Iniciar Jogo</button>
+        <button id="start-button">Iniciar Jogo</button>
     </div>
 
     <div id="game-container">
@@ -173,7 +173,7 @@
         <input type="text" id="input" autocomplete="off" placeholder="Digite a palavra aqui...">
     </div>
 
-    <button id="back-button" onclick="backToMenu()">Voltar</button> <!-- abacate -->
+    <button id="back-button">Voltar</button> <!-- abacate -->
 
     <div id="version">V2.0</div>
 
@@ -192,6 +192,7 @@
         const scoreDiv = document.getElementById('score');
         const highscoreDiv = document.getElementById('highscore');
         const backButton = document.getElementById('back-button');
+        const startButton = document.getElementById('start-button');
 
         // Variáveis do jogo
         let player = null;
@@ -291,7 +292,7 @@
                 }
             }
 
-            // Projéteis (simples)
+            // Projéteis
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const p = projectiles[i];
                 p.y -= 15;
@@ -335,7 +336,7 @@
             }
         }
 
-        function shootAt(targetX, targetY) {
+        function shoot() {
             projectiles.push({ x: player.x, y: player.y - 30 });
         }
 
@@ -364,13 +365,11 @@
             currentWordDisplay.innerHTML = '';
             input.focus();
 
-            // Inimigos iniciais
             createEnemy();
             createEnemy();
 
             enemyInterval = setInterval(createEnemy, 2500);
 
-            // Inicia o loop
             requestAnimationFrame(updateGame);
         }
 
@@ -385,6 +384,10 @@
             backButton.style.display = 'none';
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
+
+        // Eventos
+        startButton.addEventListener('click', startGame);
+        backButton.addEventListener('click', backToMenu);
 
         // Digitação
         input.addEventListener('input', () => {
@@ -402,7 +405,7 @@
                 currentWordDisplay.innerHTML = '<span style="color:#00ff00;">' + typed + '</span>' + matched.word.substring(typed.length);
 
                 if (typed === matched.word.toLowerCase()) {
-                    shootAt(matched.x, matched.y);
+                    shoot();
                     input.value = '';
                     currentWordDisplay.innerHTML = '';
                 }
