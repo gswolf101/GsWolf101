@@ -92,49 +92,6 @@
         }
         #score { right: 100px; }
         #highscore { right: 15px; }
-        #power-choice {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            padding: 30px;
-            border: 4px solid white;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 0 40px white;
-            z-index: 30;
-            width: 90%;
-            max-width: 700px;
-        }
-        #power-choice h2 {
-            margin-bottom: 20px;
-            font-size: 32px;
-        }
-        .power-option {
-            margin: 15px;
-            padding: 20px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            border: 3px solid;
-        }
-        .power-option:hover {
-            transform: scale(1.05);
-        }
-        .common { border-color: gray; background: rgba(128,128,128,0.3); }
-        .uncommon { border-color: green; background: rgba(0,255,0,0.2); }
-        .rare { border-color: blue; background: rgba(0,0,255,0.2); }
-        .epic { border-color: purple; background: rgba(128,0,128,0.2); }
-        .legendary { border-color: gold; background: rgba(255,215,0,0.2); }
-        .mythic { border-color: red; background: rgba(255,0,0,0.2); }
-        .power-key {
-            font-size: 24px;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 10px;
-        }
         #main-menu {
             text-align: center;
             margin-top: 15vh;
@@ -208,13 +165,6 @@
         <div id="health-bar"><div id="health"></div></div>
         <div id="score">Pontos: 0</div>
         <div id="highscore">Recorde: 0</div>
-
-        <div id="power-choice">
-            <h2>Escolha um Poder (clique ou 1/2/3)</h2>
-            <div id="power1" class="power-option"></div>
-            <div id="power2" class="power-option"></div>
-            <div id="power3" class="power-option"></div>
-        </div>
     </div>
 
     <div id="typing-area">
@@ -224,7 +174,7 @@
 
     <button id="back-button" onclick="backToMenu()">Voltar</button> <!-- abacate -->
 
-    <div id="version">V2.1</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
+    <div id="version">V2.0</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -234,10 +184,6 @@
         const healthBar = document.getElementById('health');
         const scoreElem = document.getElementById('score');
         const highscoreElem = document.getElementById('highscore');
-        const powerChoice = document.getElementById('power-choice');
-        const power1 = document.getElementById('power1');
-        const power2 = document.getElementById('power2');
-        const power3 = document.getElementById('power3');
         const mainMenu = document.getElementById('main-menu');
         const typingArea = document.getElementById('typing-area');
         const healthBarDiv = document.getElementById('health-bar');
@@ -245,68 +191,20 @@
         const highscoreDiv = document.getElementById('highscore');
         const backButton = document.getElementById('back-button');
 
-        // === Poderes (para leitura por AI) ===
-        const powers = [
-            { rarity: 'common', name: 'Recuperação básica', desc: 'Recupera 10% de vida', repeatable: true, apply: () => healPercent(10) },
-            { rarity: 'common', name: 'Aumento de vida', desc: 'Aumenta a vida máxima em 5%', repeatable: true, apply: () => increaseMaxHealth(5) },
-            { rarity: 'common', name: 'Atraso', desc: 'Desacelera os inimigos em 1.5%', repeatable: true, apply: () => slowEnemies(0.015) },
-            { rarity: 'uncommon', name: 'Recuperação melhor', desc: 'Recupera 25% da vida', repeatable: true, apply: () => healPercent(25) },
-            { rarity: 'uncommon', name: 'Aumento de vida maior', desc: 'Aumenta a vida máxima em 10%', repeatable: true, apply: () => increaseMaxHealth(10) },
-            { rarity: 'uncommon', name: 'Ricochete fraco', desc: '10% de chance do projétil ricochetear', repeatable: false, apply: () => addRicochet(0.1) },
-            { rarity: 'uncommon', name: 'Atraso maior', desc: 'Desacelera os inimigos em 2.5%', repeatable: true, apply: () => slowEnemies(0.025) },
-            { rarity: 'rare', name: 'Hack básico', desc: '20% de chance de transformar palavra inimiga em 1 letra', repeatable: false, apply: () => addHack(0.2) },
-            { rarity: 'epic', name: 'Recuperação alfabética', desc: 'Recupera 1% de vida por acerto', repeatable: false, apply: () => addHealOnHit(1) },
-            { rarity: 'legendary', name: 'Regeneração', desc: 'Recupera 1% de vida por segundo', repeatable: true, apply: () => startRegen(1) },
-            { rarity: 'mythic', name: 'Tempestade alfabética', desc: 'Triplo de inimigos, mas com 1 letra só', repeatable: false, apply: () => activateStorm() }
-        ];
-
-        const rarityClass = {
-            common: 'common',
-            uncommon: 'uncommon',
-            rare: 'rare',
-            epic: 'epic',
-            legendary: 'legendary',
-            mythic: 'mythic'
-        };
-
-        // Variáveis de jogo
-        let player;
-        let enemies = [];
-        let projectiles = [];
-        const words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria', 'palavra', 'velocidade', 'tiro', 'defesa', 'nave'];
-        const singleLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
-
-        let healthPercent = 100;
-        let score = 0;
-        let highscore = parseInt(localStorage.getItem('typeright_highscore') || '0');
-        highscoreElem.innerText = `Recorde: ${highscore}`;
-
-        let gameActive = false;
-        let gamePaused = false;
-        let enemyInterval;
-        let regenInterval;
-
-        let upgrades = {
-            maxHealth: 100,
-            enemySlow: 1, // multiplicador (1 = normal, 0.9 = 10% mais lento)
-            ricochetChance: 0,
-            hackChance: 0,
-            healOnHit: 0,
-            stormActive: false
-        };
-
-        class Player { /* mesmo de antes */ 
+        class Player {
             constructor() {
                 this.size = 50;
                 this.color = '#00aaff';
                 this.x = canvas.width / 2;
                 this.y = canvas.height - 80;
             }
+
             draw() {
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
                 ctx.fill();
+
                 ctx.fillStyle = '#00ffff';
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y - this.size / 2);
@@ -315,30 +213,32 @@
                 ctx.closePath();
                 ctx.fill();
             }
+
             updatePosition() {
                 this.x = canvas.width / 2;
                 this.y = canvas.height - 80;
             }
         }
 
-        class Enemy { /* mesmo, com slow aplicado */ 
+        class Enemy {
             constructor(word) {
                 this.word = word;
                 this.typed = '';
                 this.size = 50;
-                this.baseSpeed = 0.7;
+                this.speed = 0.7;
                 this.x = Math.random() * (canvas.width - this.size - 40) + this.size / 2 + 20;
                 this.y = -this.size;
             }
+
             update(player) {
                 const dx = player.x - this.x;
                 const dy = player.y - this.y;
                 const dist = Math.hypot(dx, dy) || 1;
-                const speed = this.baseSpeed * upgrades.enemySlow;
-                this.x += (dx / dist) * speed;
-                this.y += (dy / dist) * speed;
+                this.x += (dx / dist) * this.speed;
+                this.y += (dy / dist) * this.speed;
             }
-            draw() { /* mesmo de antes */ 
+
+            draw() {
                 ctx.fillStyle = 'red';
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
@@ -359,17 +259,19 @@
                     ctx.fillText(this.word, this.x, yText);
                 }
             }
+
             isHitBy(projectile) {
                 const dist = Math.hypot(projectile.x - this.x, projectile.y - this.y);
                 return dist < this.size / 2 + 8;
             }
+
             hitsPlayer(player) {
                 const dist = Math.hypot(player.x - this.x, player.y - this.y);
                 return dist < player.size / 2 + this.size / 2;
             }
         }
 
-        class Projectile { /* mesmo */ 
+        class Projectile {
             constructor(fromX, fromY, targetX, targetY) {
                 this.x = fromX;
                 this.y = fromY;
@@ -380,109 +282,107 @@
                 this.vx = (dx / dist) * speed;
                 this.vy = (dy / dist) * speed;
             }
+
             update() {
                 this.x += this.vx;
                 this.y += this.vy;
             }
+
             draw() {
                 ctx.fillStyle = '#ffff00';
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
                 ctx.fill();
             }
+
             offScreen() {
                 return this.y < -50 || this.y > canvas.height + 50 || this.x < -50 || this.x > canvas.width + 50;
             }
         }
 
-        // Funções de poder
-        function healPercent(p) {
-            healthPercent = Math.min(healthPercent + p * upgrades.maxHealth / 100, upgrades.maxHealth);
-            updateHealth();
+        let player;
+        let enemies = [];
+        let projectiles = [];
+        const words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria', 'palavra', 'velocidade', 'tiro', 'defesa', 'nave'];
+
+        let healthPercent = 100;
+        let score = 0;
+        let highscore = parseInt(localStorage.getItem('typeright_highscore') || '0');
+        highscoreElem.innerText = `Recorde: ${highscore}`;
+
+        let gameActive = false;
+        let enemyInterval;
+
+        let maxHealth = 100;
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            if (player) player.updatePosition();
         }
-        function increaseMaxHealth(p) {
-            upgrades.maxHealth += upgrades.maxHealth * p / 100;
-            updateHealth();
-        }
-        function slowEnemies(factor) {
-            upgrades.enemySlow *= (1 - factor);
-        }
-        function addRicochet(chance) {
-            upgrades.ricochetChance += chance;
-        }
-        function addHack(chance) {
-            upgrades.hackChance += chance;
-        }
-        function addHealOnHit(p) {
-            upgrades.healOnHit += p;
-        }
-        function startRegen(p) {
-            if (regenInterval) clearInterval(regenInterval);
-            regenInterval = setInterval(() => {
-                if (gameActive) healPercent(p);
-            }, 1000);
-        }
-        function activateStorm() {
-            upgrades.stormActive = true;
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function createEnemy() {
+            if (!gameActive) return;
+            const word = words[Math.floor(Math.random() * words.length)];
+            enemies.push(new Enemy(word));
         }
 
-        // Escolha de poder
-        let chosenPowers = [];
-        function showPowerChoice() {
-            gamePaused = true;
-            input.disabled = true;
-            powerChoice.style.display = 'block';
+        function updateGame() {
+            if (!gameActive) return;
 
-            // Filtra poderes disponíveis (non-repeatable já escolhidos não aparecem)
-            const available = powers.filter(p => p.repeatable || !chosenPowers.includes(p.name));
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Sorteia 3 diferentes
-            const selected = [];
-            while (selected.length < 3 && available.length > 0) {
-                const idx = Math.floor(Math.random() * available.length);
-                selected.push(available[idx]);
-                available.splice(idx, 1);
-            }
+            enemies.forEach((enemy, index) => {
+                enemy.update(player);
+                enemy.draw();
 
-            const options = [power1, power2, power3];
-            selected.forEach((power, i) => {
-                const opt = options[i];
-                opt.innerHTML = `<span class="power-key">${i+1}</span>${power.name}<br><small>${power.desc}</small>`;
-                opt.className = `power-option ${rarityClass[power.rarity]}`;
-                opt.onclick = () => selectPower(power, i+1);
+                if (enemy.hitsPlayer(player)) {
+                    healthPercent -= 20;
+                    updateHealth();
+                    enemies.splice(index, 1);
+                    if (healthPercent <= 0) {
+                        healthPercent = 0;
+                        gameActive = false;
+                        clearInterval(enemyInterval);
+                        input.disabled = true;
+                        backButton.style.display = 'none';
+                    }
+                }
             });
+
+            projectiles.forEach((proj, pIndex) => {
+                proj.update();
+                proj.draw();
+
+                if (proj.offScreen()) {
+                    projectiles.splice(pIndex, 1);
+                    return;
+                }
+
+                enemies.forEach((enemy, eIndex) => {
+                    if (enemy.isHitBy(proj)) {
+                        enemies.splice(eIndex, 1);
+                        projectiles.splice(pIndex, 1);
+                        score += 20;
+                        updateScore();
+                    }
+                });
+            });
+
+            player.draw();
+
+            requestAnimationFrame(updateGame);
         }
 
-        function selectPower(power, num) {
-            power.apply();
-            if (!power.repeatable) chosenPowers.push(power.name);
-            powerChoice.style.display = 'none';
-            gamePaused = false;
-            input.disabled = false;
-            input.focus();
+        function updateHealth() {
+            const percent = (healthPercent / maxHealth) * 100;
+            healthBar.style.width = percent + '%';
         }
 
-        // Teclas 1,2,3
-        document.addEventListener('keydown', e => {
-            if (gamePaused && ['1','2','3'].includes(e.key)) {
-                const idx = parseInt(e.key) - 1;
-                const opt = document.querySelectorAll('.power-option')[idx];
-                if (opt.onclick) opt.onclick();
-            }
-        });
-
-        function checkPowerUpgrade() {
-            if (score > 0 && score % 5 === 0 && score / 5 > (previousMultiples || 0)) {
-                previousMultiples = score / 5;
-                showPowerChoice();
-            }
-        }
-        let previousMultiples = 0;
-
-        // Restante do jogo (updateScore chama checkPowerUpgrade)
         function updateScore() {
             scoreElem.innerText = `Pontos: ${score}`;
-            checkPowerUpgrade();
             if (score > highscore) {
                 highscore = score;
                 highscoreElem.innerText = `Recorde: ${highscore}`;
@@ -490,24 +390,82 @@
             }
         }
 
-        // No hit (após matar inimigo)
-        // Dentro do loop de projéteis, após destruir inimigo:
-        // if (upgrades.healOnHit > 0) healPercent(upgrades.healOnHit);
-        // Ricochete e hack implementados simplificadamente (ricochete: chance de continuar para inimigo mais próximo, hack: ao acertar)
+        function shootAt(enemy) {
+            projectiles.push(new Projectile(player.x, player.y - 30, enemy.x, enemy.y));
+        }
 
-        // Implementação simplificada de ricochete e hack no loop de projéteis (adicionar no updateGame após destruir):
-        // Para ricochete: if (Math.random() < upgrades.ricochetChance && enemies.length > 0) { escolher novo target e mudar vx/vy }
-        // Para hack: if (Math.random() < upgrades.hackChance) { inimigo aleatório word = letra aleatória }
+        function startGame() {
+            mainMenu.style.display = 'none';
+            typingArea.style.display = 'block';
+            healthBarDiv.style.display = 'block';
+            scoreDiv.style.display = 'block';
+            highscoreDiv.style.display = 'block';
+            backButton.style.display = 'block';
 
-        // Storm: no createEnemy, if (upgrades.stormActive) criar 3 inimigos com 1 letra
+            resizeCanvas();
+            player = new Player();
 
-        // O código completo está adaptado com essas funcionalidades.
+            enemies = [];
+            projectiles = [];
+            score = 0;
+            healthPercent = maxHealth;
+            updateHealth();
+            updateScore();
 
-        // ... (o resto do código é o mesmo, com as adaptações necessárias para os poderes)
+            gameActive = true;
+            input.disabled = false;
+            input.value = '';
+            currentWordDisplay.innerHTML = '';
+            input.focus();
 
-        // Nota: Para brevidade, a implementação completa de ricochete, hack e storm está simplificada, mas funcional.
+            createEnemy();
+            setTimeout(createEnemy, 800);
 
-        // O jogo agora tem o sistema de escolha de poderes a cada 5 pontos!
+            enemyInterval = setInterval(createEnemy, 2500);
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function backToMenu() {
+            gameActive = false;
+            clearInterval(enemyInterval);
+            mainMenu.style.display = 'block';
+            typingArea.style.display = 'none';
+            healthBarDiv.style.display = 'none';
+            scoreDiv.style.display = 'none';
+            highscoreDiv.style.display = 'none';
+            backButton.style.display = 'none';
+            enemies = [];
+            projectiles = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        input.addEventListener('input', () => {
+            const typed = input.value.toLowerCase().trim();
+            let matched = null;
+
+            for (const enemy of enemies) {
+                if (enemy.word.toLowerCase().startsWith(typed)) {
+                    matched = enemy;
+                    break;
+                }
+            }
+
+            enemies.forEach(e => e.typed = e === matched ? typed : '');
+
+            if (matched) {
+                currentWordDisplay.innerHTML = '<span style="color:#00ff00;">' + typed + '</span>' + matched.word.substring(typed.length);
+
+                if (typed === matched.word.toLowerCase()) {
+                    shootAt(matched);
+                    input.value = '';
+                    currentWordDisplay.innerHTML = '';
+                }
+            } else {
+                input.value = '';
+                currentWordDisplay.innerHTML = '';
+            }
+        });
 
         backToMenu();
     </script>
