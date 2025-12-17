@@ -12,32 +12,29 @@
             color: white;
             font-family: Arial, sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
         }
         #game-container {
             border: 3px solid white;
             position: relative;
             width: 90vw;
-            height: 85vh;
+            height: 70vh;
             max-width: 900px;
             max-height: 600px;
             background-color: black;
             overflow: hidden;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            margin-top: 20px;
         }
         #canvas {
             width: 100%;
             height: 100%;
         }
         #typing-area {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 400px;
-            max-width: 90%;
+            width: 90vw;
+            max-width: 900px;
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid white;
             border-radius: 10px;
@@ -45,22 +42,26 @@
             text-align: center;
             backdrop-filter: blur(5px);
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
-            display: none; /* Escondido no menu */
+            margin-top: 15px;
+            display: none;
         }
         #current-word {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
             margin-bottom: 10px;
-            min-height: 30px;
+            min-height: 35px;
             color: #00ff00;
         }
         #input {
-            width: 100%;
+            width: 80%;
+            max-width: 500px;
             background: transparent;
-            border: none;
+            border: 2px solid white;
+            border-radius: 8px;
             color: white;
-            font-size: 20px;
+            font-size: 24px;
             text-align: center;
+            padding: 10px;
             outline: none;
         }
         #health-bar {
@@ -70,24 +71,25 @@
             width: 250px;
             height: 25px;
             border: 2px solid white;
-            background-color: #440000;
+            background-color: #330000;
             border-radius: 10px;
             overflow: hidden;
-            display: none; /* Escondido no menu */
+            display: none;
         }
         #health {
             height: 100%;
-            background: linear-gradient(to right, red, yellow, green);
+            background-color: red;
             width: 100%;
-            transition: width 0.3s;
+            transition: width 0.4s;
         }
-        #score {
+        #score, #highscore {
             position: absolute;
             top: 15px;
-            right: 15px;
             font-size: 18px;
-            display: none; /* Escondido no menu */
+            display: none;
         }
+        #score { right: 100px; }
+        #highscore { right: 15px; }
         #shop {
             display: none;
             position: absolute;
@@ -112,33 +114,25 @@
             cursor: pointer;
             font-size: 16px;
         }
-        #shop button:hover {
-            background: #ccc;
-        }
+        #shop button:hover { background: #ccc; }
         #main-menu {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             text-align: center;
-            z-index: 10;
+            margin-top: 10vh;
         }
         #main-menu h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 56px;
+            margin-bottom: 40px;
         }
         #main-menu button {
-            padding: 15px 30px;
+            padding: 15px 40px;
             background: white;
             color: black;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 24px;
         }
-        #main-menu button:hover {
-            background: #ccc;
-        }
+        #main-menu button:hover { background: #ccc; }
         #back-button {
             position: absolute;
             top: 15px;
@@ -149,42 +143,34 @@
             border: 1px solid white;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
-            display: none; /* Mostrado durante o jogo */
+            display: none;
             z-index: 10;
         }
-        #back-button:hover {
-            background: rgba(255, 255, 255, 0.4);
-        }
+        #back-button:hover { background: rgba(255, 255, 255, 0.4); }
         #version {
-            position: absolute;
+            position: fixed;
             bottom: 10px;
             right: 10px;
             font-size: 14px;
             color: #aaa;
         }
-        #highscore {
-            position: absolute;
-            top: 50px;
-            right: 15px;
-            font-size: 16px;
-            display: none; /* Escondido no menu */
-        }
     </style>
 </head>
 <body>
+    <div id="main-menu">
+        <h1>TypeRight</h1>
+        <button onclick="startGame()">Iniciar Jogo</button>
+    </div>
+
     <div id="game-container">
         <canvas id="canvas"></canvas>
-        
-        <div id="typing-area">
-            <div id="current-word"></div>
-            <input type="text" id="input" autocomplete="off" placeholder="Digite aqui...">
-        </div>
-        
+
         <div id="health-bar"><div id="health"></div></div>
         <div id="score">Pontos: 0</div>
         <div id="highscore">Recorde: 0</div>
-        
+
+        <button id="back-button" onclick="backToMenu()">Voltar</button> <!-- abacate -->
+
         <div id="shop">
             <h2>Loja de Melhorias</h2>
             <p>Pontos disponíveis: <span id="shop-score">0</span></p>
@@ -194,16 +180,15 @@
             <br><br>
             <button onclick="backToMenu()" style="padding:15px 30px; font-size:18px;">Voltar ao Menu</button>
         </div>
-        
-        <div id="main-menu">
-            <h1>TypeRight</h1>
-            <button onclick="startGame()">Iniciar Jogo</button>
-        </div>
-        
-        <button id="back-button" onclick="backToMenu()">Voltar</button> <!-- abacate -->
-        
-        <div id="version">V1.1</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
     </div>
+
+    <!-- Área de digitação FORA do canvas -->
+    <div id="typing-area">
+        <div id="current-word"></div>
+        <input type="text" id="input" autocomplete="off" placeholder="Digite a palavra aqui...">
+    </div>
+
+    <div id="version">V1.2</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -222,7 +207,6 @@
         const highscoreDiv = document.getElementById('highscore');
         const backButton = document.getElementById('back-button');
 
-        // Ajustar canvas ao container
         function resizeCanvas() {
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
@@ -232,20 +216,22 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        let player = { x: canvas.width / 2, y: canvas.height - 80, size: 30, color: '#00aaff' };
+        let player = { x: canvas.width / 2, y: canvas.height - 80, size: 40, color: '#00aaff' };
         let enemies = [];
         let projectiles = [];
-        let words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria'];
+        const words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria', 'tecla', 'palavra', 'velocidade'];
+
         let healthPercent = 100;
         let score = 0;
-        let highscore = localStorage.getItem('typeright_highscore') || 0;
+        let highscore = parseInt(localStorage.getItem('typeright_highscore') || '0');
         highscoreElem.innerText = `Recorde: ${highscore}`;
+
         let gameActive = false;
         let enemyInterval;
 
         let upgrades = {
             damage: 30,
-            projectileSpeed: 8,
+            projectileSpeed: 10,
             maxHealth: 100
         };
 
@@ -257,21 +243,26 @@
             if (!gameActive) return;
             const word = getRandomWord();
             const enemy = {
-                x: Math.random() * (canvas.width - 60) + 30,
-                y: 30,
+                x: Math.random() * (canvas.width - 80) + 40,
+                y: 40,
                 size: 40,
-                color: 'red',
                 speed: 0.5,
                 word: word,
                 typed: ''
             };
-            // Calcular direção em direção ao jogador
+            // Direção para o jogador
+            updateEnemyDirection(enemy);
+            enemies.push(enemy);
+        }
+
+        function updateEnemyDirection(enemy) {
             const dx = player.x - enemy.x;
             const dy = player.y - enemy.y;
-            const distance = Math.sqrt(dx*dx + dy*dy);
-            enemy.vx = (dx / distance) * enemy.speed;
-            enemy.vy = (dy / distance) * enemy.speed;
-            enemies.push(enemy);
+            const dist = Math.hypot(dx, dy);
+            if (dist > 0) {
+                enemy.vx = (dx / dist) * enemy.speed;
+                enemy.vy = (dy / dist) * enemy.speed;
+            }
         }
 
         function drawPlayer() {
@@ -279,81 +270,81 @@
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
             ctx.fill();
-            // Triângulo simples no topo
             ctx.fillStyle = '#00ffff';
             ctx.beginPath();
             ctx.moveTo(player.x, player.y - player.size / 2);
-            ctx.lineTo(player.x - 15, player.y - 5);
-            ctx.lineTo(player.x + 15, player.y - 5);
+            ctx.lineTo(player.x - 18, player.y - 8);
+            ctx.lineTo(player.x + 18, player.y - 8);
             ctx.closePath();
             ctx.fill();
         }
 
         function drawEnemies() {
             enemies.forEach(enemy => {
-                // Corpo vermelho
-                ctx.fillStyle = enemy.color;
+                ctx.fillStyle = 'red';
                 ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
-                
-                // Palavra acima
+
                 ctx.fillStyle = 'white';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
-                const fullText = enemy.word;
-                const typedText = enemy.typed;
-                const remainingText = fullText.substring(typedText.length);
-                
-                ctx.fillStyle = '#00ff00';
-                ctx.fillText(typedText, enemy.x, enemy.y - enemy.size/2 - 10);
-                ctx.fillStyle = 'white';
-                ctx.fillText(remainingText, enemy.x + ctx.measureText(typedText).width / 2, enemy.y - enemy.size/2 - 10);
+                const typed = enemy.typed;
+                const remain = enemy.word.substring(typed.length);
+
+                if (typed) {
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillText(typed, enemy.x, enemy.y - enemy.size/2 - 15);
+                    ctx.fillStyle = 'white';
+                    const offsetX = ctx.measureText(typed).width / 2;
+                    ctx.fillText(remain, enemy.x + offsetX, enemy.y - enemy.size/2 - 15);
+                } else {
+                    ctx.fillText(enemy.word, enemy.x, enemy.y - enemy.size/2 - 15);
+                }
             });
         }
 
         function drawProjectiles() {
-            projectiles.forEach(proj => {
+            projectiles.forEach(p => {
                 ctx.fillStyle = '#ffff00';
                 ctx.beginPath();
-                ctx.arc(proj.x, proj.y, 6, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
                 ctx.fill();
             });
         }
 
         function updateGame() {
             if (!gameActive) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Atualizar inimigos
+            // Atualiza direção dos inimigos (jogador pode se mover no futuro)
+            enemies.forEach(updateEnemyDirection);
+
+            // Move inimigos
             enemies = enemies.filter(enemy => {
                 enemy.x += enemy.vx;
                 enemy.y += enemy.vy;
 
-                // Colisão com jogador
                 const distToPlayer = Math.hypot(enemy.x - player.x, enemy.y - player.y);
                 if (distToPlayer < player.size / 2 + enemy.size / 2) {
-                    healthPercent -= 15;
+                    healthPercent -= 20;
                     updateHealth();
-                    if (healthPercent <= 0) {
-                        endGame();
-                    }
+                    if (healthPercent <= 0) endGame();
                     return false;
                 }
-                return true;
+                return enemy.y < canvas.height + 100;
             });
 
-            // Atualizar projéteis (agora com direção)
+            // Move e colide projéteis
             projectiles = projectiles.filter(proj => {
                 proj.x += proj.vx;
                 proj.y += proj.vy;
-                if (proj.y < -10 || proj.y > canvas.height + 10 || proj.x < -10 || proj.x > canvas.width + 10) return false;
+
+                if (proj.x < 0 || proj.x > canvas.width || proj.y < 0 || proj.y > canvas.height) return false;
 
                 for (let i = 0; i < enemies.length; i++) {
-                    const enemy = enemies[i];
-                    const dist = Math.hypot(proj.x - enemy.x, proj.y - enemy.y);
-                    if (dist < enemy.size / 2 + 6) {
-                        enemy.size -= upgrades.damage;
-                        if (enemy.size <= 10) {
+                    const e = enemies[i];
+                    if (Math.hypot(proj.x - e.x, proj.y - e.y) < e.size / 2 + 7) {
+                        e.size -= upgrades.damage;
+                        if (e.size <= 10) {
                             enemies.splice(i, 1);
                             score += 20;
                             updateScore();
@@ -372,7 +363,8 @@
         }
 
         function updateHealth() {
-            healthBar.style.width = `${(healthPercent / upgrades.maxHealth) * 100}%`;
+            const percent = (healthPercent / upgrades.maxHealth) * 100;
+            healthBar.style.width = percent + '%';
         }
 
         function updateScore() {
@@ -384,27 +376,26 @@
             }
         }
 
-        function shootProjectile(targetEnemy) {
-            const dx = targetEnemy.x - player.x;
-            const dy = targetEnemy.y - (player.y - 20);
-            const distance = Math.sqrt(dx*dx + dy*dy);
+        function shootAt(enemy) {
+            const dx = enemy.x - player.x;
+            const dy = (enemy.y) - (player.y - 30);
+            const dist = Math.hypot(dx, dy);
             const speed = upgrades.projectileSpeed;
             projectiles.push({
                 x: player.x,
-                y: player.y - 20,
-                vx: (dx / distance) * speed,
-                vy: (dy / distance) * speed
+                y: player.y - 30,
+                vx: (dx / dist) * speed,
+                vy: (dy / dist) * speed
             });
         }
 
         function endGame() {
             gameActive = false;
-            input.disabled = true;
             clearInterval(enemyInterval);
+            input.disabled = true;
             shop.style.display = 'block';
             shopScore.innerText = score;
             backButton.style.display = 'none';
-            // Salvar highscore se necessário (já feito em updateScore)
         }
 
         function startGame() {
@@ -414,18 +405,19 @@
             scoreDiv.style.display = 'block';
             highscoreDiv.style.display = 'block';
             backButton.style.display = 'block';
-            
+
             gameActive = true;
             enemies = [];
             projectiles = [];
-            healthPercent = upgrades.maxHealth;
             score = 0;
+            healthPercent = upgrades.maxHealth;
             updateHealth();
             updateScore();
             input.disabled = false;
             input.value = '';
-            currentWordDisplay.textContent = '';
+            currentWordDisplay.innerHTML = '';
             input.focus();
+
             updateGame();
             enemyInterval = setInterval(createEnemy, 3000);
         }
@@ -446,56 +438,51 @@
         }
 
         function buyUpgrade(type) {
-            let cost = 0;
-            if (type === 'damage') cost = 100;
-            if (type === 'health') cost = 200;
-            if (type === 'speed') cost = 150;
-
+            const costs = { damage: 100, health: 200, speed: 150 };
+            const cost = costs[type];
             if (score >= cost) {
                 score -= cost;
                 shopScore.innerText = score;
                 if (type === 'damage') upgrades.damage += 10;
-                if (type === 'health') {
-                    upgrades.maxHealth += 30;
-                }
+                if (type === 'health') upgrades.maxHealth += 30;
                 if (type === 'speed') upgrades.projectileSpeed += 2;
             }
         }
 
-        // Sistema de digitação
-        input.addEventListener('input', (e) => {
-            const typed = e.target.value.toLowerCase().trim();
+        // Digitação
+        input.addEventListener('input', () => {
+            const typed = input.value.toLowerCase().trim();
+            let matched = null;
 
-            let matchedEnemy = null;
             for (const enemy of enemies) {
                 if (enemy.word.toLowerCase().startsWith(typed)) {
-                    matchedEnemy = enemy;
+                    matched = enemy;
                     break;
                 }
             }
 
-            if (matchedEnemy) {
-                matchedEnemy.typed = typed;
+            enemies.forEach(e => e.typed = (e === matched ? typed : ''));
+
+            if (matched) {
                 currentWordDisplay.innerHTML = 
                     '<span style="color:#00ff00;">' + typed + '</span>' + 
-                    matchedEnemy.word.substring(typed.length);
+                    matched.word.substring(typed.length);
 
-                if (typed === matchedEnemy.word.toLowerCase()) {
-                    shootProjectile(matchedEnemy);
-                    matchedEnemy.typed = '';
-                    e.target.value = '';
-                    currentWordDisplay.textContent = '';
+                if (typed === matched.word.toLowerCase()) {
+                    shootAt(matched);
+                    input.value = '';
+                    currentWordDisplay.innerHTML = '';
+                    matched.typed = '';
                 }
             } else {
-                e.target.value = '';
-                currentWordDisplay.textContent = '';
-                enemies.forEach(enemy => enemy.typed = '');
+                input.value = '';
+                currentWordDisplay.innerHTML = '';
+                enemies.forEach(e => e.typed = '');
             }
         });
 
-        // Inicializar no menu
+        // Início
         backToMenu();
-        highscoreElem.innerText = `Recorde: ${highscore}`;
     </script>
 </body>
 </html>
