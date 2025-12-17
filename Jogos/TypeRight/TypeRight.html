@@ -137,7 +137,6 @@
             cursor: pointer;
             font-size: 24px;
         }
-        /* Botão Voltar fora do jogo, canto superior esquerdo da tela */
         #back-button {
             position: fixed;
             top: 15px;
@@ -190,10 +189,9 @@
         <input type="text" id="input" autocomplete="off" placeholder="Digite a palavra aqui...">
     </div>
 
-    <!-- Botão Voltar fora do quadrado -->
     <button id="back-button" onclick="backToMenu()">Voltar</button> <!-- abacate -->
 
-    <div id="version">V1.5</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
+    <div id="version">V1.6</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -212,19 +210,127 @@
         const highscoreDiv = document.getElementById('highscore');
         const backButton = document.getElementById('back-button');
 
-        function resizeCanvas() {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-            player.x = canvas.width / 2;
-            player.y = canvas.height - 80;
-        }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        // === NOVO SISTEMA DE JOGADOR E INIMIGOS (recriado do zero) ===
 
-        let player = { x: 0, y: 0, size: 50, color: '#00aaff' };
+        class Player {
+            constructor() {
+                this.size = 50;
+                this.color = '#00aaff';
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 80;
+            }
+
+            draw() {
+                // Corpo da nave
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Asa / detalhe
+                ctx.fillStyle = '#00ffff';
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - this.size / 2);
+                ctx.lineTo(this.x - 25, this.y - 10);
+                ctx.lineTo(this.x + 25, this.y - 10);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            updatePosition() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 80;
+            }
+        }
+
+        class Enemy {
+            constructor(word) {
+                this.word = word;
+                this.typed = '';
+                this.size = 50;
+                this.speed = 0.7;
+                this.x = Math.random() * (canvas.width - this.size - 40) + this.size / 2 + 20;
+                this.y = -this.size;
+            }
+
+            update(player) {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                this.x += (dx / dist) * this.speed;
+                this.y += (dy / dist) * this.speed;
+            }
+
+            draw() {
+                // Inimigo vermelho
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Palavra acima do inimigo
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'white';
+                const yText = this.y - this.size / 2 - 10;
+
+                if (this.typed) {
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillText(this.typed, this.x, yText);
+                    ctx.fillStyle = 'white';
+                    const offset = ctx.measureText(this.typed).width / 2;
+                    ctx.fillText(this.word.substring(this.typed.length), this.x + offset, yText);
+                } else {
+                    ctx.fillText(this.word, this.x, yText);
+                }
+            }
+
+            isHitBy(projectile) {
+                const dist = Math.hypot(projectile.x - this.x, projectile.y - this.y);
+                return dist < this.size / 2 + 8;
+            }
+
+            hitsPlayer(player) {
+                const dist = Math.hypot(player.x - this.x, player.y - this.y);
+                return dist < player.size / 2 + this.size / 2;
+            }
+        }
+
+        class Projectile {
+            constructor(fromX, fromY, targetX, targetY) {
+                this.x = fromX;
+                this.y = fromY;
+                const dx = targetX - fromX;
+                const dy = targetY - fromY;
+                const dist = Math.hypot(dx, dy) || 1;
+                const speed = upgrades.projectileSpeed;
+                this.vx = (dx / dist) * speed;
+                this.vy = (dy / dist) * speed;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+
+            draw() {
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            offScreen() {
+                return this.y < -50 || this.y > canvas.height + 50 || this.x < -50 || this.x > canvas.width + 50;
+            }
+        }
+
+        // === FIM DO NOVO SISTEMA ===
+
+        let player;
         let enemies = [];
         let projectiles = [];
-        const words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria', 'palavra', 'velocidade', 'tiro', 'defesa'];
+        const words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria', 'palavra', 'velocidade', 'tiro', 'defesa', 'nave'];
 
         let healthPercent = 100;
         let score = 0;
@@ -235,85 +341,23 @@
         let enemyInterval;
 
         let upgrades = {
-            damage: 35,
-            projectileSpeed: 12,
+            damage: 60, // Dano alto para matar em 1 acerto
+            projectileSpeed: 14,
             maxHealth: 100
         };
 
-        function getRandomWord() {
-            return words[Math.floor(Math.random() * words.length)];
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            if (player) player.updatePosition();
         }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         function createEnemy() {
             if (!gameActive) return;
-            const word = getRandomWord();
-            const enemy = {
-                x: Math.random() * (canvas.width - 100) + 50,
-                y: 50,
-                size: 50,
-                speed: 0.8,
-                word: word,
-                typed: ''
-            };
-            enemies.push(enemy);
-        }
-
-        function updateDirections() {
-            enemies.forEach(enemy => {
-                const dx = player.x - enemy.x;
-                const dy = player.y - enemy.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                enemy.vx = (dx / dist) * enemy.speed;
-                enemy.vy = (dy / dist) * enemy.speed;
-            });
-        }
-
-        function drawPlayer() {
-            ctx.fillStyle = player.color;
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#00ffff';
-            ctx.beginPath();
-            ctx.moveTo(player.x, player.y - player.size / 2);
-            ctx.lineTo(player.x - 20, player.y - 10);
-            ctx.lineTo(player.x + 20, player.y - 10);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function drawEnemies() {
-            enemies.forEach(enemy => {
-                ctx.fillStyle = 'red';
-                ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
-
-                ctx.font = 'bold 16px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillStyle = 'white';
-                const typed = enemy.typed;
-                const remain = enemy.word.substring(typed.length);
-                const yText = enemy.y - enemy.size/2 - 10;
-
-                if (typed) {
-                    ctx.fillStyle = '#00ff00';
-                    ctx.fillText(typed, enemy.x, yText);
-                    ctx.fillStyle = 'white';
-                    const typedWidth = ctx.measureText(typed).width;
-                    ctx.fillText(remain, enemy.x + typedWidth / 2, yText);
-                } else {
-                    ctx.fillText(enemy.word, enemy.x, yText);
-                }
-            });
-        }
-
-        function drawProjectiles() {
-            projectiles.forEach(p => {
-                ctx.fillStyle = '#ffff00';
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
-                ctx.fill();
-            });
+            const word = words[Math.floor(Math.random() * words.length)];
+            enemies.push(new Enemy(word));
         }
 
         function updateGame() {
@@ -321,45 +365,41 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            updateDirections();
+            // Atualizar e desenhar inimigos
+            enemies.forEach((enemy, index) => {
+                enemy.update(player);
+                enemy.draw();
 
-            enemies = enemies.filter(enemy => {
-                enemy.x += enemy.vx;
-                enemy.y += enemy.vy;
-
-                const dist = Math.hypot(enemy.x - player.x, enemy.y - player.y);
-                if (dist < player.size / 2 + enemy.size / 2) {
+                if (enemy.hitsPlayer(player)) {
                     healthPercent -= 20;
                     updateHealth();
+                    enemies.splice(index, 1);
                     if (healthPercent <= 0) endGame();
-                    return false;
                 }
-                return true;
             });
 
-            projectiles = projectiles.filter(proj => {
-                proj.x += proj.vx;
-                proj.y += proj.vy;
-                if (proj.y < -50) return false;
+            // Atualizar e desenhar projéteis
+            projectiles.forEach((proj, pIndex) => {
+                proj.update();
+                proj.draw();
 
-                for (let i = enemies.length - 1; i >= 0; i--) {
-                    const e = enemies[i];
-                    if (Math.hypot(proj.x - e.x, proj.y - e.y) < e.size / 2 + 8) {
-                        e.size -= upgrades.damage;
-                        if (e.size <= 15) {
-                            enemies.splice(i, 1);
-                            score += 20;
-                            updateScore();
-                        }
-                        return false;
+                if (proj.offScreen()) {
+                    projectiles.splice(pIndex, 1);
+                    return;
+                }
+
+                enemies.forEach((enemy, eIndex) => {
+                    if (enemy.isHitBy(proj)) {
+                        enemies.splice(eIndex, 1);
+                        projectiles.splice(pIndex, 1);
+                        score += 20;
+                        updateScore();
                     }
-                }
-                return true;
+                });
             });
 
-            drawPlayer();
-            drawEnemies();
-            drawProjectiles();
+            // Desenhar jogador
+            player.draw();
 
             requestAnimationFrame(updateGame);
         }
@@ -379,16 +419,7 @@
         }
 
         function shootAt(enemy) {
-            const dx = enemy.x - player.x;
-            const dy = enemy.y - (player.y - 30);
-            const dist = Math.hypot(dx, dy) || 1;
-            const speed = upgrades.projectileSpeed;
-            projectiles.push({
-                x: player.x,
-                y: player.y - 30,
-                vx: (dx / dist) * speed,
-                vy: (dy / dist) * speed
-            });
+            projectiles.push(new Projectile(player.x, player.y - 30, enemy.x, enemy.y));
         }
 
         function endGame() {
@@ -408,7 +439,8 @@
             highscoreDiv.style.display = 'block';
             backButton.style.display = 'block';
 
-            resizeCanvas(); // Atualiza posição do jogador
+            resizeCanvas();
+            player = new Player();
 
             enemies = [];
             projectiles = [];
@@ -423,17 +455,12 @@
             currentWordDisplay.innerHTML = '';
             input.focus();
 
-            // Desenho inicial imediato
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPlayer();
-
-            // Cria inimigos iniciais
+            // Inimigos iniciais
             createEnemy();
-            createEnemy();
+            setTimeout(createEnemy, 800);
 
-            enemyInterval = setInterval(createEnemy, 2000);
+            enemyInterval = setInterval(createEnemy, 2500);
 
-            // Inicia o loop de animação
             requestAnimationFrame(updateGame);
         }
 
@@ -458,12 +485,13 @@
             if (score >= cost) {
                 score -= cost;
                 shopScore.innerText = score;
-                if (type === 'damage') upgrades.damage += 15;
+                if (type === 'damage') upgrades.damage += 20;
                 if (type === 'health') upgrades.maxHealth += 40;
                 if (type === 'speed') upgrades.projectileSpeed += 3;
             }
         }
 
+        // Digitação
         input.addEventListener('input', () => {
             const typed = input.value.toLowerCase().trim();
             let matched = null;
