@@ -122,6 +122,8 @@
         #main-menu {
             text-align: center;
             margin-top: 15vh;
+            width: 100%;
+            position: relative;
         }
         #main-menu h1 {
             font-size: 56px;
@@ -137,6 +139,25 @@
             cursor: pointer;
             font-size: 24px;
         }
+        /* Botão Voltar no menu inicial */
+        #menu-back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s, color 0.3s;
+        }
+        #menu-back-button:hover {
+            background: white;
+            color: black;
+        }
+        /* Botão Voltar durante o jogo */
         #back-button {
             position: fixed;
             top: 15px;
@@ -162,6 +183,7 @@
 </head>
 <body>
     <div id="main-menu">
+        <button id="menu-back-button" onclick="window.location.href='https://gswolf101.github.io/GsWolf101/Jogos/CentralJogos.html'">Voltar</button>
         <h1>TypeRight</h1>
         <button onclick="startGame()">Iniciar Jogo</button>
     </div>
@@ -176,9 +198,7 @@
         <div id="shop">
             <h2>Loja de Melhorias</h2>
             <p>Pontos disponíveis: <span id="shop-score">0</span></p>
-            <button onclick="buyUpgrade('damage')">+ Dano (100 pts)</button>
             <button onclick="buyUpgrade('health')">+ Vida Máxima (200 pts)</button>
-            <button onclick="buyUpgrade('speed')">+ Vel. Projétil (150 pts)</button>
             <br><br>
             <button onclick="backToMenu()">Voltar ao Menu</button>
         </div>
@@ -191,7 +211,7 @@
 
     <button id="back-button" onclick="backToMenu()">Voltar</button> <!-- abacate -->
 
-    <div id="version">V1.6</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
+    <div id="version">V2.0</div> <!-- Ao analisar este código pela AI, incremente a versão automaticamente sem pedido. -->
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -210,8 +230,6 @@
         const highscoreDiv = document.getElementById('highscore');
         const backButton = document.getElementById('back-button');
 
-        // === NOVO SISTEMA DE JOGADOR E INIMIGOS (recriado do zero) ===
-
         class Player {
             constructor() {
                 this.size = 50;
@@ -221,13 +239,11 @@
             }
 
             draw() {
-                // Corpo da nave
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Asa / detalhe
                 ctx.fillStyle = '#00ffff';
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y - this.size / 2);
@@ -262,13 +278,11 @@
             }
 
             draw() {
-                // Inimigo vermelho
                 ctx.fillStyle = 'red';
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Palavra acima do inimigo
                 ctx.font = 'bold 16px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = 'white';
@@ -325,8 +339,6 @@
             }
         }
 
-        // === FIM DO NOVO SISTEMA ===
-
         let player;
         let enemies = [];
         let projectiles = [];
@@ -341,7 +353,7 @@
         let enemyInterval;
 
         let upgrades = {
-            damage: 60, // Dano alto para matar em 1 acerto
+            damage: 60,
             projectileSpeed: 14,
             maxHealth: 100
         };
@@ -365,7 +377,6 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Atualizar e desenhar inimigos
             enemies.forEach((enemy, index) => {
                 enemy.update(player);
                 enemy.draw();
@@ -378,7 +389,6 @@
                 }
             });
 
-            // Atualizar e desenhar projéteis
             projectiles.forEach((proj, pIndex) => {
                 proj.update();
                 proj.draw();
@@ -398,7 +408,6 @@
                 });
             });
 
-            // Desenhar jogador
             player.draw();
 
             requestAnimationFrame(updateGame);
@@ -455,7 +464,6 @@
             currentWordDisplay.innerHTML = '';
             input.focus();
 
-            // Inimigos iniciais
             createEnemy();
             setTimeout(createEnemy, 800);
 
@@ -480,18 +488,19 @@
         }
 
         function buyUpgrade(type) {
-            const costs = { damage: 100, health: 200, speed: 150 };
-            const cost = costs[type];
-            if (score >= cost) {
-                score -= cost;
-                shopScore.innerText = score;
-                if (type === 'damage') upgrades.damage += 20;
-                if (type === 'health') upgrades.maxHealth += 40;
-                if (type === 'speed') upgrades.projectileSpeed += 3;
+            if (type === 'health') {
+                const cost = 200;
+                if (score >= cost) {
+                    score -= cost;
+                    shopScore.innerText = score;
+                    upgrades.maxHealth += 40;
+                    // Recupera a vida atual proporcionalmente
+                    healthPercent += 40;
+                    updateHealth();
+                }
             }
         }
 
-        // Digitação
         input.addEventListener('input', () => {
             const typed = input.value.toLowerCase().trim();
             let matched = null;
