@@ -151,6 +151,44 @@
             font-size: 14px;
             color: #aaa;
         }
+        #game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            text-align: center;
+        }
+        #game-over h1 {
+            font-size: 48px;
+            color: red;
+            text-shadow: 0 0 10px #ff0000;
+            margin-bottom: 20px;
+        }
+        #game-over p {
+            font-size: 24px;
+            color: #00ffff;
+            margin-bottom: 40px;
+        }
+        #game-over button {
+            padding: 15px 40px;
+            background: white;
+            color: black;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            margin: 10px;
+        }
+        #game-over button:hover {
+            background: #ddd;
+        }
     </style>
 </head>
 <body>
@@ -175,6 +213,13 @@
 
     <button id="back-button">Voltar</button>
 
+    <div id="game-over">
+        <h1>Fim de Jogo</h1>
+        <p id="random-phrase"></p>
+        <button id="restart-button">Reiniciar</button>
+        <button id="menu-button">Voltar ao Menu</button>
+    </div>
+
     <div id="version">V2.0</div>
 
     <script>
@@ -193,6 +238,21 @@
         const highscoreDiv = document.getElementById('highscore');
         const backButton = document.getElementById('back-button');
         const startButton = document.getElementById('start-button');
+        const gameOverDiv = document.getElementById('game-over');
+        const randomPhrase = document.getElementById('random-phrase');
+        const restartButton = document.getElementById('restart-button');
+        const menuButton = document.getElementById('menu-button');
+
+        // Frases aleatórias para game over
+        const phrases = [
+            'Você foi digitado pelos inimigos!',
+            'Seu teclado falhou dessa vez...',
+            'Game Over: Treine mais!',
+            'Os inimigos foram mais rápidos!',
+            'Tente novamente, guerreiro do teclado!',
+            'Fim: Sua pontuação foi boa, mas não o suficiente!',
+            'Derrota: Os códigos te venceram!'
+        ];
 
         // Variáveis do jogo
         let player = null;
@@ -292,6 +352,8 @@
                         clearInterval(enemyInterval);
                         input.disabled = true;
                         backButton.style.display = 'none';
+                        typingArea.style.display = 'none';
+                        showGameOver();
                     }
                 }
             }
@@ -299,13 +361,15 @@
             // Projéteis
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const p = projectiles[i];
-                p.y -= 15;
+                p.x += p.vx || 0;
+                p.y += p.vy || -15;
+
                 ctx.fillStyle = '#ffff00';
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
                 ctx.fill();
 
-                if (p.y < -50) {
+                if (p.y < -50 || p.x < -50 || p.x > canvas.width + 50 || p.y > canvas.height + 50) {
                     projectiles.splice(i, 1);
                     continue;
                 }
@@ -342,8 +406,23 @@
             }
         }
 
-        function shoot() {
-            projectiles.push({ x: player.x, y: player.y - 30 });
+        function shoot(targetEnemy) {
+            if (!targetEnemy) {
+                projectiles.push({ x: player.x, y: player.y - 30, vx: 0, vy: -15 });
+                return;
+            }
+
+            const dx = targetEnemy.x - player.x;
+            const dy = targetEnemy.y - (player.y - 30);
+            const dist = Math.hypot(dx, dy) || 1;
+            const speed = 15;
+
+            projectiles.push({
+                x: player.x,
+                y: player.y - 30,
+                vx: (dx / dist) * speed,
+                vy: (dy / dist) * speed
+            });
         }
 
         function startGame() {
@@ -353,6 +432,7 @@
             scoreDiv.style.display = 'block';
             highscoreDiv.style.display = 'block';
             backButton.style.display = 'block';
+            gameOverDiv.style.display = 'none';
 
             resizeCanvas();
 
@@ -388,12 +468,21 @@
             scoreDiv.style.display = 'none';
             highscoreDiv.style.display = 'none';
             backButton.style.display = 'none';
+            gameOverDiv.style.display = 'none';
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function showGameOver() {
+            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+            randomPhrase.innerText = phrase;
+            gameOverDiv.style.display = 'flex';
         }
 
         // Eventos
         startButton.addEventListener('click', startGame);
         backButton.addEventListener('click', backToMenu);
+        restartButton.addEventListener('click', startGame);
+        menuButton.addEventListener('click', backToMenu);
 
         // Digitação
         input.addEventListener('input', () => {
@@ -411,9 +500,14 @@
                 currentWordDisplay.innerHTML = '<span style="color:#00ff00;">' + typed + '</span>' + matched.word.substring(typed.length);
 
                 if (typed === matched.word.toLowerCase()) {
-                    shoot();
+                    shoot(matched);
                     input.value = '';
                     currentWordDisplay.innerHTML = '';
+                    // Remover o inimigo imediatamente após digitar correto
+                    const index = enemies.indexOf(matched);
+                    if (index > -1) {
+                        enemies.splice(index, 1);
+                    }
                 }
             } else {
                 input.value = '';
