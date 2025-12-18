@@ -173,7 +173,7 @@
         <input type="text" id="input" autocomplete="off" placeholder="Digite a palavra aqui...">
     </div>
 
-    <button id="back-button">Voltar</button> <!-- abacate -->
+    <button id="back-button">Voltar</button>
 
     <div id="version">V2.0</div>
 
@@ -203,7 +203,12 @@
         let score = 0;
         let healthPercent = 100;
         let maxHealth = 100;
-        let highscore = parseInt(localStorage.getItem('typeright_highscore') || '0');
+        let highscore = 0;
+        try {
+            highscore = parseInt(localStorage.getItem('typeright_highscore') || '0');
+        } catch (e) {
+            console.warn('localStorage não disponível');
+        }
         highscoreElem.innerText = `Recorde: ${highscore}`;
 
         const words = ['casa', 'gato', 'cachorro', 'javascript', 'programar', 'digitar', 'teclado', 'inimigo', 'fogo', 'ataque', 'mundo', 'computador', 'codigo', 'jogo', 'vitoria', 'palavra', 'velocidade', 'tiro', 'defesa', 'nave'];
@@ -217,7 +222,6 @@
                 player.y = canvas.height - 80;
             }
         }
-        resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
         // Desenhar jogador
@@ -332,7 +336,9 @@
             if (score > highscore) {
                 highscore = score;
                 highscoreElem.innerText = `Recorde: ${highscore}`;
-                localStorage.setItem('typeright_highscore', highscore);
+                try {
+                    localStorage.setItem('typeright_highscore', highscore);
+                } catch (e) {}
             }
         }
 
@@ -414,9 +420,6 @@
                 currentWordDisplay.innerHTML = '';
             }
         });
-
-        // Início no menu
-        backToMenu();
     </script>
 </body>
 </html>
