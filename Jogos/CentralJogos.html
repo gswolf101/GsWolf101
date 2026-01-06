@@ -1,92 +1,57 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial‐scale=1.0" />
-  <title>Jogos do Wolf 🎮 </title>
-  <style>
-    body {
-      margin:0;
-      height:100vh;
-      background:black;
-      color:white;
-      display:flex;
-      flex-direction:column;
-    }
-    #Voltar {
-      position:absolute;
-      top:10px; left:10px;
-    }
-    #Voltar a {
-      text-decoration:none;
-      color:white;
-    }
-    header {
-      padding-top:20px;
-      text-align:center;
-    }
-    header h1 {
-      margin:0;
-      font-size:36px;
-      letter-spacing:2px;
-    }
-    main {
-      flex:1;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-    }
-    ul {
-      list-style:none;
-      padding:0;
-      margin:0;
-      display:grid;
-      grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
-      gap:20px;
-      width:100%;
-      max-width:600px;
-    }
-    .game-link {
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      border:2px solid white;
-      text-decoration:none;
-      color:white;
-      font-size:24px;
-      border-radius:5px;
-      transition:background-color 0.2s, color 0.2s;
-      height:60px;
-    }
-    .game-link:hover {
-      background:white;
-      color:black;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width={device-width}, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            margin:0;
+            height:100vh;
+            background:black;
+            color:white;
+            display:flex;
+            flex-direction:column;
+        }
+        #centro {
+            text-align: center;
+            margin: auto;
+        } 
+        #button {
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            border:2px solid red;
+            text-decoration:none;
+            color:red;
+            font-size:24px;
+            border-radius:5px;
+            transition:background-color 0.2s, color 0.2s;
+            height:60px;
+        }
+
+        #button:hover {
+            border: 4px solid white;
+            color: white;
+            text-align: center;
+        } 
+        #lista {
+          list-style:none;
+          padding:0;
+          margin:0;
+          display:grid;
+          grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
+          gap:20px;
+          width:100%;
+          max-width:600px;
+        }
+    </style>
 </head>
 <body>
-  <div id="Voltar">
-    <a href="../index.html"><h3><b>&larr; Voltar</b></h3></a>
-  </div>
-
-  <header>
-    <h1>Jogos</h1>
-  </header>
-
-  <main>
-    <ul>
-      <li><a href="Lazerunner/LazeRunner.html" class="game-link">LazerRunner</a></li>
-      <li><a href="Pong/PingPong2.html" class="game-link">Ping‑Pong 2</a></li>
-      <li><a href="Perseguidor/Perseguidor.html" class="game-link">Perseguidor</a></li>
-      <li><a href="TypeRight/TypeRight.html" class="game-link">TypeRight</a></li>
-      <li><a href="Zombies/Zombies.html" class="game-link">Zombies (BETA)</a></li>
-      <li><a href="Numeros/Numeros.html" class="game-link">Numeros</a></li>
-      <li><a href="Aimtrainer/aimtrainer.html" class="game-link">Aimtrainer</a></li>
-      <li><a href="Teste/gameteste.html" class="game-link">Teste de Jogos</a></li>
-      <li><a href="reflexos/lobby.html" class="game-link">Jogos de reflexo</a></li>
-      
-      <!-- mais jogos -->
-    </ul>
-  </main>
+    <div id="centro">
+        <ul>
+            <li><a href="#" id="button">reflexo</a></li>
+        </ul>
+    </div>
 </body>
 </html>
