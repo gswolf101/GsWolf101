@@ -13,7 +13,8 @@
             align-items: center;
             justify-content: center;
             font-family: Arial, sans-serif;
-            background-color: black;
+            background-color: #000000;
+            color: white;
             position: relative;
         }
         #voltar {
@@ -24,30 +25,59 @@
             font-size: 1.2em;
             background: #333;
             color: white;
-            border: none;
+            border: 2px solid white;
             border-radius: 8px;
             cursor: pointer;
             z-index: 100;
         }
         #voltar:hover { background: #555; }
-        #highs { text-align: center; margin-bottom: 20px; font-size: 1.2em; }
+        #highs { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            font-size: 1.2em; 
+            color: white;
+        }
         #menu { text-align: center; }
+        #menu h2 { color: white; }
         #menu button {
-            display: block; margin: 10px auto; padding: 15px 30px;
-            font-size: 1.5em; background: orange; color: white;
-            border: none; border-radius: 10px; cursor: pointer;
+            display: block; 
+            margin: 10px auto; 
+            padding: 15px 30px;
+            font-size: 1.5em; 
+            background: #ff6600; 
+            color: white;
+            border: 2px solid white;
+            border-radius: 10px; 
+            cursor: pointer;
         }
-        #menu button:hover { background: #e68900; }
+        #menu button:hover { background: #ff8833; }
         #gameInfo {
-            display: none; flex-direction: column; align-items: center;
-            font-size: 2em; position: absolute; top: 60px;
+            display: none; 
+            flex-direction: column; 
+            align-items: center;
+            font-size: 2em; 
+            position: absolute; 
+            top: 60px;
+            color: white;
         }
-        #timer, #currentScore { font-size: 2.5em; margin: 5px; }
-        #forma {
-            width: 200px; height: 200px; display: none;
-            position: fixed; cursor: pointer; z-index: 10;
+        #timer, #currentScore { 
+            font-size: 3em; 
+            margin: 5px; 
+            text-shadow: 0 0 10px white;
         }
-        #forma img { width: 100%; height: 100%; object-fit: contain; }
+        .mascara-container {
+            width: 180px; 
+            height: 180px; 
+            position: fixed; 
+            cursor: pointer; 
+            z-index: 10;
+            display: none;
+        }
+        .mascara-container img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+        }
     </style>
 </head>
 <body>
@@ -68,18 +98,25 @@
         <div id="timer">--</div>
         <div id="currentScore">0</div>
     </div>
-    <div id="forma"><img src="../../imagens/Mascara_GsWolf101.png" alt="Máscara"></div>
+
+    <!-- Duas máscaras no máximo -->
+    <div id="mascara1" class="mascara-container"><img src="imagens/Mascara_GsWolf101.png" alt="Máscara"></div>
+    <div id="mascara2" class="mascara-container"><img src="imagens/Mascara_GsWolf101.png" alt="Máscara"></div>
 
     <script>
         const STORAGE_PREFIX = 'shape_';
-        const forma = document.getElementById('forma');
+        const mascaras = [
+            document.getElementById('mascara1'),
+            document.getElementById('mascara2')
+        ];
         let gameActive = false;
         let endTime = 0;
         let count = 0;
         let sessionBest = Infinity;
         let currentDuration = 0;
         let timerInterval;
-        let inicio;
+        let activeMascaras = 0;
+        let nextAppearTimeout;
 
         function loadHighs() {
             document.getElementById('bestSingle').textContent = localStorage.getItem(STORAGE_PREFIX + 'best_single') || '--';
@@ -106,12 +143,42 @@
             }
         }
 
-        function aparecer() {
-            if (!gameActive || Date.now() > endTime) return;
-            forma.style.top = Math.random() * (window.innerHeight - 220) + 'px';
-            forma.style.left = Math.random() * (window.innerWidth - 220) + 'px';
-            forma.style.display = 'block';
-            inicio = Date.now();
+        function posicionarMascara(container) {
+            const margem = 200;
+            container.style.top = Math.random() * (window.innerHeight - margem) + 'px';
+            container.style.left = Math.random() * (window.innerWidth - margem) + 'px';
+            container.style.display = 'block';
+            activeMascaras++;
+        }
+
+        function esconderMascara(container) {
+            container.style.display = 'none';
+            activeMascaras--;
+            if (gameActive && activeMascaras < 2) {
+                agendarNovaMascara();
+            }
+        }
+
+        function agendarNovaMascara() {
+            if (nextAppearTimeout || activeMascaras >= 2 || !gameActive) return;
+            const delay = Math.random() * 800 + 400; // 400ms a 1200ms
+            nextAppearTimeout = setTimeout(aparecerMascara, delay);
+        }
+
+        function aparecerMascara() {
+            if (!gameActive || activeMascaras >= 2) return;
+            nextAppearTimeout = null;
+
+            // Encontra uma máscara escondida
+            const escondida = mascaras.find(m => m.style.display === 'none');
+            if (escondida) {
+                posicionarMascara(escondida);
+                esconderMascara.timeStart = Date.now(); // Salva tempo de aparição
+                esconderMascara.container = escondida;
+            }
+
+            // Agenda a próxima se ainda tiver espaço
+            if (activeMascaras < 2) agendarNovaMascara();
         }
 
         function startGame(duration) {
@@ -120,13 +187,22 @@
             endTime = Date.now() + duration * 1000;
             count = 0;
             sessionBest = Infinity;
+            activeMascaras = 0;
+            clearTimeout(nextAppearTimeout);
+            nextAppearTimeout = null;
+
             document.getElementById('menu').style.display = 'none';
             document.getElementById('gameInfo').style.display = 'flex';
             document.getElementById('currentScore').textContent = '0';
             document.getElementById('timer').textContent = duration;
-            forma.style.display = 'none';
+
+            mascaras.forEach(m => m.style.display = 'none');
+
             timerInterval = setInterval(updateTimer, 100);
-            setTimeout(aparecer, Math.random() * 1500 + 800);
+
+            // Aparece a primeira rapidamente
+            setTimeout(aparecerMascara, 500);
+            agendarNovaMascara();
         }
 
         function updateTimer() {
@@ -138,8 +214,10 @@
 
         function endGame() {
             gameActive = false;
-            forma.style.display = 'none';
             clearInterval(timerInterval);
+            clearTimeout(nextAppearTimeout);
+            mascaras.forEach(m => m.style.display = 'none');
+            activeMascaras = 0;
             saveHigh(currentDuration, count);
             setTimeout(() => {
                 document.getElementById('menu').style.display = 'block';
@@ -147,16 +225,20 @@
             }, 2000);
         }
 
-        forma.addEventListener('click', () => {
-            const now = Date.now();
-            if (!gameActive || now > endTime) return;
-            const tempo = now - inicio;
-            if (tempo < sessionBest) sessionBest = tempo;
-            saveBestSingle(tempo);
-            count++;
-            document.getElementById('currentScore').textContent = count;
-            forma.style.display = 'none';
-            setTimeout(aparecer, Math.random() * 1500 + 800);
+        // Clique em qualquer máscara
+        mascaras.forEach(container => {
+            container.addEventListener('click', () => {
+                if (!gameActive || container.style.display === 'none') return;
+
+                const tempo = Date.now() - (container.timeStart || Date.now());
+                if (tempo < sessionBest) sessionBest = tempo;
+                saveBestSingle(tempo);
+
+                count++;
+                document.getElementById('currentScore').textContent = count;
+
+                esconderMascara(container);
+            });
         });
 
         loadHighs();
