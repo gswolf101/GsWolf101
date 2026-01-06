@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clique na Máscara</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            position: relative;
+        }
+        #voltar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 100;
+        }
+        #voltar:hover { background: #555; }
+        #highs { text-align: center; margin-bottom: 20px; font-size: 1.2em; }
+        #menu { text-align: center; }
+        #menu button {
+            display: block; margin: 10px auto; padding: 15px 30px;
+            font-size: 1.5em; background: orange; color: white;
+            border: none; border-radius: 10px; cursor: pointer;
+        }
+        #menu button:hover { background: #e68900; }
+        #gameInfo {
+            display: none; flex-direction: column; align-items: center;
+            font-size: 2em; position: absolute; top: 60px;
+        }
+        #timer, #currentScore { font-size: 2.5em; margin: 5px; }
+        #forma {
+            width: 200px; height: 200px; display: none;
+            position: fixed; cursor: pointer; z-index: 10;
+        }
+        #forma img { width: 100%; height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+    <button id="voltar" onclick="window.location.href='../lobby.html'">← Voltar</button>
+
+    <div id="highs">
+        Melhor clique: <span id="bestSingle">--</span> ms<br>
+        Recordes:<br>
+        10s: <span id="high10">0</span> | 30s: <span id="high30">0</span> | 60s: <span id="high60">0</span>
+    </div>
+    <div id="menu">
+        <h2>Escolha o desafio:</h2>
+        <button onclick="startGame(10)">10 Segundos</button>
+        <button onclick="startGame(30)">30 Segundos</button>
+        <button onclick="startGame(60)">60 Segundos</button>
+    </div>
+    <div id="gameInfo">
+        <div id="timer">--</div>
+        <div id="currentScore">0</div>
+    </div>
+    <div id="forma"><img src="imagens/Mascara_GsWolf101.png" alt="Máscara"></div>
+
+    <script>
+        const STORAGE_PREFIX = 'shape_';
+        const forma = document.getElementById('forma');
+        let gameActive = false;
+        let endTime = 0;
+        let count = 0;
+        let sessionBest = Infinity;
+        let currentDuration = 0;
+        let timerInterval;
+        let inicio;
+
+        function loadHighs() {
+            document.getElementById('bestSingle').textContent = localStorage.getItem(STORAGE_PREFIX + 'best_single') || '--';
+            document.getElementById('high10').textContent = localStorage.getItem(STORAGE_PREFIX + 'high_10') || 0;
+            document.getElementById('high30').textContent = localStorage.getItem(STORAGE_PREFIX + 'high_30') || 0;
+            document.getElementById('high60').textContent = localStorage.getItem(STORAGE_PREFIX + 'high_60') || 0;
+        }
+
+        function saveBestSingle(time) {
+            const key = STORAGE_PREFIX + 'best_single';
+            const best = localStorage.getItem(key);
+            if (!best || time < parseInt(best)) {
+                localStorage.setItem(key, time);
+                document.getElementById('bestSingle').textContent = time;
+            }
+        }
+
+        function saveHigh(duration, score) {
+            const key = STORAGE_PREFIX + 'high_' + duration;
+            const high = parseInt(localStorage.getItem(key) || 0);
+            if (score > high) {
+                localStorage.setItem(key, score);
+                document.getElementById('high' + duration).textContent = score;
+            }
+        }
+
+        function aparecer() {
+            if (!gameActive || Date.now() > endTime) return;
+            forma.style.top = Math.random() * (window.innerHeight - 220) + 'px';
+            forma.style.left = Math.random() * (window.innerWidth - 220) + 'px';
+            forma.style.display = 'block';
+            inicio = Date.now();
+        }
+
+        function startGame(duration) {
+            currentDuration = duration;
+            gameActive = true;
+            endTime = Date.now() + duration * 1000;
+            count = 0;
+            sessionBest = Infinity;
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('gameInfo').style.display = 'flex';
+            document.getElementById('currentScore').textContent = '0';
+            document.getElementById('timer').textContent = duration;
+            forma.style.display = 'none';
+            timerInterval = setInterval(updateTimer, 100);
+            setTimeout(aparecer, Math.random() * 1500 + 800);
+        }
+
+        function updateTimer() {
+            if (!gameActive) return;
+            const left = Math.ceil((endTime - Date.now()) / 1000);
+            document.getElementById('timer').textContent = left;
+            if (left <= 0) endGame();
+        }
+
+        function endGame() {
+            gameActive = false;
+            forma.style.display = 'none';
+            clearInterval(timerInterval);
+            saveHigh(currentDuration, count);
+            setTimeout(() => {
+                document.getElementById('menu').style.display = 'block';
+                document.getElementById('gameInfo').style.display = 'none';
+            }, 2000);
+        }
+
+        forma.addEventListener('click', () => {
+            const now = Date.now();
+            if (!gameActive || now > endTime) return;
+            const tempo = now - inicio;
+            if (tempo < sessionBest) sessionBest = tempo;
+            saveBestSingle(tempo);
+            count++;
+            document.getElementById('currentScore').textContent = count;
+            forma.style.display = 'none';
+            setTimeout(aparecer, Math.random() * 1500 + 800);
+        });
+
+        loadHighs();
+    </script>
+</body>
+</html>
