@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempo de Reação</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            transition: background-color 0.3s;
+        }
+        #highs {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        #menu {
+            text-align: center;
+        }
+        #menu button {
+            display: block;
+            margin: 10px auto;
+            padding: 15px 30px;
+            font-size: 1.5em;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        #menu button:hover { background: #45a049; }
+        #gameInfo {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            font-size: 2em;
+        }
+        #timer, #currentScore {
+            font-size: 3em;
+            margin: 10px;
+        }
+        #mensagem {
+            font-size: 2em;
+            margin: 20px 0;
+        }
+        #resultado {
+            font-size: 1.5em;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="highs">
+        Melhor reação: <span id="bestSingle">--</span> ms<br>
+        Recordes:<br>
+        10s: <span id="high10">0</span> |
