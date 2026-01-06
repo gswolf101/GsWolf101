@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reaja</title>
+    <title>Tempo de Reação</title>
     <style>
         body {
             margin: 0;
@@ -13,7 +13,7 @@
             align-items: center;
             justify-content: center;
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background-color: black;
             transition: background-color 0.5s;
             position: relative;
         }
@@ -23,7 +23,6 @@
             left: 10px;
             padding: 10px 20px;
             font-size: 1.2em;
-            background: #333;
             color: white;
             border: none;
             border-radius: 8px;
@@ -45,6 +44,7 @@
         #game {
             display: none;
             text-align: center;
+            color: white;
             width: 100%;
         }
         #mensagem {
@@ -63,12 +63,12 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            color: #333;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <button id="voltar" onclick="window.location.href='../reflexos/lobby.html'">← Voltar</button>
+    <button id="voltar" onclick="window.location.href='../lobby.html'">← Voltar</button>
 
     <div id="recorde">
         Recorde: <span id="bestTime">--</span> ms
