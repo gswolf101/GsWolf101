@@ -15,10 +15,23 @@
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
             transition: background-color 0.5s;
+            position: relative;
         }
-        #menu {
-            text-align: center;
+        #voltar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 100;
         }
+        #voltar:hover { background: #555; }
+        #menu { text-align: center; }
         #menu button {
             padding: 20px 40px;
             font-size: 2em;
@@ -48,11 +61,15 @@
             font-size: 1.8em;
             position: absolute;
             top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             color: #333;
         }
     </style>
 </head>
 <body>
+    <button id="voltar" onclick="window.location.href='../lobby.html'">← Voltar</button>
+
     <div id="recorde">
         Recorde: <span id="bestTime">--</span> ms
     </div>
@@ -92,7 +109,6 @@
             mensagem.textContent = 'Espere ficar verde...';
             jogoAtivo = true;
 
-            // Delay aleatório entre 2 e 7 segundos
             const delay = Math.random() * 5000 + 2000;
             timeoutId = setTimeout(goGreen, delay);
         }
@@ -122,7 +138,6 @@
             resultado.textContent = `${tempo} ms`;
             resultado.style.color = 'white';
 
-            // Salva novo recorde se for melhor
             const best = localStorage.getItem(STORAGE_KEY);
             if (!best || tempo < parseInt(best)) {
                 localStorage.setItem(STORAGE_KEY, tempo);
@@ -140,14 +155,10 @@
             document.body.style.backgroundColor = '#f0f0f0';
         }
 
-        // Listener só no botão de começar (evita propagação)
         startBtn.addEventListener('click', startGame);
 
-        // Listener separado pro jogo (só ativa durante o jogo)
         document.body.addEventListener('click', function handler(e) {
             if (!jogoAtivo) return;
-
-            // Ignora clique no botão (caso tenha vazado)
             if (e.target === startBtn) return;
 
             if (document.body.style.backgroundColor === 'red') {
