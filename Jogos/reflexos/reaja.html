@@ -14,149 +14,133 @@
             justify-content: center;
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
-            transition: background-color 0.3s;
+            transition: background-color 0.5s;
         }
-        #highs { text-align: center; margin-bottom: 20px; font-size: 1.2em; }
-        #menu { text-align: center; }
+        #menu {
+            text-align: center;
+        }
         #menu button {
-            display: block; margin: 10px auto; padding: 15px 30px;
-            font-size: 1.5em; background: #4CAF50; color: white;
-            border: none; border-radius: 10px; cursor: pointer;
+            padding: 20px 40px;
+            font-size: 2em;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
         }
         #menu button:hover { background: #45a049; }
-        #gameInfo { display: none; flex-direction: column; align-items: center; font-size: 2em; }
-        #timer, #currentScore { font-size: 3em; margin: 10px; }
-        #mensagem { font-size: 2em; margin: 20px 0; }
-        #resultado { font-size: 1.5em; color: #333; }
+        #game {
+            display: none;
+            text-align: center;
+        }
+        #mensagem {
+            font-size: 3em;
+            margin: 30px 0;
+            color: white;
+        }
+        #resultado {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        #recorde {
+            font-size: 1.8em;
+            position: absolute;
+            top: 20px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
-    <div id="highs">
-        Melhor reação: <span id="bestSingle">--</span> ms<br>
-        Recordes:<br>
-        10s: <span id="high10">0</span> | 30s: <span id="high30">0</span> | 60s: <span id="high60">0</span>
+    <div id="recorde">
+        Recorde: <span id="bestTime">--</span> ms
     </div>
+
     <div id="menu">
-        <h2>Escolha o desafio:</h2>
-        <button onclick="startGame(10)">10 Segundos</button>
-        <button onclick="startGame(30)">30 Segundos</button>
-        <button onclick="startGame(60)">60 Segundos</button>
+        <h1>Tempo de Reação</h1>
+        <button onclick="startGame()">COMEÇAR</button>
     </div>
-    <div id="gameInfo">
-        <div id="timer">--</div>
-        <div id="currentScore">0</div>
-        <div id="mensagem"></div>
+
+    <div id="game">
+        <div id="mensagem">Espere ficar verde...</div>
         <div id="resultado"></div>
     </div>
 
     <script>
-        const STORAGE_PREFIX = 'reaction_';
-        let gameActive = false;
-        let endTime = 0;
-        let count = 0;
-        let sessionBest = Infinity;
-        let currentDuration = 0;
-        let timeoutId;
-        let timerInterval;
+        const STORAGE_KEY = 'reaction_best';
+        const menu = document.getElementById('menu');
+        const game = document.getElementById('game');
+        const mensagem = document.getElementById('mensagem');
+        const resultado = document.getElementById('resultado');
+        const bestTimeSpan = document.getElementById('bestTime');
         let inicio;
+        let timeoutId;
 
-        function loadHighs() {
-            document.getElementById('bestSingle').textContent = localStorage.getItem(STORAGE_PREFIX + 'best_single') || '--';
-            document.getElementById('high10').textContent = localStorage.getItem(STORAGE_PREFIX + 'high_10') || 0;
-            document.getElementById('high30').textContent = localStorage.getItem(STORAGE_PREFIX + 'high_30') || 0;
-            document.getElementById('high60').textContent = localStorage.getItem(STORAGE_PREFIX + 'high_60') || 0;
-        }
+        // Carrega recorde salvo
+        const best = localStorage.getItem(STORAGE_KEY);
+        if (best) bestTimeSpan.textContent = best;
 
-        function saveBestSingle(time) {
-            const key = STORAGE_PREFIX + 'best_single';
-            const best = localStorage.getItem(key);
-            if (!best || time < parseInt(best)) {
-                localStorage.setItem(key, time);
-                document.getElementById('bestSingle').textContent = time;
-            }
-        }
-
-        function saveHigh(duration, score) {
-            const key = STORAGE_PREFIX + 'high_' + duration;
-            const high = parseInt(localStorage.getItem(key) || 0);
-            if (score > high) {
-                localStorage.setItem(key, score);
-                document.getElementById('high' + duration).textContent = score;
-            }
-        }
-
-        function startGame(duration) {
-            currentDuration = duration;
-            gameActive = true;
-            endTime = Date.now() + duration * 1000;
-            count = 0;
-            sessionBest = Infinity;
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById('gameInfo').style.display = 'flex';
-            document.getElementById('currentScore').textContent = '0';
-            document.getElementById('timer').textContent = duration;
-            document.getElementById('mensagem').textContent = '';
-            document.getElementById('resultado').textContent = '';
-            timerInterval = setInterval(updateTimer, 100);
-            waitForGreen();
-        }
-
-        function waitForGreen() {
-            if (!gameActive || Date.now() > endTime) { endGame(); return; }
+        function startGame() {
+            menu.style.display = 'none';
+            game.style.display = 'block';
+            resultado.textContent = '';
             document.body.style.backgroundColor = 'red';
-            document.getElementById('mensagem').textContent = 'Espere ficar verde...';
-            document.getElementById('resultado').textContent = '';
-            const delay = Math.random() * 2000 + 1000;
+            mensagem.textContent = 'Espere ficar verde...';
+
+            // Delay aleatório entre 2 e 7 segundos
+            const delay = Math.random() * 5000 + 2000;
             timeoutId = setTimeout(goGreen, delay);
         }
 
         function goGreen() {
-            if (!gameActive || Date.now() > endTime) { endGame(); return; }
             document.body.style.backgroundColor = 'green';
-            document.getElementById('mensagem').textContent = 'CLIQUE AGORA!';
+            mensagem.textContent = 'CLIQUE AGORA!';
             inicio = Date.now();
         }
 
-        function updateTimer() {
-            if (!gameActive) return;
-            const left = Math.ceil((endTime - Date.now()) / 1000);
-            document.getElementById('timer').textContent = left;
-            if (left <= 0) endGame();
-        }
-
-        function endGame() {
-            gameActive = false;
+        function tooEarly() {
             clearTimeout(timeoutId);
-            clearInterval(timerInterval);
-            document.body.style.backgroundColor = '#f0f0f0';
-            saveHigh(currentDuration, count);
-            document.getElementById('resultado').textContent = `Final: ${count} reações! Melhor nesta: ${sessionBest === Infinity ? '-' : sessionBest}ms`;
-            setTimeout(() => {
-                document.getElementById('menu').style.display = 'block';
-                document.getElementById('gameInfo').style.display = 'none';
-            }, 3000);
+            document.body.style.backgroundColor = '#ff4444';
+            mensagem.textContent = 'ERROU!';
+            resultado.textContent = 'Clicou muito cedo!';
+            resultado.style.color = 'white';
+            setTimeout(backToMenu, 2000);
         }
 
+        function success() {
+            const tempo = Date.now() - inicio;
+            document.body.style.backgroundColor = '#44ff44';
+            mensagem.textContent = 'Ótimo!';
+            resultado.textContent = `${tempo} ms`;
+            resultado.style.color = 'white';
+
+            // Salva novo recorde se for melhor
+            const best = localStorage.getItem(STORAGE_KEY);
+            if (!best || tempo < parseInt(best)) {
+                localStorage.setItem(STORAGE_KEY, tempo);
+                bestTimeSpan.textContent = tempo;
+                resultado.textContent = `${tempo} ms (NOVO RECORDE!)`;
+            }
+
+            setTimeout(backToMenu, 3000);
+        }
+
+        function backToMenu() {
+            menu.style.display = 'block';
+            game.style.display = 'none';
+            document.body.style.backgroundColor = '#f0f0f0';
+        }
+
+        // Detecta clique em qualquer lugar
         document.body.addEventListener('click', () => {
-            if (!gameActive) return;
-            const now = Date.now();
-            if (now > endTime) return;
+            if (menu.style.display !== 'none') return; // só durante o jogo
+
             if (document.body.style.backgroundColor === 'red') {
-                clearTimeout(timeoutId);
-                waitForGreen();
+                tooEarly();
             } else if (document.body.style.backgroundColor === 'green') {
-                const tempo = now - inicio;
-                if (tempo < sessionBest) sessionBest = tempo;
-                saveBestSingle(tempo);
-                count++;
-                document.getElementById('currentScore').textContent = count;
-                document.getElementById('resultado').textContent = `${tempo}ms`;
-                document.body.style.backgroundColor = 'red';
-                setTimeout(waitForGreen, 300);
+                success();
             }
         });
-
-        loadHighs();
     </script>
 </body>
 </html>
