@@ -32,6 +32,7 @@
         #game {
             display: none;
             text-align: center;
+            width: 100%;
         }
         #mensagem {
             font-size: 3em;
@@ -58,7 +59,7 @@
 
     <div id="menu">
         <h1>Tempo de Reação</h1>
-        <button onclick="startGame()">COMEÇAR</button>
+        <button id="startBtn">COMEÇAR</button>
     </div>
 
     <div id="game">
@@ -73,8 +74,11 @@
         const mensagem = document.getElementById('mensagem');
         const resultado = document.getElementById('resultado');
         const bestTimeSpan = document.getElementById('bestTime');
+        const startBtn = document.getElementById('startBtn');
+
         let inicio;
         let timeoutId;
+        let jogoAtivo = false;
 
         // Carrega recorde salvo
         const best = localStorage.getItem(STORAGE_KEY);
@@ -86,6 +90,7 @@
             resultado.textContent = '';
             document.body.style.backgroundColor = 'red';
             mensagem.textContent = 'Espere ficar verde...';
+            jogoAtivo = true;
 
             // Delay aleatório entre 2 e 7 segundos
             const delay = Math.random() * 5000 + 2000;
@@ -93,21 +98,24 @@
         }
 
         function goGreen() {
+            if (!jogoAtivo) return;
             document.body.style.backgroundColor = 'green';
             mensagem.textContent = 'CLIQUE AGORA!';
             inicio = Date.now();
         }
 
         function tooEarly() {
+            jogoAtivo = false;
             clearTimeout(timeoutId);
             document.body.style.backgroundColor = '#ff4444';
             mensagem.textContent = 'ERROU!';
             resultado.textContent = 'Clicou muito cedo!';
             resultado.style.color = 'white';
-            setTimeout(backToMenu, 2000);
+            setTimeout(backToMenu, 2500);
         }
 
         function success() {
+            jogoAtivo = false;
             const tempo = Date.now() - inicio;
             document.body.style.backgroundColor = '#44ff44';
             mensagem.textContent = 'Ótimo!';
@@ -126,14 +134,21 @@
         }
 
         function backToMenu() {
+            jogoAtivo = false;
             menu.style.display = 'block';
             game.style.display = 'none';
             document.body.style.backgroundColor = '#f0f0f0';
         }
 
-        // Detecta clique em qualquer lugar
-        document.body.addEventListener('click', () => {
-            if (menu.style.display !== 'none') return; // só durante o jogo
+        // Listener só no botão de começar (evita propagação)
+        startBtn.addEventListener('click', startGame);
+
+        // Listener separado pro jogo (só ativa durante o jogo)
+        document.body.addEventListener('click', function handler(e) {
+            if (!jogoAtivo) return;
+
+            // Ignora clique no botão (caso tenha vazado)
+            if (e.target === startBtn) return;
 
             if (document.body.style.backgroundColor === 'red') {
                 tooEarly();
