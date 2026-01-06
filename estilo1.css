@@ -120,7 +120,19 @@ div {
 }
 
 /*---------- Bloco do Contato----------*/ 
+#contato {
+    background: black;
+    border: 3px solid red;
+    color: red;
+    text-align: center;
+}
 
+#contato:hover {
+    background: black;
+    border: 3px solid white;
+    color: white;
+    text-align: center;
+}
 #contato h2 {
     text-align: center;
     font-size: small;
