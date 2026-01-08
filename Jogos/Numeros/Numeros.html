@@ -1,21 +1,300 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Número</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Minha Torre Roguelike</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            position: relative;
+        }
+        canvas {
+            background-color: #333;
+            border: 2px solid #fff;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #wave, #coins, #health {
+            margin-bottom: 5px;
+        }
+        #upgrades {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.8);
+            padding: 20px;
+            text-align: center;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Adivinhe o Número</h1>
-        <p>Tente adivinhar o número secreto entre 1 e 100!</p>
-        <input type="number" id="guessInput" placeholder="Digite seu palpite" min="1" max="100">
-        <button id="guessButton">Enviar Palpite</button>
-        <p id="message"></p>
-        <p id="attempts">Tentativas: 0</p>
-        <button id="restartButton" style="display: none;">Jogar Novamente</button>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="ui">
+            <div id="wave">Onda: 1</div>
+            <div id="coins">Moedas: 0</div>
+            <div id="health">Vida da Torre: 100</div>
+        </div>
+        <div id="upgrades">
+            <button id="upgradeDamage">Upgrade Dano (Custo: 50)</button>
+            <button id="upgradeFireRate">Upgrade Taxa de Fogo (Custo: 75)</button>
+            <button id="upgradeHealth">Upgrade Vida (Custo: 100)</button>
+        </div>
+        <div id="game-over">
+            <h2>Game Over!</h2>
+            <p>Ondas Sobrevividas: <span id="finalWave"></span></p>
+            <button id="restart">Reiniciar</button>
+        </div>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const waveElement = document.getElementById('wave');
+        const coinsElement = document.getElementById('coins');
+        const healthElement = document.getElementById('health');
+        const upgradeDamageBtn = document.getElementById('upgradeDamage');
+        const upgradeFireRateBtn = document.getElementById('upgradeFireRate');
+        const upgradeHealthBtn = document.getElementById('upgradeHealth');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalWaveElement = document.getElementById('finalWave');
+        const restartBtn = document.getElementById('restart');
+
+        // Variáveis do jogo (roguelike: procedural waves, permadeath)
+        let tower = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            health: 100,
+            maxHealth: 100,
+            damage: 10,
+            fireRate: 1000, // ms entre tiros
+            lastShot: 0
+        };
+
+        let enemies = [];
+        let projectiles = [];
+        let coins = 0;
+        let wave = 1;
+        let gameOver = false;
+        let lastEnemySpawn = 0;
+        let enemySpawnRate = 2000; // ms entre inimigos
+
+        // Funções auxiliares
+        function random(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Inimigo
+        class Enemy {
+            constructor() {
+                this.x = random(0, canvas.width - 20);
+                this.y = 0;
+                this.width = 20;
+                this.height = 20;
+                this.speed = random(1, 3) + (wave * 0.2); // Aumenta com waves
+                this.health = 20 + (wave * 5); // Procedural difficulty
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y + this.height >= tower.y) {
+                    tower.health -= 10;
+                    this.y = canvas.height + 10; // Remove
+                }
+            }
+            draw() {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        // Projétil
+        class Projectile {
+            constructor(target) {
+                this.x = tower.x;
+                this.y = tower.y - 20;
+                this.width = 5;
+                this.height = 10;
+                this.speed = 5;
+                this.target = target;
+            }
+            update() {
+                const dx = this.target.x - this.x;
+                const dy = this.target.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                this.x += (dx / dist) * this.speed;
+                this.y += (dy / dist) * this.speed;
+
+                if (dist < this.speed) {
+                    this.target.health -= tower.damage;
+                    if (this.target.health <= 0) {
+                        coins += 10 + wave;
+                        this.target.y = -100; // Remove
+                    }
+                    this.y = -100; // Remove projétil
+                }
+            }
+            draw() {
+                ctx.fillStyle = 'yellow';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        // Spawn inimigos (procedural)
+        function spawnEnemy() {
+            if (Date.now() - lastEnemySpawn > enemySpawnRate) {
+                enemies.push(new Enemy());
+                lastEnemySpawn = Date.now();
+            }
+        }
+
+        // Atirar no inimigo mais próximo
+        function shoot() {
+            if (Date.now() - tower.lastShot > tower.fireRate && enemies.length > 0) {
+                let closest = enemies.reduce((prev, curr) => 
+                    (curr.y > prev.y && curr.y < canvas.height) ? curr : prev
+                );
+                projectiles.push(new Projectile(closest));
+                tower.lastShot = Date.now();
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            waveElement.textContent = `Onda: ${wave}`;
+            coinsElement.textContent = `Moedas: ${coins}`;
+            healthElement.textContent = `Vida da Torre: ${tower.health}`;
+        }
+
+        // Checar game over
+        function checkGameOver() {
+            if (tower.health <= 0) {
+                gameOver = true;
+                gameOverScreen.style.display = 'block';
+                finalWaveElement.textContent = wave - 1;
+            }
+        }
+
+        // Avançar onda (roguelite: após limpar, nova onda com buffs)
+        function nextWave() {
+            if (enemies.every(e => e.y > canvas.height || e.y < 0)) {
+                wave++;
+                enemySpawnRate = Math.max(500, 2000 - (wave * 100));
+                // Buff procedural: chance de card (simulado)
+                if (random(1, 3) === 1) {
+                    coins += 50; // "Card" bonus
+                    alert('Você ganhou um card bonus: +50 moedas!');
+                }
+            }
+        }
+
+        // Upgrades
+        upgradeDamageBtn.addEventListener('click', () => {
+            if (coins >= 50) {
+                coins -= 50;
+                tower.damage += 5;
+            }
+        });
+
+        upgradeFireRateBtn.addEventListener('click', () => {
+            if (coins >= 75) {
+                coins -= 75;
+                tower.fireRate = Math.max(200, tower.fireRate - 100);
+            }
+        });
+
+        upgradeHealthBtn.addEventListener('click', () => {
+            if (coins >= 100) {
+                coins -= 100;
+                tower.maxHealth += 20;
+                tower.health = tower.maxHealth;
+            }
+        });
+
+        restartBtn.addEventListener('click', () => {
+            // Reset game (permadeath: start over)
+            tower.health = 100;
+            tower.maxHealth = 100;
+            tower.damage = 10;
+            tower.fireRate = 1000;
+            enemies = [];
+            projectiles = [];
+            coins = 0;
+            wave = 1;
+            gameOver = false;
+            gameOverScreen.style.display = 'none';
+        });
+
+        // Loop principal
+        function gameLoop() {
+            if (gameOver) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar torre
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(tower.x - 25, tower.y - 50, 50, 50);
+
+            spawnEnemy();
+            shoot();
+
+            enemies.forEach((enemy, i) => {
+                enemy.update();
+                enemy.draw();
+                if (enemy.y > canvas.height || enemy.y < 0) enemies.splice(i, 1);
+            });
+
+            projectiles.forEach((proj, i) => {
+                proj.update();
+                proj.draw();
+                if (proj.y < 0 || proj.y > canvas.height) projectiles.splice(i, 1);
+            });
+
+            updateUI();
+            checkGameOver();
+            nextWave();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
 </body>
 </html>
