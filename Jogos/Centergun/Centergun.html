@@ -173,8 +173,13 @@
         // Custos dos upgrades temporários
         let costs = { damage: 5, fireRate: 5, health: 5, range: 5 };
 
+        // Tamanho da torre fixo em tela, mas escala do mundo maior
+        const TOWER_SCREEN_SIZE = 50; // Tamanho visual da torre (pixels na tela)
+        let worldScale = 2.0; // Escala inicial: 2x maior que antes (mais espaço)
+
         let tower = {
-            size: 50, health: 150, maxHealth: 150, damage: 15, fireRate: 800, range: 250, color: '#0000FF', lastShot: 0
+            worldSize: 50, // Tamanho no mundo (usado pra colisão)
+            health: 150, maxHealth: 150, damage: 15, fireRate: 800, range: 250 * worldScale, color: '#0000FF', lastShot: 0
         };
 
         let enemies = [];
@@ -212,9 +217,11 @@
         }
 
         function newRun() {
+            worldScale = 2.0; // Mapa maior desde o início
+            tower.range = 250 * worldScale;
             tower.damage = 15 + persistent.damageLevel * 2;
             tower.fireRate = Math.max(200, 800 - persistent.fireRateLevel * 50);
-            tower.range = 250 + persistent.rangeLevel * 20;
+            tower.range = (250 + persistent.rangeLevel * 20) * worldScale;
             tower.maxHealth = 150 + persistent.healthLevel * 20;
             tower.health = tower.maxHealth;
             copper = 0;
@@ -257,65 +264,70 @@
         class Enemy {
             constructor() {
                 const angle = random(0, Math.PI * 2);
-                const spawnDist = tower.range + 50 + random(0, 100);
-                this.x = tower.x + Math.cos(angle) * spawnDist;
-                this.y = tower.y + Math.sin(angle) * spawnDist;
-                this.x = Math.max(25, Math.min(canvas.width - 25, this.x));
-                this.y = Math.max(25, Math.min(canvas.height - 25, this.y));
+                const spawnDist = tower.range + 100 + random(0, 200); // Spawn mais longe no mapa maior
+                this.worldX = tower.x + Math.cos(angle) * spawnDist;
+                this.worldY = tower.y + Math.sin(angle) * spawnDist;
+                this.worldX = Math.max(25, Math.min(canvas.width - 25, this.worldX));
+                this.worldY = Math.max(25, Math.min(canvas.height - 25, this.worldY));
                 this.radius = 10;
-                const growthFactor = Math.pow(1.11, wave - 1);
-                this.health = Math.floor(25 * growthFactor + random(0, 15));
+                // Vida e dano com progressão mais forte
+                const growthFactor = Math.pow(1.15, wave - 1); // Aumentei de 1.11 → 1.15
+                this.health = Math.floor(30 * growthFactor + random(0, 20)); // Base maior + crescimento mais rápido
                 this.maxHealth = this.health;
-                this.damage = Math.floor(12 * Math.pow(1.08, wave - 1));
+                this.damage = Math.floor(15 * Math.pow(1.12, wave - 1)); // Aumentei de 1.08 → 1.12
                 const speedGrowth = Math.pow(1.09, wave - 1);
                 this.speed = 0.5 + 0.3 * speedGrowth + random(-0.1, 0.3);
             }
             update() {
-                const dx = tower.x - this.x; const dy = tower.y - this.y;
+                const dx = tower.x - this.worldX;
+                const dy = tower.y - this.worldY;
                 const dist = Math.hypot(dx, dy);
-                if (dist < tower.size / 2 + this.radius) {
+                if (dist < (TOWER_SCREEN_SIZE / 2) + this.radius) {
                     tower.health = Math.max(0, tower.health - this.damage);
-                    this.x = canvas.width + 100;
+                    this.worldX = canvas.width + 100;
                 } else {
-                    this.x += (dx / dist) * this.speed;
-                    this.y += (dy / dist) * this.speed;
+                    this.worldX += (dx / dist) * this.speed;
+                    this.worldY += (dy / dist) * this.speed;
                 }
             }
             draw() {
+                const screenX = this.worldX;
+                const screenY = this.worldY;
                 ctx.fillStyle = 'red';
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#444';
-                ctx.fillRect(this.x - 12, this.y - 28, 24, 5);
+                ctx.fillRect(screenX - 12, screenY - 28, 24, 5);
                 if (this.health > 0) {
                     ctx.fillStyle = this.health > this.maxHealth * 0.5 ? '#4CAF50' : '#f44336';
-                    ctx.fillRect(this.x - 12, this.y - 28, (this.health / this.maxHealth) * 24, 5);
+                    ctx.fillRect(screenX - 12, screenY - 28, (this.health / this.maxHealth) * 24, 5);
                 }
             }
         }
 
         class Projectile {
             constructor(target) {
-                this.x = tower.x; this.y = tower.y; this.radius = 8; this.speed = 7; this.target = target;
+                this.worldX = tower.x; this.worldY = tower.y; this.radius = 8; this.speed = 7; this.target = target;
             }
             update() {
-                const dx = this.target.x - this.x; const dy = this.target.y - this.y;
+                const dx = this.target.worldX - this.worldX;
+                const dy = this.target.worldY - this.worldY;
                 const dist = Math.hypot(dx, dy);
                 if (dist < this.speed + this.target.radius + this.radius) {
                     this.target.health -= tower.damage;
                     if (this.target.health <= 0) {
                         copper += Math.floor(random(1, 6));
                         if (Math.random() < 0.02) { persistent.gold += 1; saveProgress(); }
-                        this.target.x = canvas.width + 100;
+                        this.target.worldX = canvas.width + 100;
                     }
-                    this.x = -100;
+                    this.worldX = -100;
                 } else {
-                    this.x += (dx / dist) * this.speed;
-                    this.y += (dy / dist) * this.speed;
+                    this.worldX += (dx / dist) * this.speed;
+                    this.worldY += (dy / dist) * this.speed;
                 }
             }
             draw() {
                 ctx.fillStyle = 'yellow';
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(this.worldX, this.worldY, this.radius, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = '#ff0'; ctx.lineWidth = 2; ctx.stroke();
             }
         }
@@ -333,7 +345,7 @@
                 let closest = null; let minDist = Infinity;
                 enemies.forEach(enemy => {
                     if (enemy.health <= 0) return;
-                    const dist = distance(tower.x, tower.y, enemy.x, enemy.y);
+                    const dist = distance(tower.x, tower.y, enemy.worldX, enemy.worldY);
                     if (dist < minDist && dist <= tower.range) { minDist = dist; closest = enemy; }
                 });
                 if (closest) {
@@ -372,11 +384,11 @@
             }
         }
 
-        // Upgrades temporários (atributos reduzidos 50%)
+        // Upgrades temporários
         upgradeDamageBtn.addEventListener('click', () => {
             if (copper >= costs.damage) {
                 copper -= costs.damage;
-                tower.damage += 2;  // era +5 → agora +2
+                tower.damage += 2;
                 costs.damage = Math.floor(costs.damage * 1.6) + 3;
                 updateUpgradeButtons();
             }
@@ -384,7 +396,7 @@
         upgradeFireRateBtn.addEventListener('click', () => {
             if (copper >= costs.fireRate) {
                 copper -= costs.fireRate;
-                tower.fireRate = Math.max(200, tower.fireRate - 50);  // era -100 → agora -50 (melhora metade)
+                tower.fireRate = Math.max(200, tower.fireRate - 50);
                 costs.fireRate = Math.floor(costs.fireRate * 1.6) + 3;
                 updateUpgradeButtons();
             }
@@ -392,7 +404,7 @@
         upgradeHealthBtn.addEventListener('click', () => {
             if (copper >= costs.health) {
                 copper -= costs.health;
-                tower.maxHealth += 10;  // era +20 → agora +10
+                tower.maxHealth += 10;
                 tower.health += 10;
                 costs.health = Math.floor(costs.health * 1.6) + 3;
                 updateUpgradeButtons();
@@ -401,7 +413,7 @@
         upgradeRangeBtn.addEventListener('click', () => {
             if (copper >= costs.range) {
                 copper -= costs.range;
-                tower.range += 25;  // era +50 → agora +25
+                tower.range += 25 * worldScale; // Aumenta proporcional ao mapa maior
                 costs.range = Math.floor(costs.range * 1.6) + 3;
                 updateUpgradeButtons();
             }
@@ -424,12 +436,12 @@
             if (gameOver) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Torre
+            // Torre (tamanho fixo na tela)
             ctx.fillStyle = tower.color;
-            ctx.beginPath(); ctx.arc(tower.x, tower.y, tower.size / 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(tower.x, tower.y, TOWER_SCREEN_SIZE / 2, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
 
-            // Alcance
+            // Alcance (escalado)
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2); ctx.stroke();
@@ -445,11 +457,11 @@
 
             for (let i = enemies.length - 1; i >= 0; i--) {
                 enemies[i].update(); enemies[i].draw();
-                if (enemies[i].health <= 0 || enemies[i].x > canvas.width + 50) enemies.splice(i, 1);
+                if (enemies[i].health <= 0 || enemies[i].worldX > canvas.width + 50) enemies.splice(i, 1);
             }
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 projectiles[i].update(); projectiles[i].draw();
-                if (projectiles[i].x < -50 || projectiles[i].x > canvas.width + 50) projectiles.splice(i, 1);
+                if (projectiles[i].worldX < -50 || projectiles[i].worldX > canvas.width + 50) projectiles.splice(i, 1);
             }
 
             updateUI();
