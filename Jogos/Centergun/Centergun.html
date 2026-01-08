@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centergun</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            background-color: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            margin-top: 20px;
+        }
+        canvas {
+            background-color: #333;
+            border: 2px solid #fff;
+        }
+        #ui {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 800px;
+            margin: 10px 0;
+        }
+        #health-bar-container {
+            width: 200px;
+            height: 20px;
+            background: #555;
+            border: 1px solid #fff;
+            position: relative;
+        }
+        #health-bar {
+            height: 100%;
+            background: #4CAF50;
+            width: 100%;
+        }
+        #upgrades {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #color-picker {
+            margin: 5px;
+        }
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.8);
+            padding: 20px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+        @media (max-width: 600px) {
+            #ui {
+                flex-direction: column;
+                align-items: center;
+            }
+            #upgrades {
+                flex-direction: column;
+                align-items: center;
+            }
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="game-over">
+            <h2>Game Over!</h2>
+            <p>Ondas Sobrevividas: <span id="finalWave"></span></p>
+            <p>High Score: <span id="highScore"></span></p>
+            <button id="restart">Reiniciar</button>
+        </div>
+    </div>
+    <div id="ui">
+        <div id="wave">Onda: 1</div>
+        <div id="coins">Moedas: 0</div>
+        <div>
+            Vida da Torre:
+            <div id="health-bar-container">
+                <div id="health-bar"></div>
+            </div>
+        </div>
+    </div>
+    <div id="upgrades">
+        <button id="upgradeDamage">Upgrade Dano (Custo: 50)</button>
+        <button id="upgradeFireRate">Upgrade Taxa de Fogo (Custo: 75)</button>
+        <button id="upgradeHealth">Upgrade Vida (Custo: 100)</button>
+        <button id="upgradeRange">Upgrade Alcance (Custo: 100)</button>
+        <label>Cor da Torre: <input type="color" id="color-picker" value="#0000FF"></label>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const waveElement = document.getElementById('wave');
+        const coinsElement = document.getElementById('coins');
+        const healthBar = document.getElementById('health-bar');
+        const upgradeDamageBtn = document.getElementById('upgradeDamage');
+        const upgradeFireRateBtn = document.getElementById('upgradeFireRate');
+        const upgradeHealthBtn = document.getElementById('upgradeHealth');
+        const upgradeRangeBtn = document.getElementById('upgradeRange');
+        const colorPicker = document.getElementById('color-picker');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalWaveElement = document.getElementById('finalWave');
+        const highScoreElement = document.getElementById('highScore');
+        const restartBtn = document.getElementById('restart');
+
+        // Variáveis do jogo
+        let tower = {
+            x: canvas.width / 2,
+            y: canvas.height / 2, // Agora no meio da tela
+            size: 50,
+            health: 100,
+            maxHealth: 100,
+            damage: 10,
+            fireRate: 1000,
+            range: 200, // Alcance inicial
+            color: '#0000FF', // Azul padrão
+            lastShot: 0
+        };
+
+        let enemies = [];
+        let projectiles = [];
+        let coins = 0;
+        let wave = 1;
+        let highScore = 0;
+        let gameOver = false;
+        let lastEnemySpawn = 0;
+        let enemySpawnRate = 2000;
+
+        // Funções auxiliares
+        function random(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        }
+
+        // Carregar save
+        function loadSave() {
+            const save = JSON.parse(localStorage.getItem('centergunSave')) || {};
+            coins = save.coins || 0;
+            wave = save.wave || 1;
+            highScore = save.highScore || 0;
+            tower.damage = save.damage || 10;
+            tower.fireRate = save.fireRate || 1000;
+            tower.maxHealth = save.maxHealth || 100;
+            tower.health = tower.maxHealth;
+            tower.range = save.range || 200;
+            tower.color = save.color || '#0000FF';
+            colorPicker.value = tower.color;
+        }
+
+        // Salvar progresso
+        function saveProgress() {
+            const save = {
+                coins,
+                wave,
+                highScore,
+                damage: tower.damage,
+                fireRate: tower.fireRate,
+                maxHealth: tower.maxHealth,
+                range: tower.range,
+                color: tower.color
+            };
+            localStorage.setItem('centergunSave', JSON.stringify(save));
+        }
+
+        // Inimigo (move em direção à torre)
+        class Enemy {
+            constructor() {
+                this.x = random(0, canvas.width);
+                this.y = random(0, 1) ? random(-50, -10) : random(canvas.height + 10, canvas.height + 50); // Spawn topo ou fundo
+                this.width = 20;
+                this.height = 20;
+                this.speed = random(1, 3) + (wave * 0.2);
+                this.health = 20 + (wave * 5);
+            }
+            update() {
+                const dx = tower.x - this.x;
+                const dy = tower.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < tower.size / 2 + this.width / 2) {
+                    tower.health -= 10;
+                    this.y = canvas.height + 10; // Remove
+                } else {
+                    this.x += (dx / dist) * this.speed;
+                    this.y += (dy / dist) * this.speed;
+                }
+            }
+            draw() {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+            }
+        }
+
+        // Projétil
+        class Projectile {
+            constructor(target) {
+                this.x = tower.x;
+                this.y = tower.y;
+                this.width = 5;
+                this.height = 10;
+                this.speed = 5;
+                this.target = target;
+            }
+            update() {
+                const dx = this.target.x - this.x;
+                const dy = this.target.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < this.speed) {
+                    this.target.health -= tower.damage;
+                    if (this.target.health <= 0) {
+                        coins += 10 + wave;
+                        this.target.y = -100;
+                    }
+                    this.y = -100;
+                } else {
+                    this.x += (dx / dist) * this.speed;
+                    this.y += (dy / dist) * this.speed;
+                }
+            }
+            draw() {
+                ctx.fillStyle = 'yellow';
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+            }
+        }
+
+        // Spawn inimigos
+        function spawnEnemy() {
+            if (Date.now() - lastEnemySpawn > enemySpawnRate) {
+                enemies.push(new Enemy());
+                lastEnemySpawn = Date.now();
+            }
+        }
+
+        // Atirar no inimigo mais próximo dentro do range
+        function shoot() {
+            if (Date.now() - tower.lastShot > tower.fireRate && enemies.length > 0) {
+                let closest = null;
+                let minDist = Infinity;
+                enemies.forEach(enemy => {
+                    const dist = distance(tower.x, tower.y, enemy.x, enemy.y);
+                    if (dist < minDist && dist <= tower.range) {
+                        minDist = dist;
+                        closest = enemy;
+                    }
+                });
+                if (closest) {
+                    projectiles.push(new Projectile(closest));
+                    tower.lastShot = Date.now();
+                }
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            waveElement.textContent = `Onda: ${wave}`;
+            coinsElement.textContent = `Moedas: ${coins}`;
+            healthBar.style.width = `${(tower.health / tower.maxHealth) * 100}%`;
+        }
+
+        // Checar game over
+        function checkGameOver() {
+            if (tower.health <= 0) {
+                gameOver = true;
+                gameOverScreen.style.display = 'block';
+                finalWaveElement.textContent = wave - 1;
+                highScore = Math.max(highScore, wave - 1);
+                highScoreElement.textContent = highScore;
+                saveProgress(); // Salva high score
+            }
+        }
+
+        // Avançar onda
+        function nextWave() {
+            if (enemies.every(e => e.y > canvas.height || e.y < 0 || e.health <= 0)) {
+                wave++;
+                enemySpawnRate = Math.max(500, 2000 - (wave * 100));
+                if (random(1, 3) === 1) {
+                    coins += 50;
+                    alert('Você ganhou um card bonus: +50 moedas!');
+                }
+                saveProgress();
+            }
+        }
+
+        // Upgrades
+        upgradeDamageBtn.addEventListener('click', () => {
+            if (coins >= 50) {
+                coins -= 50;
+                tower.damage += 5;
+                saveProgress();
+            }
+        });
+
+        upgradeFireRateBtn.addEventListener('click', () => {
+            if (coins >= 75) {
+                coins -= 75;
+                tower.fireRate = Math.max(200, tower.fireRate - 100);
+                saveProgress();
+            }
+        });
+
+        upgradeHealthBtn.addEventListener('click', () => {
+            if (coins >= 100) {
+                coins -= 100;
+                tower.maxHealth += 20;
+                tower.health += 20;
+                saveProgress();
+            }
+        });
+
+        upgradeRangeBtn.addEventListener('click', () => {
+            if (coins >= 100) {
+                coins -= 100;
+                tower.range += 50;
+                saveProgress();
+            }
+        });
+
+        colorPicker.addEventListener('input', () => {
+            tower.color = colorPicker.value;
+            saveProgress();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            // Reset mas mantém high score e cor (permadeath parcial)
+            tower.health = tower.maxHealth;
+            tower.damage = 10;
+            tower.fireRate = 1000;
+            tower.range = 200;
+            enemies = [];
+            projectiles = [];
+            coins = 0;
+            wave = 1;
+            gameOver = false;
+            gameOverScreen.style.display = 'none';
+            saveProgress();
+        });
+
+        // Loop principal
+        function gameLoop() {
+            if (gameOver) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar torre
+            ctx.fillStyle = tower.color;
+            ctx.beginPath();
+            ctx.arc(tower.x, tower.y, tower.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Desenhar círculo de alcance
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.beginPath();
+            ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
+            ctx.stroke();
+
+            spawnEnemy();
+            shoot();
+
+            enemies.forEach((enemy, i) => {
+                enemy.update();
+                enemy.draw();
+                if (enemy.y > canvas.height + 50 || enemy.y < -50 || enemy.health <= 0) enemies.splice(i, 1);
+            });
+
+            projectiles.forEach((proj, i) => {
+                proj.update();
+                proj.draw();
+                if (proj.y < -50 || proj.y > canvas.height + 50) projectiles.splice(i, 1);
+            });
+
+            updateUI();
+            checkGameOver();
+            nextWave();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        loadSave();
+        gameLoop();
+    </script>
+</body>
+</html>
