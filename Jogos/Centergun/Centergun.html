@@ -139,10 +139,10 @@
         </div>
     </div>
     <div id="upgrades">
-        <button id="upgradeDamage">Upgrade Dano (+5) (Custo: 5 Cobre)</button>
+        <button id="upgradeDamage">Upgrade Dano (+2) (Custo: 5 Cobre)</button>
         <button id="upgradeFireRate">Upgrade Taxa de Fogo (Custo: 5 Cobre)</button>
-        <button id="upgradeHealth">Upgrade Vida (+20) (Custo: 5 Cobre)</button>
-        <button id="upgradeRange">Upgrade Alcance (+50) (Custo: 5 Cobre)</button>
+        <button id="upgradeHealth">Upgrade Vida (+10) (Custo: 5 Cobre)</button>
+        <button id="upgradeRange">Upgrade Alcance (+25) (Custo: 5 Cobre)</button>
         <label>Cor da Torre: <input type="color" id="color-picker" value="#0000FF"></label>
     </div>
 
@@ -180,8 +180,8 @@
         let enemies = [];
         let projectiles = [];
         let wave = 1;
-        let enemiesThisWave = 0;      // Quantos inimigos já spawnaram na onda atual
-        let totalEnemiesForWave = 5; // Quantos devem spawnar na onda atual
+        let enemiesThisWave = 0;
+        let totalEnemiesForWave = 5;
         let gameOver = false;
         let lastEnemySpawn = 0;
         let enemySpawnRate = 3000;
@@ -233,10 +233,10 @@
         }
 
         function updateUpgradeButtons() {
-            upgradeDamageBtn.textContent = `Upgrade Dano (+5) (Custo: ${costs.damage} Cobre)`;
+            upgradeDamageBtn.textContent = `Upgrade Dano (+2) (Custo: ${costs.damage} Cobre)`;
             upgradeFireRateBtn.textContent = `Upgrade Taxa de Fogo (Custo: ${costs.fireRate} Cobre)`;
-            upgradeHealthBtn.textContent = `Upgrade Vida (+20) (Custo: ${costs.health} Cobre)`;
-            upgradeRangeBtn.textContent = `Upgrade Alcance (+50) (Custo: ${costs.range} Cobre)`;
+            upgradeHealthBtn.textContent = `Upgrade Vida (+10) (Custo: ${costs.health} Cobre)`;
+            upgradeRangeBtn.textContent = `Upgrade Alcance (+25) (Custo: ${costs.range} Cobre)`;
         }
 
         function updateMetaUI() {
@@ -361,23 +361,22 @@
         }
 
         function nextWave() {
-            // Só avança quando todos os inimigos da onda atual morreram e todos spawnaram
             if (enemies.length === 0 && enemiesThisWave >= totalEnemiesForWave) {
                 wave++;
-                totalEnemiesForWave += 3; // Aumenta o número de inimigos por onda
+                totalEnemiesForWave += 3;
                 enemiesThisWave = 0;
-                enemySpawnRate = Math.max(800, enemySpawnRate - 100); // Spawn mais rápido
+                enemySpawnRate = Math.max(800, enemySpawnRate - 100);
                 copper += wave * 5;
                 persistent.gold += Math.floor(wave / 3) + 1;
                 saveProgress();
             }
         }
 
-        // Upgrades temporários
+        // Upgrades temporários (atributos reduzidos 50%)
         upgradeDamageBtn.addEventListener('click', () => {
             if (copper >= costs.damage) {
                 copper -= costs.damage;
-                tower.damage += 5;
+                tower.damage += 2;  // era +5 → agora +2
                 costs.damage = Math.floor(costs.damage * 1.6) + 3;
                 updateUpgradeButtons();
             }
@@ -385,7 +384,7 @@
         upgradeFireRateBtn.addEventListener('click', () => {
             if (copper >= costs.fireRate) {
                 copper -= costs.fireRate;
-                tower.fireRate = Math.max(200, tower.fireRate - 100);
+                tower.fireRate = Math.max(200, tower.fireRate - 50);  // era -100 → agora -50 (melhora metade)
                 costs.fireRate = Math.floor(costs.fireRate * 1.6) + 3;
                 updateUpgradeButtons();
             }
@@ -393,8 +392,8 @@
         upgradeHealthBtn.addEventListener('click', () => {
             if (copper >= costs.health) {
                 copper -= costs.health;
-                tower.maxHealth += 20;
-                tower.health += 20;
+                tower.maxHealth += 10;  // era +20 → agora +10
+                tower.health += 10;
                 costs.health = Math.floor(costs.health * 1.6) + 3;
                 updateUpgradeButtons();
             }
@@ -402,7 +401,7 @@
         upgradeRangeBtn.addEventListener('click', () => {
             if (copper >= costs.range) {
                 copper -= costs.range;
-                tower.range += 50;
+                tower.range += 25;  // era +50 → agora +25
                 costs.range = Math.floor(costs.range * 1.6) + 3;
                 updateUpgradeButtons();
             }
