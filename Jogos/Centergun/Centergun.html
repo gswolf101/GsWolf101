@@ -23,6 +23,7 @@
         canvas {
             background-color: #333;
             border: 2px solid #fff;
+            display: block;
         }
         #ui {
             display: flex;
@@ -30,6 +31,7 @@
             width: 100%;
             max-width: 800px;
             margin: 10px 0;
+            font-size: 18px;
         }
         #health-bar-container {
             width: 200px;
@@ -37,11 +39,13 @@
             background: #555;
             border: 1px solid #fff;
             position: relative;
+            margin-top: 5px;
         }
         #health-bar {
             height: 100%;
             background: #4CAF50;
             width: 100%;
+            transition: width 0.3s;
         }
         #upgrades {
             display: flex;
@@ -55,40 +59,61 @@
             background: #4CAF50;
             color: white;
             border: none;
-            padding: 5px 10px;
+            padding: 8px 12px;
             margin: 5px;
             cursor: pointer;
-            border-radius: 3px;
+            border-radius: 5px;
+            font-size: 14px;
         }
-        button:hover {
+        button:hover, button:active {
             background: #45a049;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
         }
         #color-picker {
             margin: 5px;
+            padding: 5px;
         }
         #game-over {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 0, 0, 0.8);
-            padding: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
             text-align: center;
             display: none;
             z-index: 10;
+            border-radius: 10px;
+            max-width: 90%;
+            box-shadow: 0 0 20px rgba(255,0,0,0.5);
+        }
+        #meta-upgrades {
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            max-width: 400px;
+            margin: 20px auto;
         }
         @media (max-width: 600px) {
             #ui {
                 flex-direction: column;
                 align-items: center;
+                font-size: 16px;
             }
             #upgrades {
                 flex-direction: column;
                 align-items: center;
             }
+            #meta-upgrades {
+                grid-template-columns: 1fr;
+            }
             canvas {
-                width: 100%;
-                height: auto;
+                width: 100vw;
+                height: 60vh;
             }
         }
     </style>
@@ -98,14 +123,23 @@
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div id="game-over">
             <h2>Game Over!</h2>
-            <p>Ondas Sobrevividas: <span id="finalWave"></span></p>
-            <p>High Score: <span id="highScore"></span></p>
-            <button id="restart">Reiniciar</button>
+            <p>Ondas Sobrevividas: <span id="finalWave">0</span></p>
+            <p>Recorde: <span id="highScoreUI">0</span></p>
+            <p>Ouro Total: <span id="totalGold">0</span> | Ganho nesta run: <span id="runGoldEarned">0</span></p>
+            <h3>Upgrades Permanentes (com Ouro)</h3>
+            <div id="meta-upgrades">
+                <button id="metaDamage">Dano +1 (20 Ouro) Lv.0</button>
+                <button id="metaFireRate">Taxa de Fogo +1 (30 Ouro) Lv.0</button>
+                <button id="metaHealth">Vida Máx +1 (50 Ouro) Lv.0</button>
+                <button id="metaRange">Alcance +1 (40 Ouro) Lv.0</button>
+            </div>
+            <button id="restart">Iniciar Nova Partida</button>
         </div>
     </div>
     <div id="ui">
         <div id="wave">Onda: 1</div>
-        <div id="coins">Moedas: 0</div>
+        <div id="copper">Cobre: 0</div>
+        <div id="goldUI">Ouro: 0</div>
         <div>
             Vida da Torre:
             <div id="health-bar-container">
@@ -114,10 +148,10 @@
         </div>
     </div>
     <div id="upgrades">
-        <button id="upgradeDamage">Upgrade Dano (Custo: 50)</button>
-        <button id="upgradeFireRate">Upgrade Taxa de Fogo (Custo: 75)</button>
-        <button id="upgradeHealth">Upgrade Vida (Custo: 100)</button>
-        <button id="upgradeRange">Upgrade Alcance (Custo: 100)</button>
+        <button id="upgradeDamage">Upgrade Dano (+5) (Custo: 50 Cobre)</button>
+        <button id="upgradeFireRate">Upgrade Taxa de Fogo (Custo: 75 Cobre)</button>
+        <button id="upgradeHealth">Upgrade Vida (+20) (Custo: 100 Cobre)</button>
+        <button id="upgradeRange">Upgrade Alcance (+50) (Custo: 100 Cobre)</button>
         <label>Cor da Torre: <input type="color" id="color-picker" value="#0000FF"></label>
     </div>
 
@@ -125,7 +159,8 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const waveElement = document.getElementById('wave');
-        const coinsElement = document.getElementById('coins');
+        const copperElement = document.getElementById('copper');
+        const goldElement = document.getElementById('goldUI');
         const healthBar = document.getElementById('health-bar');
         const upgradeDamageBtn = document.getElementById('upgradeDamage');
         const upgradeFireRateBtn = document.getElementById('upgradeFireRate');
@@ -133,97 +168,145 @@
         const upgradeRangeBtn = document.getElementById('upgradeRange');
         const colorPicker = document.getElementById('color-picker');
         const gameOverScreen = document.getElementById('game-over');
-        const finalWaveElement = document.getElementById('finalWave');
-        const highScoreElement = document.getElementById('highScore');
+        const finalWaveEl = document.getElementById('finalWave');
+        const highScoreUIEl = document.getElementById('highScoreUI');
+        const totalGoldEl = document.getElementById('totalGold');
+        const runGoldEarnedEl = document.getElementById('runGoldEarned');
         const restartBtn = document.getElementById('restart');
 
-        // Variáveis do jogo
+        // Persistent e run vars
+        let persistent = {
+            gold: 0,
+            damageLevel: 0,
+            fireRateLevel: 0,
+            healthLevel: 0,
+            rangeLevel: 0,
+            highScore: 0,
+            color: '#0000FF'
+        };
+        let copper = 0;
+        let runStartGold = 0;
+
         let tower = {
             x: canvas.width / 2,
-            y: canvas.height / 2, // Agora no meio da tela
+            y: canvas.height / 2,
             size: 50,
             health: 100,
             maxHealth: 100,
             damage: 10,
             fireRate: 1000,
-            range: 200, // Alcance inicial
-            color: '#0000FF', // Azul padrão
+            range: 200,
+            color: '#0000FF',
             lastShot: 0
         };
 
         let enemies = [];
         let projectiles = [];
-        let coins = 0;
         let wave = 1;
-        let highScore = 0;
         let gameOver = false;
         let lastEnemySpawn = 0;
         let enemySpawnRate = 2000;
 
         // Funções auxiliares
         function random(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
+            return Math.random() * (max - min) + min;
         }
 
         function distance(x1, y1, x2, y2) {
-            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            return Math.hypot(x2 - x1, y2 - y1);
         }
 
-        // Carregar save
-        function loadSave() {
-            const save = JSON.parse(localStorage.getItem('centergunSave')) || {};
-            coins = save.coins || 0;
-            wave = save.wave || 1;
-            highScore = save.highScore || 0;
-            tower.damage = save.damage || 10;
-            tower.fireRate = save.fireRate || 1000;
-            tower.maxHealth = save.maxHealth || 100;
-            tower.health = tower.maxHealth;
-            tower.range = save.range || 200;
-            tower.color = save.color || '#0000FF';
-            colorPicker.value = tower.color;
-        }
-
-        // Salvar progresso
         function saveProgress() {
-            const save = {
-                coins,
-                wave,
-                highScore,
-                damage: tower.damage,
-                fireRate: tower.fireRate,
-                maxHealth: tower.maxHealth,
-                range: tower.range,
-                color: tower.color
-            };
+            const save = { ...persistent };
             localStorage.setItem('centergunSave', JSON.stringify(save));
         }
 
-        // Inimigo (move em direção à torre)
+        function loadSave() {
+            const save = JSON.parse(localStorage.getItem('centergunSave')) || {};
+            persistent = {
+                gold: save.gold || 0,
+                damageLevel: save.damageLevel || 0,
+                fireRateLevel: save.fireRateLevel || 0,
+                healthLevel: save.healthLevel || 0,
+                rangeLevel: save.rangeLevel || 0,
+                highScore: save.highScore || 0,
+                color: save.color || '#0000FF'
+            };
+            tower.color = persistent.color;
+            colorPicker.value = tower.color;
+            newRun();
+        }
+
+        function newRun() {
+            tower.damage = 10 + persistent.damageLevel * 2;
+            tower.fireRate = Math.max(200, 1000 - persistent.fireRateLevel * 50);
+            tower.range = 200 + persistent.rangeLevel * 20;
+            tower.maxHealth = 100 + persistent.healthLevel * 20;
+            tower.health = tower.maxHealth;
+            copper = 0;
+            wave = 1;
+            enemies = [];
+            projectiles = [];
+            lastEnemySpawn = 0;
+            enemySpawnRate = 2000;
+            gameOver = false;
+            gameOverScreen.style.display = 'none';
+            runStartGold = persistent.gold;
+        }
+
+        function updateMetaUI() {
+            document.getElementById('metaDamage').textContent = `Dano +1 (20 Ouro) Lv.${persistent.damageLevel}`;
+            document.getElementById('metaFireRate').textContent = `Taxa de Fogo +1 (30 Ouro) Lv.${persistent.fireRateLevel}`;
+            document.getElementById('metaHealth').textContent = `Vida Máx +1 (50 Ouro) Lv.${persistent.healthLevel}`;
+            document.getElementById('metaRange').textContent = `Alcance +1 (40 Ouro) Lv.${persistent.rangeLevel}`;
+        }
+
+        function updateGameOverUI() {
+            totalGoldEl.textContent = persistent.gold;
+            runGoldEarnedEl.textContent = persistent.gold - runStartGold;
+            highScoreUIEl.textContent = persistent.highScore;
+            updateMetaUI();
+        }
+
+        // Enemy
         class Enemy {
             constructor() {
-                this.x = random(0, canvas.width);
-                this.y = random(0, 1) ? random(-50, -10) : random(canvas.height + 10, canvas.height + 50); // Spawn topo ou fundo
+                const angle = random(0, Math.PI * 2);
+                const spawnDist = tower.range + 30 + random(0, 80);
+                this.x = tower.x + Math.cos(angle) * spawnDist;
+                this.y = tower.y + Math.sin(angle) * spawnDist;
+                // Clamp para não spawn fora demais
+                this.x = Math.max(0, Math.min(canvas.width, this.x));
+                this.y = Math.max(0, Math.min(canvas.height, this.y));
                 this.width = 20;
                 this.height = 20;
-                this.speed = random(1, 3) + (wave * 0.2);
-                this.health = 20 + (wave * 5);
+                this.speed = 0.8 + wave * 0.15 + random(0, 0.6);
+                this.health = Math.floor(15 + wave * 6 + random(0, 10));
+                this.maxHealth = this.health;
             }
             update() {
                 const dx = tower.x - this.x;
                 const dy = tower.y - this.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                const dist = Math.hypot(dx, dy);
                 if (dist < tower.size / 2 + this.width / 2) {
-                    tower.health -= 10;
-                    this.y = canvas.height + 10; // Remove
+                    tower.health = Math.max(0, tower.health - (15 + wave * 2));
+                    this.x = canvas.width + 100;
                 } else {
                     this.x += (dx / dist) * this.speed;
                     this.y += (dy / dist) * this.speed;
                 }
             }
             draw() {
+                // Corpo
                 ctx.fillStyle = 'red';
                 ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                // Barra de vida
+                ctx.fillStyle = '#444';
+                ctx.fillRect(this.x - 10, this.y - 25, 20, 4);
+                if (this.health > 0) {
+                    ctx.fillStyle = this.health > this.maxHealth * 0.5 ? '#4CAF50' : '#f44336';
+                    ctx.fillRect(this.x - 10, this.y - 25, (this.health / this.maxHealth) * 20, 4);
+                }
             }
         }
 
@@ -234,20 +317,23 @@
                 this.y = tower.y;
                 this.width = 5;
                 this.height = 10;
-                this.speed = 5;
+                this.speed = 6;
                 this.target = target;
             }
             update() {
                 const dx = this.target.x - this.x;
                 const dy = this.target.y - this.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                const dist = Math.hypot(dx, dy);
                 if (dist < this.speed) {
                     this.target.health -= tower.damage;
                     if (this.target.health <= 0) {
-                        coins += 10 + wave;
-                        this.target.y = -100;
+                        copper += 10 + wave;
+                        if (Math.random() < 0.015) { // Baixa chance de ouro
+                            persistent.gold += 1;
+                        }
+                        this.target.x = canvas.width + 100;
                     }
-                    this.y = -100;
+                    this.x = -100;
                 } else {
                     this.x += (dx / dist) * this.speed;
                     this.y += (dy / dist) * this.speed;
@@ -259,7 +345,7 @@
             }
         }
 
-        // Spawn inimigos
+        // Spawn
         function spawnEnemy() {
             if (Date.now() - lastEnemySpawn > enemySpawnRate) {
                 enemies.push(new Enemy());
@@ -267,14 +353,14 @@
             }
         }
 
-        // Atirar no inimigo mais próximo dentro do range
+        // Shoot
         function shoot() {
             if (Date.now() - tower.lastShot > tower.fireRate && enemies.length > 0) {
                 let closest = null;
                 let minDist = Infinity;
                 enemies.forEach(enemy => {
                     const dist = distance(tower.x, tower.y, enemy.x, enemy.y);
-                    if (dist < minDist && dist <= tower.range) {
+                    if (dist < minDist && dist <= tower.range && enemy.health > 0) {
                         minDist = dist;
                         closest = enemy;
                     }
@@ -289,121 +375,153 @@
         // Update UI
         function updateUI() {
             waveElement.textContent = `Onda: ${wave}`;
-            coinsElement.textContent = `Moedas: ${coins}`;
+            copperElement.textContent = `Cobre: ${copper}`;
+            goldElement.textContent = `Ouro: ${persistent.gold}`;
             healthBar.style.width = `${(tower.health / tower.maxHealth) * 100}%`;
         }
 
-        // Checar game over
+        // Game over
         function checkGameOver() {
             if (tower.health <= 0) {
-                gameOver = true;
+                persistent.highScore = Math.max(persistent.highScore, wave - 1);
+                updateGameOverUI();
                 gameOverScreen.style.display = 'block';
-                finalWaveElement.textContent = wave - 1;
-                highScore = Math.max(highScore, wave - 1);
-                highScoreElement.textContent = highScore;
-                saveProgress(); // Salva high score
+                saveProgress();
+                gameOver = true;
             }
         }
 
-        // Avançar onda
+        // Next wave
         function nextWave() {
-            if (enemies.every(e => e.y > canvas.height || e.y < 0 || e.health <= 0)) {
+            if (enemies.length === 0) {
                 wave++;
-                enemySpawnRate = Math.max(500, 2000 - (wave * 100));
-                if (random(1, 3) === 1) {
-                    coins += 50;
-                    alert('Você ganhou um card bonus: +50 moedas!');
-                }
+                enemySpawnRate = Math.max(500, 2000 - (wave - 1) * 80);
+                copper += wave * 15;
+                persistent.gold += 1;
                 saveProgress();
             }
         }
 
-        // Upgrades
+        // Upgrades da run (cobre)
         upgradeDamageBtn.addEventListener('click', () => {
-            if (coins >= 50) {
-                coins -= 50;
+            if (copper >= 50) {
+                copper -= 50;
                 tower.damage += 5;
-                saveProgress();
             }
         });
-
         upgradeFireRateBtn.addEventListener('click', () => {
-            if (coins >= 75) {
-                coins -= 75;
+            if (copper >= 75) {
+                copper -= 75;
                 tower.fireRate = Math.max(200, tower.fireRate - 100);
-                saveProgress();
             }
         });
-
         upgradeHealthBtn.addEventListener('click', () => {
-            if (coins >= 100) {
-                coins -= 100;
+            if (copper >= 100) {
+                copper -= 100;
                 tower.maxHealth += 20;
-                tower.health += 20;
-                saveProgress();
+                tower.health = tower.maxHealth;
             }
         });
-
         upgradeRangeBtn.addEventListener('click', () => {
-            if (coins >= 100) {
-                coins -= 100;
+            if (copper >= 100) {
+                copper -= 100;
                 tower.range += 50;
+            }
+        });
+
+        // Cor
+        colorPicker.addEventListener('input', () => {
+            tower.color = persistent.color = colorPicker.value;
+            saveProgress();
+        });
+
+        // Meta upgrades
+        document.getElementById('metaDamage').addEventListener('click', () => {
+            if (persistent.gold >= 20) {
+                persistent.gold -= 20;
+                persistent.damageLevel += 1;
+                updateGameOverUI();
+                saveProgress();
+            }
+        });
+        document.getElementById('metaFireRate').addEventListener('click', () => {
+            if (persistent.gold >= 30) {
+                persistent.gold -= 30;
+                persistent.fireRateLevel += 1;
+                updateGameOverUI();
+                saveProgress();
+            }
+        });
+        document.getElementById('metaHealth').addEventListener('click', () => {
+            if (persistent.gold >= 50) {
+                persistent.gold -= 50;
+                persistent.healthLevel += 1;
+                updateGameOverUI();
+                saveProgress();
+            }
+        });
+        document.getElementById('metaRange').addEventListener('click', () => {
+            if (persistent.gold >= 40) {
+                persistent.gold -= 40;
+                persistent.rangeLevel += 1;
+                updateGameOverUI();
                 saveProgress();
             }
         });
 
-        colorPicker.addEventListener('input', () => {
-            tower.color = colorPicker.value;
-            saveProgress();
-        });
+        // Restart
+        restartBtn.addEventListener('click', newRun);
 
-        restartBtn.addEventListener('click', () => {
-            // Reset mas mantém high score e cor (permadeath parcial)
-            tower.health = tower.maxHealth;
-            tower.damage = 10;
-            tower.fireRate = 1000;
-            tower.range = 200;
-            enemies = [];
-            projectiles = [];
-            coins = 0;
-            wave = 1;
-            gameOver = false;
-            gameOverScreen.style.display = 'none';
-            saveProgress();
-        });
-
-        // Loop principal
+        // Game Loop
         function gameLoop() {
             if (gameOver) return;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Desenhar torre
+            // Torre
             ctx.fillStyle = tower.color;
             ctx.beginPath();
             ctx.arc(tower.x, tower.y, tower.size / 2, 0, Math.PI * 2);
             ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
 
-            // Desenhar círculo de alcance
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            // Círculo de alcance
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
             ctx.stroke();
 
+            // Onda no topo
+            ctx.font = 'bold 36px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`Onda ${wave}`, canvas.width / 2, 40);
+            ctx.textAlign = 'left';
+
             spawnEnemy();
             shoot();
 
-            enemies.forEach((enemy, i) => {
-                enemy.update();
-                enemy.draw();
-                if (enemy.y > canvas.height + 50 || enemy.y < -50 || enemy.health <= 0) enemies.splice(i, 1);
-            });
+            // Enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].update();
+                enemies[i].draw();
+                if (enemies[i].x > canvas.width + 50 || enemies[i].health <= 0) {
+                    enemies.splice(i, 1);
+                }
+            }
 
-            projectiles.forEach((proj, i) => {
-                proj.update();
-                proj.draw();
-                if (proj.y < -50 || proj.y > canvas.height + 50) projectiles.splice(i, 1);
-            });
+            // Projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                projectiles[i].update();
+                projectiles[i].draw();
+                if (projectiles[i].x < -50 || projectiles[i].x > canvas.width + 50) {
+                    projectiles.splice(i, 1);
+                }
+            }
 
             updateUI();
             checkGameOver();
@@ -412,6 +530,7 @@
             requestAnimationFrame(gameLoop);
         }
 
+        // Init
         loadSave();
         gameLoop();
     </script>
