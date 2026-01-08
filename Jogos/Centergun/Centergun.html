@@ -191,11 +191,11 @@
             x: canvas.width / 2,
             y: canvas.height / 2,
             size: 50,
-            health: 100,
-            maxHealth: 100,
-            damage: 10,
-            fireRate: 1000,
-            range: 200,
+            health: 150, // Aumentei vida inicial pra facilitar o começo
+            maxHealth: 150,
+            damage: 15,  // Dano inicial maior
+            fireRate: 800, // Tiro mais rápido
+            range: 250,   // Alcance maior
             color: '#0000FF',
             lastShot: 0
         };
@@ -205,7 +205,7 @@
         let wave = 1;
         let gameOver = false;
         let lastEnemySpawn = 0;
-        let enemySpawnRate = 2000;
+        let enemySpawnRate = 3000; // Spawn mais lento no início
 
         // Funções auxiliares
         function random(min, max) {
@@ -238,17 +238,17 @@
         }
 
         function newRun() {
-            tower.damage = 10 + persistent.damageLevel * 2;
-            tower.fireRate = Math.max(200, 1000 - persistent.fireRateLevel * 50);
-            tower.range = 200 + persistent.rangeLevel * 20;
-            tower.maxHealth = 100 + persistent.healthLevel * 20;
+            tower.damage = 15 + persistent.damageLevel * 2;
+            tower.fireRate = Math.max(200, 800 - persistent.fireRateLevel * 50);
+            tower.range = 250 + persistent.rangeLevel * 20;
+            tower.maxHealth = 150 + persistent.healthLevel * 20;
             tower.health = tower.maxHealth;
             copper = 0;
             wave = 1;
             enemies = [];
             projectiles = [];
             lastEnemySpawn = 0;
-            enemySpawnRate = 2000;
+            enemySpawnRate = 3000;
             gameOver = false;
             gameOverScreen.style.display = 'none';
             runStartGold = persistent.gold;
@@ -265,6 +265,7 @@
             totalGoldEl.textContent = persistent.gold;
             runGoldEarnedEl.textContent = persistent.gold - runStartGold;
             highScoreUIEl.textContent = persistent.highScore;
+            finalWaveEl.textContent = wave - 1;
             updateMetaUI();
         }
 
@@ -272,16 +273,15 @@
         class Enemy {
             constructor() {
                 const angle = random(0, Math.PI * 2);
-                const spawnDist = tower.range + 30 + random(0, 80);
+                const spawnDist = tower.range + 50 + random(0, 100);
                 this.x = tower.x + Math.cos(angle) * spawnDist;
                 this.y = tower.y + Math.sin(angle) * spawnDist;
-                // Clamp para não spawn fora demais
-                this.x = Math.max(0, Math.min(canvas.width, this.x));
-                this.y = Math.max(0, Math.min(canvas.height, this.y));
+                this.x = Math.max(20, Math.min(canvas.width - 20, this.x));
+                this.y = Math.max(20, Math.min(canvas.height - 20, this.y));
                 this.width = 20;
                 this.height = 20;
-                this.speed = 0.8 + wave * 0.15 + random(0, 0.6);
-                this.health = Math.floor(15 + wave * 6 + random(0, 10));
+                this.speed = 0.6 + wave * 0.1 + random(0, 0.4); // Mais lento
+                this.health = Math.floor(20 + wave * 4 + random(0, 8)); // Menos vida
                 this.maxHealth = this.health;
             }
             update() {
@@ -289,7 +289,7 @@
                 const dy = tower.y - this.y;
                 const dist = Math.hypot(dx, dy);
                 if (dist < tower.size / 2 + this.width / 2) {
-                    tower.health = Math.max(0, tower.health - (15 + wave * 2));
+                    tower.health = Math.max(0, tower.health - (10 + wave * 2));
                     this.x = canvas.width + 100;
                 } else {
                     this.x += (dx / dist) * this.speed;
@@ -297,38 +297,39 @@
                 }
             }
             draw() {
-                // Corpo
                 ctx.fillStyle = 'red';
-                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+
                 // Barra de vida
                 ctx.fillStyle = '#444';
-                ctx.fillRect(this.x - 10, this.y - 25, 20, 4);
+                ctx.fillRect(this.x - 12, this.y - 28, 24, 5);
                 if (this.health > 0) {
                     ctx.fillStyle = this.health > this.maxHealth * 0.5 ? '#4CAF50' : '#f44336';
-                    ctx.fillRect(this.x - 10, this.y - 25, (this.health / this.maxHealth) * 20, 4);
+                    ctx.fillRect(this.x - 12, this.y - 28, (this.health / this.maxHealth) * 24, 5);
                 }
             }
         }
 
-        // Projétil
+        // Projétil (agora círculo!)
         class Projectile {
             constructor(target) {
                 this.x = tower.x;
                 this.y = tower.y;
-                this.width = 5;
-                this.height = 10;
-                this.speed = 6;
+                this.radius = 10; // Tamanho do círculo
+                this.speed = 7;
                 this.target = target;
             }
             update() {
                 const dx = this.target.x - this.x;
                 const dy = this.target.y - this.y;
                 const dist = Math.hypot(dx, dy);
-                if (dist < this.speed) {
+                if (dist < this.speed + this.target.width / 2 + this.radius) {
                     this.target.health -= tower.damage;
                     if (this.target.health <= 0) {
-                        copper += 10 + wave;
-                        if (Math.random() < 0.015) { // Baixa chance de ouro
+                        copper += 10 + wave * 2;
+                        if (Math.random() < 0.02) { // 2% chance de ouro por kill
                             persistent.gold += 1;
                         }
                         this.target.x = canvas.width + 100;
@@ -341,7 +342,12 @@
             }
             draw() {
                 ctx.fillStyle = 'yellow';
-                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ff0';
+                ctx.lineWidth = 2;
+                ctx.stroke();
             }
         }
 
@@ -393,11 +399,11 @@
 
         // Next wave
         function nextWave() {
-            if (enemies.length === 0) {
+            if (enemies.length === 0 && Date.now() - lastEnemySpawn > 1000) {
                 wave++;
-                enemySpawnRate = Math.max(500, 2000 - (wave - 1) * 80);
-                copper += wave * 15;
-                persistent.gold += 1;
+                enemySpawnRate = Math.max(600, 3000 - (wave - 1) * 120);
+                copper += wave * 20;
+                persistent.gold += Math.floor(wave / 3) + 1; // Mais ouro por onda
                 saveProgress();
             }
         }
@@ -419,7 +425,7 @@
             if (copper >= 100) {
                 copper -= 100;
                 tower.maxHealth += 20;
-                tower.health = tower.maxHealth;
+                tower.health += 20;
             }
         });
         upgradeRangeBtn.addEventListener('click', () => {
@@ -484,7 +490,7 @@
             ctx.arc(tower.x, tower.y, tower.size / 2, 0, Math.PI * 2);
             ctx.fill();
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.stroke();
 
             // Círculo de alcance
@@ -495,12 +501,10 @@
             ctx.stroke();
 
             // Onda no topo
-            ctx.font = 'bold 36px Arial';
+            ctx.font = 'bold 40px Arial';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(`Onda ${wave}`, canvas.width / 2, 40);
-            ctx.textAlign = 'left';
+            ctx.fillText(`Onda ${wave}`, canvas.width / 2, 50);
 
             spawnEnemy();
             shoot();
