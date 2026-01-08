@@ -174,10 +174,10 @@
         let costs = { damage: 5, fireRate: 5, health: 5, range: 5 };
 
         let tower = {
-            size: 50, health: 150, maxHealth: 150, damage: 15, fireRate: 800, range: 250, color: '#0000FF', lastShot: 0
+            size: 50, health: 150, maxHealth: 150, damage: 15, fireRate: 800, range: 180, color: '#0000FF', lastShot: 0 // Alcance reduzido
         };
 
-        const ZOOM = 0.5; // Zoom out: 0.5 = arena 2x maior (mais espaço)
+        const ZOOM = 0.5; // Zoom out pra arena maior
 
         let enemies = [];
         let projectiles = [];
@@ -215,7 +215,7 @@
         function newRun() {
             tower.damage = 15 + persistent.damageLevel * 2;
             tower.fireRate = Math.max(200, 800 - persistent.fireRateLevel * 50);
-            tower.range = 250 + persistent.rangeLevel * 20;
+            tower.range = 180 + persistent.rangeLevel * 20; // Base reduzida
             tower.maxHealth = 150 + persistent.healthLevel * 20;
             tower.health = tower.maxHealth;
             copper = 0;
@@ -296,25 +296,21 @@
         }
 
         class Projectile {
-            constructor(target) {
-                this.x = canvas.width / 2; this.y = canvas.height / 2; this.radius = 8; this.speed = 7; this.target = target;
+            constructor(initialTargetX, initialTargetY) {
+                this.x = canvas.width / 2;
+                this.y = canvas.height / 2;
+                this.radius = 8;
+                this.speed = 7;
+                // Direção fixa no momento do tiro
+                const dx = initialTargetX - this.x;
+                const dy = initialTargetY - this.y;
+                const dist = Math.hypot(dx, dy) || 1; // evita divisão por zero
+                this.vx = (dx / dist) * this.speed;
+                this.vy = (dy / dist) * this.speed;
             }
             update() {
-                const dx = this.target.x - this.x;
-                const dy = this.target.y - this.y;
-                const dist = Math.hypot(dx, dy);
-                if (dist < this.speed + this.target.radius + this.radius) {
-                    this.target.health -= tower.damage;
-                    if (this.target.health <= 0) {
-                        copper += Math.floor(random(1, 6));
-                        if (Math.random() < 0.02) { persistent.gold += 1; saveProgress(); }
-                        this.target.x = canvas.width + 100;
-                    }
-                    this.x = -100;
-                } else {
-                    this.x += (dx / dist) * this.speed;
-                    this.y += (dy / dist) * this.speed;
-                }
+                this.x += this.vx;
+                this.y += this.vy;
             }
             draw() {
                 ctx.fillStyle = 'yellow';
@@ -333,14 +329,18 @@
 
         function shoot() {
             if (Date.now() - tower.lastShot > tower.fireRate && enemies.length > 0) {
-                let closest = null; let minDist = Infinity;
+                let closest = null;
+                let minDist = Infinity;
                 enemies.forEach(enemy => {
                     if (enemy.health <= 0) return;
                     const dist = distance(canvas.width / 2, canvas.height / 2, enemy.x, enemy.y);
-                    if (dist < minDist && dist <= tower.range / ZOOM) { minDist = dist; closest = enemy; }
+                    if (dist < minDist && dist <= tower.range) {
+                        minDist = dist;
+                        closest = enemy;
+                    }
                 });
                 if (closest) {
-                    projectiles.push(new Projectile(closest));
+                    projectiles.push(new Projectile(closest.x, closest.y)); // Direção fixa
                     tower.lastShot = Date.now();
                 }
             }
@@ -427,13 +427,13 @@
             if (gameOver) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Zoom da arena
+            // Zoom
             ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.scale(ZOOM, ZOOM);
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
-            // Torre (centro)
+            // Torre
             ctx.fillStyle = tower.color;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.size / 2, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
@@ -452,16 +452,29 @@
             spawnEnemy();
             shoot();
 
+            // Enemies
             for (let i = enemies.length - 1; i >= 0; i--) {
-                enemies[i].update(); enemies[i].draw();
-                if (enemies[i].health <= 0 || enemies[i].x > canvas.width * 2 || enemies[i].x < -canvas.width || enemies[i].y > canvas.height * 2 || enemies[i].y < -canvas.height) enemies.splice(i, 1);
-            }
-            for (let i = projectiles.length - 1; i >= 0; i--) {
-                projectiles[i].update(); projectiles[i].draw();
-                if (projectiles[i].x < -100 || projectiles[i].x > canvas.width + 100) projectiles.splice(i, 1);
+                enemies[i].update();
+                enemies[i].draw();
+                if (enemies[i].health <= 0) {
+                    copper += Math.floor(random(1, 6));
+                    if (Math.random() < 0.02) { persistent.gold += 1; saveProgress(); }
+                }
+                if (enemies[i].health <= 0 || enemies[i].x > canvas.width * 2 || enemies[i].x < -canvas.width || enemies[i].y > canvas.height * 2 || enemies[i].y < -canvas.height) {
+                    enemies.splice(i, 1);
+                }
             }
 
-            ctx.restore(); // Volta zoom normal pro texto/UI se precisar (mas aqui não tem)
+            // Projectiles (agora vão reto)
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                projectiles[i].update();
+                projectiles[i].draw();
+                if (projectiles[i].x < -100 || projectiles[i].x > canvas.width + 100 || projectiles[i].y < -100 || projectiles[i].y > canvas.height + 100) {
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            ctx.restore();
 
             updateUI();
             checkGameOver();
