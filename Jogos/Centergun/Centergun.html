@@ -19,6 +19,7 @@
         #color-picker { margin: 5px; padding: 5px; }
         #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 30px; text-align: center; display: none; z-index: 10; border-radius: 10px; max-width: 90%; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
         #meta-upgrades { margin: 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 400px; margin: 20px auto; }
+        .icon { margin-right: 5px; font-size: 1.1em; }
         @media (max-width: 600px) { #ui { flex-direction: column; align-items: center; font-size: 14px; } #upgrades { flex-direction: column; align-items: center; } #meta-upgrades { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -40,19 +41,23 @@
             <button id="restart">Iniciar Nova Partida</button>
         </div>
     </div>
+
     <div id="ui">
         <div id="wave">Onda: 1</div>
         <div id="stats">
-            Dano: <span id="statDamage">15</span> | 
-            Taxa: <span id="statFireRate">1.25</span>/s | 
-            Alcance: <span id="statRange">180</span> | 
-            Vida Máx: <span id="statMaxHealth">150</span>
+            <span class="icon">🪙</span> Cobre: <span id="statCopper">0</span> | 
+            <span class="icon">🥇</span> Ouro: <span id="statGold">0</span><br>
+            <span class="icon">⚔️</span> Dano: <span id="statDamage">15</span> | 
+            <span class="icon">⚡</span> Taxa: <span id="statFireRate">1.25</span>/s | 
+            <span class="icon">🎯</span> Alcance: <span id="statRange">180</span> | 
+            <span class="icon">❤️</span> Vida Máx: <span id="statMaxHealth">150</span>
         </div>
         <div>
             Vida da Torre:
             <div id="health-bar-container"><div id="health-bar"></div></div>
         </div>
     </div>
+
     <div id="upgrades">
         <button id="upgradeDamage">Upgrade Dano (+2) (Custo: 5 Cobre)</button>
         <button id="upgradeFireRate">Upgrade Taxa de Fogo (Custo: 5 Cobre)</button>
@@ -62,7 +67,31 @@
     </div>
 
     <script>
-                // Persistent e run vars
+        // Primeiro: pega todos os elementos do DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const waveElement = document.getElementById('wave');
+        const statCopper = document.getElementById('statCopper');
+        const statGold = document.getElementById('statGold');
+        const statDamage = document.getElementById('statDamage');
+        const statFireRate = document.getElementById('statFireRate');
+        const statRange = document.getElementById('statRange');
+        const statMaxHealth = document.getElementById('statMaxHealth');
+        const healthBar = document.getElementById('health-bar');
+        const upgradeDamageBtn = document.getElementById('upgradeDamage');
+        const upgradeFireRateBtn = document.getElementById('upgradeFireRate');
+        const upgradeHealthBtn = document.getElementById('upgradeHealth');
+        const upgradeRangeBtn = document.getElementById('upgradeRange');
+        const colorPicker = document.getElementById('color-picker');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalWaveEl = document.getElementById('finalWave');
+        const highScoreUIEl = document.getElementById('highScoreUI');
+        const totalGoldEl = document.getElementById('totalGold');
+        const runGoldEarnedEl = document.getElementById('runGoldEarned');
+        const restartBtn = document.getElementById('restart');
+
+        // Agora sim: define as variáveis do jogo
         let persistent = { gold: 0, damageLevel: 0, fireRateLevel: 0, healthLevel: 0, rangeLevel: 0, highScore: 0, color: '#0000FF' };
         let copper = 0;
         let runStartGold = 0;
@@ -92,6 +121,7 @@
         let enemySpawnRate = 3000;
         let animationFrameId = null;
 
+        // Funções
         function resizeCanvas() {
             const maxW = window.innerWidth * 0.95;
             const maxH = window.innerHeight * 0.65;
@@ -140,6 +170,7 @@
 
             updateUpgradeButtons();
             updateStatsUI();
+            updateUI();
         }
 
         function updateStatsUI() {
@@ -261,8 +292,8 @@
 
         function updateUI() {
             waveElement.textContent = `Onda: ${wave}`;
-            copperElement.textContent = `Cobre: ${Math.floor(copper)}`;
-            goldElement.textContent = `Ouro: ${persistent.gold}`;
+            statCopper.textContent = Math.floor(copper);
+            statGold.textContent = persistent.gold;
             healthBar.style.width = `${Math.max(0, (tower.health / tower.maxHealth) * 100)}%`;
             updateStatsUI();
         }
@@ -364,7 +395,7 @@
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.range, 0, Math.PI * 2); ctx.stroke();
 
-            // Onda (y = 60)
+            // Onda
             ctx.font = 'bold 40px Arial';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
@@ -391,7 +422,6 @@
                 projectiles[i].update();
                 projectiles[i].draw();
 
-                // Colisão
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     if (enemies[j].health <= 0) continue;
                     const dist = distance(projectiles[i].x, projectiles[i].y, enemies[j].x, enemies[j].y);
@@ -416,6 +446,7 @@
             animationFrameId = requestAnimationFrame(gameLoop);
         }
 
+        // Inicia o jogo
         resizeCanvas();
         loadSave();
         updateUpgradeButtons();
