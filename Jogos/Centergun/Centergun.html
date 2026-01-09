@@ -6,19 +6,20 @@
     <title>Centergun</title>
     <style>
         body { display: flex; flex-direction: column; align-items: center; margin: 0; background-color: #222; color: #fff; font-family: Arial, sans-serif; height: 100vh; overflow: hidden; }
-        #game-container { position: relative; margin-top: 20px; flex: 1; display: flex; justify-content: center; align-items: center; }
-        canvas { background-color: #333; border: 2px solid #fff; display: block; max-width: 100%; max-height: 70vh; }
-        #ui { display: flex; justify-content: space-around; width: 100%; max-width: 800px; margin: 10px 0; font-size: 18px; }
+        #game-container { position: relative; margin-top: 10px; flex: 1; display: flex; justify-content: center; align-items: center; }
+        canvas { background-color: #333; border: 2px solid #fff; display: block; max-width: 100%; max-height: 65vh; }
+        #ui { display: flex; justify-content: space-between; width: 100%; max-width: 800px; margin: 5px 0; font-size: 16px; }
+        #stats { background: rgba(0,0,0,0.5); padding: 8px; border-radius: 5px; }
         #health-bar-container { width: 200px; height: 20px; background: #555; border: 1px solid #fff; position: relative; margin-top: 5px; }
         #health-bar { height: 100%; background: #4CAF50; width: 100%; transition: width 0.3s; }
-        #upgrades { display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px; margin: 10px 0; }
+        #upgrades { display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px; margin: 5px 0; }
         button { background: #4CAF50; color: white; border: none; padding: 8px 12px; margin: 5px; cursor: pointer; border-radius: 5px; font-size: 14px; }
         button:hover { background: #45a049; }
         button:disabled { background: #666; cursor: not-allowed; }
         #color-picker { margin: 5px; padding: 5px; }
-        #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); padding: 30px; text-align: center; display: none; z-index: 10; border-radius: 10px; max-width: 90%; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+        #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 30px; text-align: center; display: none; z-index: 10; border-radius: 10px; max-width: 90%; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
         #meta-upgrades { margin: 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 400px; margin: 20px auto; }
-        @media (max-width: 600px) { #ui { flex-direction: column; align-items: center; font-size: 16px; } #upgrades { flex-direction: column; align-items: center; } #meta-upgrades { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) { #ui { flex-direction: column; align-items: center; font-size: 14px; } #upgrades { flex-direction: column; align-items: center; } #meta-upgrades { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -41,8 +42,12 @@
     </div>
     <div id="ui">
         <div id="wave">Onda: 1</div>
-        <div id="copper">Cobre: 0</div>
-        <div id="goldUI">Ouro: 0</div>
+        <div id="stats">
+            Dano: <span id="statDamage">15</span> | 
+            Taxa: <span id="statFireRate">1.25</span>/s | 
+            Alcance: <span id="statRange">180</span> | 
+            Vida Máx: <span id="statMaxHealth">150</span>
+        </div>
         <div>
             Vida da Torre:
             <div id="health-bar-container"><div id="health-bar"></div></div>
@@ -63,6 +68,10 @@
         const copperElement = document.getElementById('copper');
         const goldElement = document.getElementById('goldUI');
         const healthBar = document.getElementById('health-bar');
+        const statDamage = document.getElementById('statDamage');
+        const statFireRate = document.getElementById('statFireRate');
+        const statRange = document.getElementById('statRange');
+        const statMaxHealth = document.getElementById('statMaxHealth');
         const upgradeDamageBtn = document.getElementById('upgradeDamage');
         const upgradeFireRateBtn = document.getElementById('upgradeFireRate');
         const upgradeHealthBtn = document.getElementById('upgradeHealth');
@@ -81,10 +90,7 @@
         let runStartGold = 0;
         let costs = { damage: 5, fireRate: 5, health: 5, range: 5 };
 
-        // Configuração inicial
         const ZOOM = 0.5;
-        const CENTER_X = canvas.width / 2;
-        const CENTER_Y = canvas.height / 2;
         const TOWER_SIZE = 50;
 
         let tower = {
@@ -106,6 +112,7 @@
         let gameOver = false;
         let lastEnemySpawn = 0;
         let enemySpawnRate = 3000;
+        let animationFrameId = null;
 
         function resizeCanvas() {
             const maxW = window.innerWidth * 0.95;
@@ -133,14 +140,17 @@
         }
 
         function newRun() {
+            // Reset tower stats
             tower.damage = 15 + persistent.damageLevel * 2;
             tower.fireRate = Math.max(200, 800 - persistent.fireRateLevel * 50);
             tower.range = 180 + persistent.rangeLevel * 20;
             tower.maxHealth = 150 + persistent.healthLevel * 20;
             tower.health = tower.maxHealth;
+            tower.lastShot = 0;
+
+            // Reset game state
             copper = 0;
             costs = { damage: 5, fireRate: 5, health: 5, range: 5 };
-            updateUpgradeButtons();
             wave = 1;
             enemies = [];
             projectiles = [];
@@ -151,6 +161,17 @@
             gameOver = false;
             gameOverScreen.style.display = 'none';
             runStartGold = persistent.gold;
+
+            // Atualiza UI
+            updateUpgradeButtons();
+            updateStatsUI();
+        }
+
+        function updateStatsUI() {
+            statDamage.textContent = tower.damage;
+            statFireRate.textContent = (1000 / tower.fireRate).toFixed(2);
+            statRange.textContent = Math.round(tower.range);
+            statMaxHealth.textContent = tower.maxHealth;
         }
 
         function updateUpgradeButtons() {
@@ -268,6 +289,7 @@
             copperElement.textContent = `Cobre: ${Math.floor(copper)}`;
             goldElement.textContent = `Ouro: ${persistent.gold}`;
             healthBar.style.width = `${Math.max(0, (tower.health / tower.maxHealth) * 100)}%`;
+            updateStatsUI();
         }
 
         function checkGameOver() {
@@ -292,7 +314,7 @@
             }
         }
 
-        // Upgrades temporários
+        // Upgrades
         upgradeDamageBtn.addEventListener('click', () => {
             if (copper >= costs.damage) {
                 copper -= costs.damage;
@@ -338,10 +360,20 @@
         document.getElementById('metaHealth').addEventListener('click', () => { if (persistent.gold >= 50) { persistent.gold -= 50; persistent.healthLevel += 1; updateGameOverUI(); saveProgress(); } });
         document.getElementById('metaRange').addEventListener('click', () => { if (persistent.gold >= 40) { persistent.gold -= 40; persistent.rangeLevel += 1; updateGameOverUI(); saveProgress(); } });
 
-        restartBtn.addEventListener('click', newRun);
+        restartBtn.addEventListener('click', () => {
+            newRun();
+            // Reinicia o loop se estiver parado
+            if (!animationFrameId) {
+                gameLoop();
+            }
+        });
 
         function gameLoop() {
-            if (gameOver) return;
+            if (gameOver) {
+                animationFrameId = null;
+                return;
+            }
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             ctx.save();
@@ -349,7 +381,7 @@
             ctx.scale(ZOOM, ZOOM);
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
-            // Torre (centro fixo)
+            // Torre
             ctx.fillStyle = tower.color;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.size / 2, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
@@ -359,11 +391,11 @@
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.range, 0, Math.PI * 2); ctx.stroke();
 
-            // Onda
+            // Onda (mais pra cima)
             ctx.font = 'bold 40px Arial';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
-            ctx.fillText(`Onda ${wave}`, canvas.width / 2, 80);
+            ctx.fillText(`Onda ${wave}`, canvas.width / 2, 40);
 
             spawnEnemy();
             shoot();
@@ -381,12 +413,12 @@
                 }
             }
 
-            // Projéteis (vão reto e colidem com inimigos)
+            // Projéteis
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 projectiles[i].update();
                 projectiles[i].draw();
 
-                // Verifica colisão com inimigos
+                // Colisão com inimigos
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     if (enemies[j].health <= 0) continue;
                     const dist = distance(projectiles[i].x, projectiles[i].y, enemies[j].x, enemies[j].y);
@@ -407,12 +439,14 @@
             updateUI();
             checkGameOver();
             nextWave();
-            requestAnimationFrame(gameLoop);
+
+            animationFrameId = requestAnimationFrame(gameLoop);
         }
 
         resizeCanvas();
         loadSave();
         updateUpgradeButtons();
+        updateStatsUI();
         gameLoop();
     </script>
 </body>
