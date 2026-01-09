@@ -62,29 +62,7 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const waveElement = document.getElementById('wave');
-        const copperElement = document.getElementById('copper');
-        const goldElement = document.getElementById('goldUI');
-        const healthBar = document.getElementById('health-bar');
-        const statDamage = document.getElementById('statDamage');
-        const statFireRate = document.getElementById('statFireRate');
-        const statRange = document.getElementById('statRange');
-        const statMaxHealth = document.getElementById('statMaxHealth');
-        const upgradeDamageBtn = document.getElementById('upgradeDamage');
-        const upgradeFireRateBtn = document.getElementById('upgradeFireRate');
-        const upgradeHealthBtn = document.getElementById('upgradeHealth');
-        const upgradeRangeBtn = document.getElementById('upgradeRange');
-        const colorPicker = document.getElementById('color-picker');
-        const gameOverScreen = document.getElementById('game-over');
-        const finalWaveEl = document.getElementById('finalWave');
-        const highScoreUIEl = document.getElementById('highScoreUI');
-        const totalGoldEl = document.getElementById('totalGold');
-        const runGoldEarnedEl = document.getElementById('runGoldEarned');
-        const restartBtn = document.getElementById('restart');
-
-        // Persistent e run vars
+                // Persistent e run vars
         let persistent = { gold: 0, damageLevel: 0, fireRateLevel: 0, healthLevel: 0, rangeLevel: 0, highScore: 0, color: '#0000FF' };
         let copper = 0;
         let runStartGold = 0;
@@ -386,7 +364,7 @@
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.range, 0, Math.PI * 2); ctx.stroke();
 
-            // Onda (posição y = 60)
+            // Onda (y = 60)
             ctx.font = 'bold 40px Arial';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
