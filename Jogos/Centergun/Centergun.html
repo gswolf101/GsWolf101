@@ -75,16 +75,28 @@
         const runGoldEarnedEl = document.getElementById('runGoldEarned');
         const restartBtn = document.getElementById('restart');
 
+        // Persistent e run vars
         let persistent = { gold: 0, damageLevel: 0, fireRateLevel: 0, healthLevel: 0, rangeLevel: 0, highScore: 0, color: '#0000FF' };
         let copper = 0;
         let runStartGold = 0;
         let costs = { damage: 5, fireRate: 5, health: 5, range: 5 };
 
-        let tower = {
-            size: 50, health: 150, maxHealth: 150, damage: 15, fireRate: 800, range: 180, color: '#0000FF', lastShot: 0
-        };
+        // Configuração inicial
+        const ZOOM = 0.5;
+        const CENTER_X = canvas.width / 2;
+        const CENTER_Y = canvas.height / 2;
+        const TOWER_SIZE = 50;
 
-        const ZOOM = 0.5; // Arena maior (zoom out)
+        let tower = {
+            size: TOWER_SIZE,
+            health: 150,
+            maxHealth: 150,
+            damage: 15,
+            fireRate: 800,
+            range: 180,
+            color: '#0000FF',
+            lastShot: 0
+        };
 
         let enemies = [];
         let projectiles = [];
@@ -101,7 +113,8 @@
             let targetW = Math.min(800, maxW);
             let targetH = targetW * (600 / 800);
             if (targetH > maxH) { targetH = maxH; targetW = targetH * (800 / 600); }
-            canvas.width = targetW; canvas.height = targetH;
+            canvas.width = targetW;
+            canvas.height = targetH;
         }
         window.addEventListener('resize', resizeCanvas);
 
@@ -114,7 +127,8 @@
             const save = JSON.parse(localStorage.getItem('centergunSave')) || {};
             Object.assign(persistent, { gold: save.gold || 0, damageLevel: save.damageLevel || 0, fireRateLevel: save.fireRateLevel || 0,
                 healthLevel: save.healthLevel || 0, rangeLevel: save.rangeLevel || 0, highScore: save.highScore || 0, color: save.color || '#0000FF' });
-            tower.color = persistent.color; colorPicker.value = tower.color;
+            tower.color = persistent.color;
+            colorPicker.value = tower.color;
             newRun();
         }
 
@@ -176,10 +190,8 @@
                 this.speed = 0.5 + 0.3 * speedGrowth + random(-0.1, 0.3);
             }
             update() {
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                const dx = centerX - this.x;
-                const dy = centerY - this.y;
+                const dx = canvas.width / 2 - this.x;
+                const dy = canvas.height / 2 - this.y;
                 const dist = Math.hypot(dx, dy);
                 if (dist < tower.size / 2 + this.radius) {
                     tower.health = Math.max(0, tower.health - this.damage);
@@ -337,7 +349,7 @@
             ctx.scale(ZOOM, ZOOM);
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
-            // Torre
+            // Torre (centro fixo)
             ctx.fillStyle = tower.color;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.size / 2, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
@@ -356,24 +368,36 @@
             spawnEnemy();
             shoot();
 
-            // Atualiza e desenha inimigos
+            // Inimigos
             for (let i = enemies.length - 1; i >= 0; i--) {
                 enemies[i].update();
                 enemies[i].draw();
                 if (enemies[i].health <= 0) {
                     copper += Math.floor(random(1, 6));
                     if (Math.random() < 0.02) { persistent.gold += 1; saveProgress(); }
-                }
-                if (enemies[i].health <= 0 || Math.abs(enemies[i].x - canvas.width / 2) > canvas.width) {
+                    enemies.splice(i, 1);
+                } else if (Math.abs(enemies[i].x - canvas.width / 2) > canvas.width * 2) {
                     enemies.splice(i, 1);
                 }
             }
 
-            // Atualiza e desenha projéteis (sem buscar novo alvo)
+            // Projéteis (vão reto e colidem com inimigos)
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 projectiles[i].update();
                 projectiles[i].draw();
-                if (projectiles[i].x < -100 || projectiles[i].x > canvas.width + 100) {
+
+                // Verifica colisão com inimigos
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    if (enemies[j].health <= 0) continue;
+                    const dist = distance(projectiles[i].x, projectiles[i].y, enemies[j].x, enemies[j].y);
+                    if (dist < projectiles[i].radius + enemies[j].radius) {
+                        enemies[j].health -= tower.damage;
+                        projectiles.splice(i, 1);
+                        break;
+                    }
+                }
+
+                if (projectiles[i] && (projectiles[i].x < -100 || projectiles[i].x > canvas.width + 100 || projectiles[i].y < -100 || projectiles[i].y > canvas.height + 100)) {
                     projectiles.splice(i, 1);
                 }
             }
