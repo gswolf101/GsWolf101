@@ -140,7 +140,6 @@
         }
 
         function newRun() {
-            // Reset tower stats
             tower.damage = 15 + persistent.damageLevel * 2;
             tower.fireRate = Math.max(200, 800 - persistent.fireRateLevel * 50);
             tower.range = 180 + persistent.rangeLevel * 20;
@@ -148,7 +147,6 @@
             tower.health = tower.maxHealth;
             tower.lastShot = 0;
 
-            // Reset game state
             copper = 0;
             costs = { damage: 5, fireRate: 5, health: 5, range: 5 };
             wave = 1;
@@ -162,7 +160,6 @@
             gameOverScreen.style.display = 'none';
             runStartGold = persistent.gold;
 
-            // Atualiza UI
             updateUpgradeButtons();
             updateStatsUI();
         }
@@ -314,7 +311,7 @@
             }
         }
 
-        // Upgrades
+        // Upgrades temporários
         upgradeDamageBtn.addEventListener('click', () => {
             if (copper >= costs.damage) {
                 copper -= costs.damage;
@@ -362,10 +359,8 @@
 
         restartBtn.addEventListener('click', () => {
             newRun();
-            // Reinicia o loop se estiver parado
-            if (!animationFrameId) {
-                gameLoop();
-            }
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(gameLoop);
         });
 
         function gameLoop() {
@@ -391,11 +386,11 @@
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.range, 0, Math.PI * 2); ctx.stroke();
 
-            // Onda (mais pra cima)
+            // Onda (posição y = 60)
             ctx.font = 'bold 40px Arial';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
-            ctx.fillText(`Onda ${wave}`, canvas.width / 2, 40);
+            ctx.fillText(`Onda ${wave}`, canvas.width / 2, 60);
 
             spawnEnemy();
             shoot();
@@ -418,7 +413,7 @@
                 projectiles[i].update();
                 projectiles[i].draw();
 
-                // Colisão com inimigos
+                // Colisão
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     if (enemies[j].health <= 0) continue;
                     const dist = distance(projectiles[i].x, projectiles[i].y, enemies[j].x, enemies[j].y);
@@ -447,7 +442,7 @@
         loadSave();
         updateUpgradeButtons();
         updateStatsUI();
-        gameLoop();
+        animationFrameId = requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
