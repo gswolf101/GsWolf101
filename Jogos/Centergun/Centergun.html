@@ -9,7 +9,7 @@
         #game-container { position: relative; margin-top: 10px; flex: 1; display: flex; justify-content: center; align-items: center; }
         canvas { background-color: #333; border: 2px solid #fff; display: block; max-width: 100%; max-height: 65vh; }
         #ui { display: flex; justify-content: space-between; width: 100%; max-width: 800px; margin: 5px 0; font-size: 16px; }
-        #stats { background: rgba(0,0,0,0.5); padding: 8px; border-radius: 5px; }
+        #stats { background: rgba(0,0,0,0.5); padding: 8px; border-radius: 5px; line-height: 1.6; }
         #health-bar-container { width: 200px; height: 20px; background: #555; border: 1px solid #fff; position: relative; margin-top: 5px; }
         #health-bar { height: 100%; background: #4CAF50; width: 100%; transition: width 0.3s; }
         #upgrades { display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px; margin: 5px 0; }
@@ -67,7 +67,7 @@
     </div>
 
     <script>
-        // Primeiro: pega todos os elementos do DOM
+        // Declarações no topo para evitar "not defined"
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -91,7 +91,6 @@
         const runGoldEarnedEl = document.getElementById('runGoldEarned');
         const restartBtn = document.getElementById('restart');
 
-        // Agora sim: define as variáveis do jogo
         let persistent = { gold: 0, damageLevel: 0, fireRateLevel: 0, healthLevel: 0, rangeLevel: 0, highScore: 0, color: '#0000FF' };
         let copper = 0;
         let runStartGold = 0;
@@ -121,7 +120,6 @@
         let enemySpawnRate = 3000;
         let animationFrameId = null;
 
-        // Funções
         function resizeCanvas() {
             const maxW = window.innerWidth * 0.95;
             const maxH = window.innerHeight * 0.65;
@@ -395,7 +393,7 @@
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.range, 0, Math.PI * 2); ctx.stroke();
 
-            // Onda
+            // Onda (y = 60)
             ctx.font = 'bold 40px Arial';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
@@ -446,7 +444,6 @@
             animationFrameId = requestAnimationFrame(gameLoop);
         }
 
-        // Inicia o jogo
         resizeCanvas();
         loadSave();
         updateUpgradeButtons();
