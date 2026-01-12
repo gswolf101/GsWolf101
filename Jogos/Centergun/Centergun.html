@@ -16,6 +16,7 @@
         button { background: #4CAF50; color: white; border: none; padding: 8px 12px; margin: 5px; cursor: pointer; border-radius: 5px; font-size: 14px; }
         button:hover { background: #45a049; }
         button:disabled { background: #666; cursor: not-allowed; }
+        button.active { background: #ff4444; }
         #color-picker { margin: 5px; padding: 5px; }
         #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 30px; text-align: center; display: none; z-index: 10; border-radius: 10px; max-width: 90%; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
         #meta-upgrades { margin: 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 400px; margin: 20px auto; }
@@ -59,6 +60,7 @@
     </div>
 
     <div id="upgrades">
+        <button id="speedToggle">2x Speed (OFF)</button>
         <button id="upgradeDamage">Upgrade Dano (+2) (Custo: 5 Cobre)</button>
         <button id="upgradeFireRate">Upgrade Taxa de Fogo (Custo: 5 Cobre)</button>
         <button id="upgradeHealth">Upgrade Vida (+10) (Custo: 5 Cobre)</button>
@@ -67,7 +69,7 @@
     </div>
 
     <script>
-        // Declarações no topo para evitar "not defined"
+        // Declarações no topo
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -79,6 +81,7 @@
         const statRange = document.getElementById('statRange');
         const statMaxHealth = document.getElementById('statMaxHealth');
         const healthBar = document.getElementById('health-bar');
+        const speedToggle = document.getElementById('speedToggle');
         const upgradeDamageBtn = document.getElementById('upgradeDamage');
         const upgradeFireRateBtn = document.getElementById('upgradeFireRate');
         const upgradeHealthBtn = document.getElementById('upgradeHealth');
@@ -98,6 +101,7 @@
 
         const ZOOM = 0.5;
         const TOWER_SIZE = 50;
+        let gameSpeed = 1.0; // 1x normal, 2x rápido
 
         let tower = {
             size: TOWER_SIZE,
@@ -119,6 +123,7 @@
         let lastEnemySpawn = 0;
         let enemySpawnRate = 3000;
         let animationFrameId = null;
+        let lastTime = 0;
 
         function resizeCanvas() {
             const maxW = window.innerWidth * 0.95;
@@ -212,9 +217,9 @@
                 this.maxHealth = this.health;
                 this.damage = Math.floor(15 * Math.pow(1.12, wave - 1));
                 const speedGrowth = Math.pow(1.09, wave - 1);
-                this.speed = 0.5 + 0.3 * speedGrowth + random(-0.1, 0.3);
+                this.baseSpeed = 0.5 + 0.3 * speedGrowth + random(-0.1, 0.3);
             }
-            update() {
+            update(delta) {
                 const dx = canvas.width / 2 - this.x;
                 const dy = canvas.height / 2 - this.y;
                 const dist = Math.hypot(dx, dy);
@@ -222,8 +227,9 @@
                     tower.health = Math.max(0, tower.health - this.damage);
                     this.x = canvas.width + 100;
                 } else {
-                    this.x += (dx / dist) * this.speed;
-                    this.y += (dy / dist) * this.speed;
+                    const speed = this.baseSpeed * gameSpeed;
+                    this.x += (dx / dist) * speed * delta;
+                    this.y += (dy / dist) * speed * delta;
                 }
             }
             draw() {
@@ -250,9 +256,9 @@
                 this.vx = (dx / dist) * this.speed;
                 this.vy = (dy / dist) * this.speed;
             }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
+            update(delta) {
+                this.x += this.vx * gameSpeed * delta;
+                this.y += this.vy * gameSpeed * delta;
             }
             draw() {
                 ctx.fillStyle = 'yellow';
@@ -358,7 +364,7 @@
             saveProgress();
         });
 
-        // Meta upgrades
+        // Meta upgrades (exemplo simples, pode expandir)
         document.getElementById('metaDamage').addEventListener('click', () => { if (persistent.gold >= 20) { persistent.gold -= 20; persistent.damageLevel += 1; updateGameOverUI(); saveProgress(); } });
         document.getElementById('metaFireRate').addEventListener('click', () => { if (persistent.gold >= 30) { persistent.gold -= 30; persistent.fireRateLevel += 1; updateGameOverUI(); saveProgress(); } });
         document.getElementById('metaHealth').addEventListener('click', () => { if (persistent.gold >= 50) { persistent.gold -= 50; persistent.healthLevel += 1; updateGameOverUI(); saveProgress(); } });
@@ -370,7 +376,17 @@
             animationFrameId = requestAnimationFrame(gameLoop);
         });
 
-        function gameLoop() {
+        speedToggle.addEventListener('click', () => {
+            gameSpeed = gameSpeed === 1 ? 2 : 1;
+            speedToggle.textContent = `2x Speed (${gameSpeed === 2 ? 'ON' : 'OFF'})`;
+            speedToggle.classList.toggle('active', gameSpeed === 2);
+        });
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const delta = (timestamp - lastTime) / 16.67; // normaliza para ~60fps
+            lastTime = timestamp;
+
             if (gameOver) {
                 animationFrameId = null;
                 return;
@@ -393,7 +409,7 @@
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.range, 0, Math.PI * 2); ctx.stroke();
 
-            // Onda (y = 60)
+            // Onda
             ctx.font = 'bold 40px Arial';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
@@ -404,7 +420,7 @@
 
             // Inimigos
             for (let i = enemies.length - 1; i >= 0; i--) {
-                enemies[i].update();
+                enemies[i].update(delta);
                 enemies[i].draw();
                 if (enemies[i].health <= 0) {
                     copper += Math.floor(random(1, 6));
@@ -417,7 +433,7 @@
 
             // Projéteis
             for (let i = projectiles.length - 1; i >= 0; i--) {
-                projectiles[i].update();
+                projectiles[i].update(delta);
                 projectiles[i].draw();
 
                 for (let j = enemies.length - 1; j >= 0; j--) {
