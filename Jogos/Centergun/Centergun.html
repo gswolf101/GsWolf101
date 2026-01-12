@@ -69,7 +69,6 @@
     </div>
 
     <script>
-        // Declarações no topo
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -101,7 +100,7 @@
 
         const ZOOM = 0.5;
         const TOWER_SIZE = 50;
-        let gameSpeed = 1.0; // 1x normal, 2x rápido
+        let gameSpeed = 1.0; // 1 = normal, 2 = rápido
 
         let tower = {
             size: TOWER_SIZE,
@@ -206,18 +205,21 @@
         }
 
         class Enemy {
-            constructor() {
+            constructor(isBoss = false) {
+                this.isBoss = isBoss;
                 const angle = random(0, Math.PI * 2);
-                const spawnDist = tower.range / ZOOM + 200 + random(0, 300);
+                const spawnDist = tower.range / ZOOM + (isBoss ? 400 : 200) + random(0, 300);
                 this.x = canvas.width / 2 + Math.cos(angle) * spawnDist;
                 this.y = canvas.height / 2 + Math.sin(angle) * spawnDist;
-                this.radius = 10;
+                this.radius = isBoss ? 30 : 10;
                 const growthFactor = Math.pow(1.15, wave - 1);
-                this.health = Math.floor(30 * growthFactor + random(0, 20));
+                let baseHealth = 30 * growthFactor + random(0, 20);
+                this.health = isBoss ? Math.floor(baseHealth * 4) : Math.floor(baseHealth);
                 this.maxHealth = this.health;
-                this.damage = Math.floor(15 * Math.pow(1.12, wave - 1));
+                this.damage = Math.floor(15 * Math.pow(1.12, wave - 1)) * (isBoss ? 2 : 1);
                 const speedGrowth = Math.pow(1.09, wave - 1);
-                this.baseSpeed = 0.5 + 0.3 * speedGrowth + random(-0.1, 0.3);
+                this.baseSpeed = (0.5 + 0.3 * speedGrowth + random(-0.1, 0.3)) * (isBoss ? 0.7 : 1); // Boss mais lento
+                this.color = isBoss ? '#8B008B' : 'red'; // Roxo escuro pro boss
             }
             update(delta) {
                 const dx = canvas.width / 2 - this.x;
@@ -233,13 +235,13 @@
                 }
             }
             draw() {
-                ctx.fillStyle = 'red';
+                ctx.fillStyle = this.color;
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#444';
-                ctx.fillRect(this.x - 12, this.y - 28, 24, 5);
+                ctx.fillRect(this.x - this.radius, this.y - this.radius - 20, this.radius * 2, 5);
                 if (this.health > 0) {
                     ctx.fillStyle = this.health > this.maxHealth * 0.5 ? '#4CAF50' : '#f44336';
-                    ctx.fillRect(this.x - 12, this.y - 28, (this.health / this.maxHealth) * 24, 5);
+                    ctx.fillRect(this.x - this.radius, this.y - this.radius - 20, (this.health / this.maxHealth) * (this.radius * 2), 5);
                 }
             }
         }
@@ -269,14 +271,15 @@
 
         function spawnEnemy() {
             if (enemiesThisWave < totalEnemiesForWave && Date.now() - lastEnemySpawn > enemySpawnRate) {
-                enemies.push(new Enemy());
+                const isBoss = (wave % 10 === 0 && wave >= 10);
+                enemies.push(new Enemy(isBoss));
                 enemiesThisWave++;
                 lastEnemySpawn = Date.now();
             }
         }
 
         function shoot() {
-            if (Date.now() - tower.lastShot > tower.fireRate && enemies.length > 0) {
+            if (Date.now() - tower.lastShot > (tower.fireRate / gameSpeed) && enemies.length > 0) {
                 let closest = null;
                 let minDist = Infinity;
                 enemies.forEach(enemy => {
@@ -317,7 +320,7 @@
                 wave++;
                 totalEnemiesForWave += 3;
                 enemiesThisWave = 0;
-                enemySpawnRate = Math.max(800, enemySpawnRate - 100);
+                enemySpawnRate = Math.max(800, enemySpawnRate - 100 * gameSpeed); // Spawn mais rápido no 2x
                 copper += wave * 5;
                 persistent.gold += Math.floor(wave / 3) + 1;
                 saveProgress();
@@ -364,7 +367,7 @@
             saveProgress();
         });
 
-        // Meta upgrades (exemplo simples, pode expandir)
+        // Meta upgrades (exemplo)
         document.getElementById('metaDamage').addEventListener('click', () => { if (persistent.gold >= 20) { persistent.gold -= 20; persistent.damageLevel += 1; updateGameOverUI(); saveProgress(); } });
         document.getElementById('metaFireRate').addEventListener('click', () => { if (persistent.gold >= 30) { persistent.gold -= 30; persistent.fireRateLevel += 1; updateGameOverUI(); saveProgress(); } });
         document.getElementById('metaHealth').addEventListener('click', () => { if (persistent.gold >= 50) { persistent.gold -= 50; persistent.healthLevel += 1; updateGameOverUI(); saveProgress(); } });
@@ -373,6 +376,7 @@
         restartBtn.addEventListener('click', () => {
             newRun();
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            lastTime = 0;
             animationFrameId = requestAnimationFrame(gameLoop);
         });
 
@@ -384,7 +388,7 @@
 
         function gameLoop(timestamp) {
             if (!lastTime) lastTime = timestamp;
-            const delta = (timestamp - lastTime) / 16.67; // normaliza para ~60fps
+            const delta = (timestamp - lastTime) / 16.67; // normaliza ~60fps
             lastTime = timestamp;
 
             if (gameOver) {
