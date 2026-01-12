@@ -69,6 +69,7 @@
     </div>
 
     <script>
+        // Declarações no topo para evitar "not defined"
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -100,7 +101,7 @@
 
         const ZOOM = 0.5;
         const TOWER_SIZE = 50;
-        let gameSpeed = 1.0; // 1 = normal, 2 = rápido
+        let gameSpeed = 1.0; // 1 = normal, 2 = 2x
 
         let tower = {
             size: TOWER_SIZE,
@@ -218,8 +219,8 @@
                 this.maxHealth = this.health;
                 this.damage = Math.floor(15 * Math.pow(1.12, wave - 1)) * (isBoss ? 2 : 1);
                 const speedGrowth = Math.pow(1.09, wave - 1);
-                this.baseSpeed = (0.5 + 0.3 * speedGrowth + random(-0.1, 0.3)) * (isBoss ? 0.7 : 1); // Boss mais lento
-                this.color = isBoss ? '#8B008B' : 'red'; // Roxo escuro pro boss
+                this.baseSpeed = (0.5 + 0.3 * speedGrowth + random(-0.1, 0.3)) * (isBoss ? 0.7 : 1);
+                this.color = isBoss ? '#8B008B' : 'red';
             }
             update(delta) {
                 const dx = canvas.width / 2 - this.x;
@@ -271,7 +272,7 @@
 
         function spawnEnemy() {
             if (enemiesThisWave < totalEnemiesForWave && Date.now() - lastEnemySpawn > enemySpawnRate) {
-                const isBoss = (wave % 10 === 0 && wave >= 10);
+                const isBoss = (wave % 10 === 0 && wave >= 10 && enemiesThisWave === 0); // Só um boss, no primeiro spawn da onda
                 enemies.push(new Enemy(isBoss));
                 enemiesThisWave++;
                 lastEnemySpawn = Date.now();
@@ -320,7 +321,7 @@
                 wave++;
                 totalEnemiesForWave += 3;
                 enemiesThisWave = 0;
-                enemySpawnRate = Math.max(800, enemySpawnRate - 100 * gameSpeed); // Spawn mais rápido no 2x
+                enemySpawnRate = Math.max(800, enemySpawnRate - 100 * gameSpeed);
                 copper += wave * 5;
                 persistent.gold += Math.floor(wave / 3) + 1;
                 saveProgress();
@@ -367,7 +368,7 @@
             saveProgress();
         });
 
-        // Meta upgrades (exemplo)
+        // Meta upgrades (exemplo simples)
         document.getElementById('metaDamage').addEventListener('click', () => { if (persistent.gold >= 20) { persistent.gold -= 20; persistent.damageLevel += 1; updateGameOverUI(); saveProgress(); } });
         document.getElementById('metaFireRate').addEventListener('click', () => { if (persistent.gold >= 30) { persistent.gold -= 30; persistent.fireRateLevel += 1; updateGameOverUI(); saveProgress(); } });
         document.getElementById('metaHealth').addEventListener('click', () => { if (persistent.gold >= 50) { persistent.gold -= 50; persistent.healthLevel += 1; updateGameOverUI(); saveProgress(); } });
@@ -388,7 +389,7 @@
 
         function gameLoop(timestamp) {
             if (!lastTime) lastTime = timestamp;
-            const delta = (timestamp - lastTime) / 16.67; // normaliza ~60fps
+            const delta = (timestamp - lastTime) / 16.67;
             lastTime = timestamp;
 
             if (gameOver) {
