@@ -8,26 +8,29 @@
         body { display: flex; flex-direction: column; align-items: center; margin: 0; background-color: #222; color: #fff; font-family: Arial, sans-serif; height: 100vh; overflow: hidden; }
         #game-container { position: relative; margin-top: 10px; flex: 1; display: flex; justify-content: center; align-items: center; }
         canvas { background-color: #333; border: 2px solid #fff; display: block; max-width: 100%; max-height: 65vh; }
-        #ui { display: flex; justify-content: space-between; width: 100%; max-width: 800px; margin: 5px 0; font-size: 16px; }
+        #ui { display: flex; justify-content: space-between; width: 100%; max-width: 800px; margin: 5px 0; font-size: 16px; position: relative; }
+        #end-game-btn { position: absolute; left: 10px; top: 10px; background: #ff4444; color: white; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; z-index: 5; }
+        #end-game-btn:hover { background: #cc0000; }
         #stats { background: rgba(0,0,0,0.5); padding: 8px; border-radius: 5px; line-height: 1.6; }
         #health-bar-container { width: 200px; height: 20px; background: #555; border: 1px solid #fff; position: relative; margin-top: 5px; }
         #health-bar { height: 100%; background: #4CAF50; width: 100%; transition: width 0.3s; }
-        #upgrades { display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px; margin: 5px 0; }
+        #upgrades, #copper-upgrades { display: flex; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px; margin: 5px 0; }
         button { background: #4CAF50; color: white; border: none; padding: 8px 12px; margin: 5px; cursor: pointer; border-radius: 5px; font-size: 14px; }
         button:hover { background: #45a049; }
         button:disabled { background: #666; cursor: not-allowed; }
         button.active { background: #ff4444; }
         #color-picker { margin: 5px; padding: 5px; }
         #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 30px; text-align: center; display: none; z-index: 10; border-radius: 10px; max-width: 90%; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
-        #meta-tabs { margin: 10px 0; text-align: center; }
+        #meta-tabs, #meta-tabs-copper { margin: 10px 0; text-align: center; }
         .tab-button { background: #555; color: white; border: none; padding: 10px 20px; margin: 0 5px; cursor: pointer; border-radius: 5px 5px 0 0; }
         .tab-button.active { background: #4CAF50; }
         .tab-content { display: none; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 0 5px 5px 5px; max-width: 600px; margin: 0 auto; }
         .tab-content.active { display: block; }
-        #meta-upgrades { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+        #meta-upgrades, #copper-upgrades-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
         .icon { margin-right: 5px; font-size: 1.1em; }
         input[type="text"] { padding: 8px; margin: 10px; width: 200px; }
-        @media (max-width: 600px) { #ui { flex-direction: column; align-items: center; font-size: 14px; } #upgrades { flex-direction: column; align-items: center; } #meta-upgrades { grid-template-columns: 1fr; } }
+        #copper-upgrades { border-top: 1px solid #444; padding-top: 10px; }
+        @media (max-width: 600px) { #ui { flex-direction: column; align-items: center; font-size: 14px; } #upgrades, #copper-upgrades { flex-direction: column; align-items: center; } }
     </style>
 </head>
 <body>
@@ -80,6 +83,7 @@
     </div>
 
     <div id="ui">
+        <button id="endGameBtn">Encerrar Partida</button>
         <div id="wave">Onda: 1</div>
         <div id="stats">
             <span class="icon">🪙</span> Cobre: <span id="statCopper">0</span> | 
@@ -105,8 +109,33 @@
         <label>Cor da Torre: <input type="color" id="color-picker" value="#0000FF"></label>
     </div>
 
+    <div id="copper-upgrades">
+        <h3>Loja de Cobre (durante a run)</h3>
+        <div id="meta-tabs-copper">
+            <button class="tab-button active" data-tab="attack-c">Ataque</button>
+            <button class="tab-button" data-tab="vida-c">Vida</button>
+            <button class="tab-button" data-tab="defesa-c">Defesa</button>
+            <button class="tab-button" data-tab="ganhos-c">Ganhos</button>
+        </div>
+        <div id="copper-upgrades-grid">
+            <div class="tab-content active" id="tab-attack-c">
+                <button id="upgradeDamageTemp">Dano +2 (5 Cobre)</button>
+                <button id="upgradeFireRateTemp">Taxa de Ataque +50ms (5 Cobre)</button>
+                <button id="upgradeRangeTemp">Alcance +25 (5 Cobre)</button>
+            </div>
+            <div class="tab-content" id="tab-vida-c">
+                <button id="upgradeHealthTemp">Vida +10 (5 Cobre)</button>
+            </div>
+            <div class="tab-content" id="tab-defesa-c">
+                <!-- Pode adicionar upgrades temporários de defesa aqui -->
+            </div>
+            <div class="tab-content" id="tab-ganhos-c">
+                <!-- Pode adicionar upgrades temporários de ganhos aqui -->
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Declarações no topo
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -125,6 +154,7 @@
         const upgradeHealthBtn = document.getElementById('upgradeHealth');
         const upgradeRangeBtn = document.getElementById('upgradeRange');
         const colorPicker = document.getElementById('color-picker');
+        const endGameBtn = document.getElementById('endGameBtn');
         const gameOverScreen = document.getElementById('game-over');
         const finalWaveEl = document.getElementById('finalWave');
         const highScoreUIEl = document.getElementById('highScoreUI');
@@ -431,7 +461,18 @@
             }
         }
 
-        // Upgrades temporários
+        // Botão Encerrar Partida
+        endGameBtn.addEventListener('click', () => {
+            if (!gameOver) {
+                gameOver = true;
+                gameOverTime = Date.now();
+                gameOverScreen.style.display = 'block';
+                updateGameOverUI();
+                saveProgress();
+            }
+        });
+
+        // Upgrades temporários (loja de cobre)
         upgradeDamageBtn.addEventListener('click', () => {
             if (copper >= costs.damage) {
                 copper -= costs.damage;
@@ -471,35 +512,45 @@
             saveProgress();
         });
 
-        // Abas dos upgrades
-        document.querySelectorAll('.tab-button').forEach(btn => {
+        // Abas dos upgrades permanentes
+        document.querySelectorAll('#meta-tabs .tab-button').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelectorAll('#meta-tabs .tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#meta-upgrades .tab-content').forEach(c => c.classList.remove('active'));
                 btn.classList.add('active');
                 document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
             });
         });
 
-        // Meta upgrades com verificação de existência
+        // Abas da loja de cobre (temporária)
+        document.querySelectorAll('#meta-tabs-copper .tab-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#meta-tabs-copper .tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#copper-upgrades-grid .tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+            });
+        });
+
+        // Meta upgrades permanentes (com verificação)
         const metaButtons = [
-            { id: 'metaDamage', level: 'lvDamage', prop: 'damageLevel', cost: 20 },
-            { id: 'metaFireRate', level: 'lvFireRate', prop: 'fireRateLevel', cost: 30 },
-            { id: 'metaHealth', level: 'lvHealth', prop: 'healthLevel', cost: 50 },
-            { id: 'metaRange', level: 'lvRange', prop: 'rangeLevel', cost: 40 },
-            { id: 'metaCritChance', level: 'lvCritChance', prop: 'critChanceLevel', cost: 50 },
-            { id: 'metaRegen', level: 'lvRegen', prop: 'regenLevel', cost: 60 },
-            { id: 'metaDamageReduction', level: 'lvDamageReduction', prop: 'damageReductionLevel', cost: 70 },
-            { id: 'metaDodgeChance', level: 'lvDodgeChance', prop: 'dodgeChanceLevel', cost: 80 },
-            { id: 'metaGoldWave', level: 'lvGoldWave', prop: 'goldWaveLevel', cost: 50 },
-            { id: 'metaCopperWave', level: 'lvCopperWave', prop: 'copperWaveLevel', cost: 40 },
-            { id: 'metaCopperKill', level: 'lvCopperKill', prop: 'copperKillLevel', cost: 45 },
-            { id: 'metaGoldKillChance', level: 'lvGoldKillChance', prop: 'goldKillChanceLevel', cost: 60 },
-            { id: 'metaGoldKillAmount', level: 'lvGoldKillAmount', prop: 'goldKillAmountLevel', cost: 100 },
-            { id: 'metaStartingGold', level: 'lvStartingGold', prop: 'startingGoldLevel', cost: 150 }
+            { id: 'metaDamage', prop: 'damageLevel', cost: 20 },
+            { id: 'metaFireRate', prop: 'fireRateLevel', cost: 30 },
+            { id: 'metaHealth', prop: 'healthLevel', cost: 50 },
+            { id: 'metaRange', prop: 'rangeLevel', cost: 40 },
+            { id: 'metaCritChance', prop: 'critChanceLevel', cost: 50 },
+            { id: 'metaRegen', prop: 'regenLevel', cost: 60 },
+            { id: 'metaDamageReduction', prop: 'damageReductionLevel', cost: 70 },
+            { id: 'metaDodgeChance', prop: 'dodgeChanceLevel', cost: 80 },
+            { id: 'metaGoldWave', prop: 'goldWaveLevel', cost: 50 },
+            { id: 'metaCopperWave', prop: 'copperWaveLevel', cost: 40 },
+            { id: 'metaCopperKill', prop: 'copperKillLevel', cost: 45 },
+            { id: 'metaGoldKillChance', prop: 'goldKillChanceLevel', cost: 60 },
+            { id: 'metaGoldKillAmount', prop: 'goldKillAmountLevel', cost: 100 },
+            { id: 'metaStartingGold', prop: 'startingGoldLevel', cost: 150 }
         ];
 
-        metaButtons.forEach(({ id, level, prop, cost }) => {
+        metaButtons.forEach(({ id, prop, cost }) => {
             const btn = document.getElementById(id);
             if (btn) {
                 btn.addEventListener('click', () => {
@@ -525,7 +576,6 @@
 
         confirmPrestigeBtn.addEventListener('click', () => {
             if (prestigeInput.value.trim() === 'gswolf101') {
-                // Reset todos os níveis
                 Object.keys(persistent).forEach(key => {
                     if (key.endsWith('Level')) persistent[key] = 0;
                 });
