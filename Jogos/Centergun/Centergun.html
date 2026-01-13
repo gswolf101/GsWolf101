@@ -80,7 +80,6 @@
     </div>
 
     <script>
-        // Declarações no topo
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -109,12 +108,6 @@
         const prestigeInput = document.getElementById('prestigeInput');
         const confirmPrestigeBtn = document.getElementById('confirmPrestige');
 
-        // Variáveis de meta-progressão
-        let goldPerWave = 1;
-        let copperPerWave = 5;
-        let goldDropChance = 0.02; // 2%
-        let copperMultiplier = 1.0;
-
         let persistent = { 
             gold: 0, 
             damageLevel: 0, 
@@ -133,12 +126,6 @@
         let copper = 0;
         let runStartGold = 0;
         let costs = { damage: 5, fireRate: 5, health: 5, range: 5 };
-        let metaCosts = {
-            goldWave: 50,
-            copperWave: 40,
-            goldDrop: 60,
-            copperMult: 80
-        };
 
         const ZOOM = 0.5;
         const TOWER_SIZE = 50;
@@ -161,6 +148,7 @@
         let enemiesThisWave = 0;
         let totalEnemiesForWave = 5;
         let gameOver = false;
+        let gameOverTime = 0;
         let lastEnemySpawn = 0;
         let enemySpawnRate = 3000;
         let animationFrameId = null;
@@ -220,6 +208,7 @@
             lastEnemySpawn = 0;
             enemySpawnRate = 3000;
             gameOver = false;
+            gameOverTime = 0;
             gameOverScreen.style.display = 'none';
             runStartGold = persistent.gold;
 
@@ -364,17 +353,18 @@
         }
 
         function checkGameOver() {
-            if (tower.health <= 0) {
+            if (tower.health <= 0 && !gameOver) {
                 persistent.highScore = Math.max(persistent.highScore, wave - 1);
                 updateGameOverUI();
                 gameOverScreen.style.display = 'block';
                 saveProgress();
                 gameOver = true;
+                gameOverTime = Date.now();
             }
         }
 
         function nextWave() {
-            if (enemies.length === 0 && enemiesThisWave >= totalEnemiesForWave) {
+            if (enemies.length === 0 && enemiesThisWave >= totalEnemiesForWave && !gameOver) {
                 wave++;
                 totalEnemiesForWave += 3;
                 enemiesThisWave = 0;
@@ -427,37 +417,37 @@
 
         // Meta upgrades
         document.getElementById('metaDamage').addEventListener('click', () => { 
-            if (persistent.gold >= 20) { persistent.gold -= 20; persistent.damageLevel += 1; updateGameOverUI(); saveProgress(); } 
+            if (persistent.gold >= 20) { persistent.gold -= 20; persistent.damageLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
         });
         document.getElementById('metaFireRate').addEventListener('click', () => { 
-            if (persistent.gold >= 30) { persistent.gold -= 30; persistent.fireRateLevel += 1; updateGameOverUI(); saveProgress(); } 
+            if (persistent.gold >= 30) { persistent.gold -= 30; persistent.fireRateLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
         });
         document.getElementById('metaHealth').addEventListener('click', () => { 
-            if (persistent.gold >= 50) { persistent.gold -= 50; persistent.healthLevel += 1; updateGameOverUI(); saveProgress(); } 
+            if (persistent.gold >= 50) { persistent.gold -= 50; persistent.healthLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
         });
         document.getElementById('metaRange').addEventListener('click', () => { 
-            if (persistent.gold >= 40) { persistent.gold -= 40; persistent.rangeLevel += 1; updateGameOverUI(); saveProgress(); } 
+            if (persistent.gold >= 40) { persistent.gold -= 40; persistent.rangeLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
         });
 
         document.getElementById('metaGoldWave').addEventListener('click', () => { 
-            if (persistent.gold >= 50) { persistent.gold -= 50; persistent.goldPerWave += 1; updateGameOverUI(); saveProgress(); } 
+            if (persistent.gold >= 50) { persistent.gold -= 50; persistent.goldPerWave += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
         });
 
         document.getElementById('metaCopperWave').addEventListener('click', () => { 
-            if (persistent.gold >= 40) { persistent.gold -= 40; persistent.copperPerWave += 5; updateGameOverUI(); saveProgress(); } 
+            if (persistent.gold >= 40) { persistent.gold -= 40; persistent.copperPerWave += 5; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
         });
 
         document.getElementById('metaGoldDrop').addEventListener('click', () => { 
-            if (persistent.gold >= 60) { persistent.gold -= 60; persistent.goldDropChance += 0.005; updateGameOverUI(); saveProgress(); } 
+            if (persistent.gold >= 60) { persistent.gold -= 60; persistent.goldDropChance += 0.005; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
         });
 
         document.getElementById('metaCopperMult').addEventListener('click', () => { 
-            if (persistent.gold >= 80) { persistent.gold -= 80; persistent.copperMultiplier += 0.01; updateGameOverUI(); saveProgress(); } 
+            if (persistent.gold >= 80) { persistent.gold -= 80; persistent.copperMultiplier += 0.01; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
         });
 
         // Prestígio com requisitos
         prestigeResetBtn.addEventListener('click', () => {
-            if (wave - 1 < 50 || persistent.gold < 1000) {
+            if ((wave - 1) < 50 || persistent.gold < 1000) {
                 alert(`Requisitos não atendidos!\nPrecisa sobreviver ≥ 50 ondas e ter ≥ 1000 ouro total.`);
                 return;
             }
@@ -499,17 +489,19 @@
             const delta = (timestamp - lastTime) / 16.67;
             lastTime = timestamp;
 
-            if (gameOver) {
-                animationFrameId = null;
-                return;
-            }
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.scale(ZOOM, ZOOM);
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+            // Efeito de game over (piscando vermelho)
+            if (gameOver) {
+                const flash = Math.sin((timestamp - gameOverTime) / 300) * 0.3 + 0.3;
+                ctx.fillStyle = `rgba(139, 0, 0, ${flash})`;
+                ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2);
+            }
 
             // Torre
             ctx.fillStyle = tower.color;
@@ -527,47 +519,49 @@
             ctx.textAlign = 'center';
             ctx.fillText(`Onda ${wave}`, canvas.width / 2, 60);
 
-            spawnEnemy();
-            shoot();
+            if (!gameOver) {
+                spawnEnemy();
+                shoot();
 
-            // Inimigos
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                enemies[i].update(delta);
-                enemies[i].draw();
-                if (enemies[i].health <= 0) {
-                    copper += Math.floor(random(1, 6) * persistent.copperMultiplier);
-                    if (Math.random() < persistent.goldDropChance) { persistent.gold += 1; saveProgress(); }
-                    enemies.splice(i, 1);
-                } else if (Math.abs(enemies[i].x - canvas.width / 2) > canvas.width * 2) {
-                    enemies.splice(i, 1);
-                }
-            }
-
-            // Projéteis
-            for (let i = projectiles.length - 1; i >= 0; i--) {
-                projectiles[i].update(delta);
-                projectiles[i].draw();
-
-                for (let j = enemies.length - 1; j >= 0; j--) {
-                    if (enemies[j].health <= 0) continue;
-                    const dist = distance(projectiles[i].x, projectiles[i].y, enemies[j].x, enemies[j].y);
-                    if (dist < projectiles[i].radius + enemies[j].radius) {
-                        enemies[j].health -= tower.damage;
-                        projectiles.splice(i, 1);
-                        break;
+                // Inimigos
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    enemies[i].update(delta);
+                    enemies[i].draw();
+                    if (enemies[i].health <= 0) {
+                        copper += Math.floor(random(1, 6) * persistent.copperMultiplier);
+                        if (Math.random() < persistent.goldDropChance) { persistent.gold += 1; saveProgress(); }
+                        enemies.splice(i, 1);
+                    } else if (Math.abs(enemies[i].x - canvas.width / 2) > canvas.width * 2) {
+                        enemies.splice(i, 1);
                     }
                 }
 
-                if (projectiles[i] && (projectiles[i].x < -100 || projectiles[i].x > canvas.width + 100 || projectiles[i].y < -100 || projectiles[i].y > canvas.height + 100)) {
-                    projectiles.splice(i, 1);
+                // Projéteis
+                for (let i = projectiles.length - 1; i >= 0; i--) {
+                    projectiles[i].update(delta);
+                    projectiles[i].draw();
+
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        if (enemies[j].health <= 0) continue;
+                        const dist = distance(projectiles[i].x, projectiles[i].y, enemies[j].x, enemies[j].y);
+                        if (dist < projectiles[i].radius + enemies[j].radius) {
+                            enemies[j].health -= tower.damage;
+                            projectiles.splice(i, 1);
+                            break;
+                        }
+                    }
+
+                    if (projectiles[i] && (projectiles[i].x < -100 || projectiles[i].x > canvas.width + 100 || projectiles[i].y < -100 || projectiles[i].y > canvas.height + 100)) {
+                        projectiles.splice(i, 1);
+                    }
                 }
+
+                updateUI();
+                checkGameOver();
+                nextWave();
             }
 
             ctx.restore();
-
-            updateUI();
-            checkGameOver();
-            nextWave();
 
             animationFrameId = requestAnimationFrame(gameLoop);
         }
