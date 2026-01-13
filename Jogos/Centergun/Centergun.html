@@ -9,7 +9,19 @@
         #game-container { position: relative; margin-top: 10px; flex: 1; display: flex; justify-content: center; align-items: center; }
         canvas { background-color: #333; border: 2px solid #fff; display: block; max-width: 100%; max-height: 65vh; }
         #ui { display: flex; justify-content: space-between; width: 100%; max-width: 800px; margin: 5px 0; font-size: 16px; position: relative; }
-        #end-game-btn { position: absolute; left: 10px; top: 10px; background: #ff4444; color: white; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; z-index: 5; }
+        #end-game-btn { 
+            position: absolute; 
+            right: 10px; 
+            top: 10px; 
+            background: #ff4444; 
+            color: white; 
+            padding: 6px 10px; 
+            font-size: 13px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            z-index: 5; 
+        }
         #end-game-btn:hover { background: #cc0000; }
         #stats { background: rgba(0,0,0,0.5); padding: 8px; border-radius: 5px; line-height: 1.6; }
         #health-bar-container { width: 200px; height: 20px; background: #555; border: 1px solid #fff; position: relative; margin-top: 5px; }
@@ -30,6 +42,7 @@
         .icon { margin-right: 5px; font-size: 1.1em; }
         input[type="text"] { padding: 8px; margin: 10px; width: 200px; }
         #copper-upgrades { border-top: 1px solid #444; padding-top: 10px; }
+        #copper-upgrades h3 { margin: 0 0 10px 0; text-align: center; }
         @media (max-width: 600px) { #ui { flex-direction: column; align-items: center; font-size: 14px; } #upgrades, #copper-upgrades { flex-direction: column; align-items: center; } }
     </style>
 </head>
@@ -110,7 +123,6 @@
     </div>
 
     <div id="copper-upgrades">
-        <h3>Loja de Cobre (durante a run)</h3>
         <div id="meta-tabs-copper">
             <button class="tab-button active" data-tab="attack-c">Ataque</button>
             <button class="tab-button" data-tab="vida-c">Vida</button>
@@ -127,10 +139,10 @@
                 <button id="upgradeHealthTemp">Vida +10 (5 Cobre)</button>
             </div>
             <div class="tab-content" id="tab-defesa-c">
-                <!-- Pode adicionar upgrades temporários de defesa aqui -->
+                <!-- Pode adicionar upgrades temporários de defesa aqui no futuro -->
             </div>
             <div class="tab-content" id="tab-ganhos-c">
-                <!-- Pode adicionar upgrades temporários de ganhos aqui -->
+                <!-- Pode adicionar upgrades temporários de ganhos aqui no futuro -->
             </div>
         </div>
     </div>
