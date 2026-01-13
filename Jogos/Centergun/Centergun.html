@@ -46,24 +46,20 @@
                 <button class="tab-button" data-tab="ganhos">Ganhos</button>
             </div>
             <div id="meta-upgrades">
-                <!-- Ataque -->
                 <div class="tab-content active" id="tab-attack">
                     <button id="metaDamage">Dano +1 (20 Ouro) Lv.<span id="lvDamage">0</span></button>
-                    <button id="metaAttackSpeed">Velocidade Ataque +1 (30 Ouro) Lv.<span id="lvAttackSpeed">0</span></button>
+                    <button id="metaFireRate">Velocidade Ataque +1 (30 Ouro) Lv.<span id="lvFireRate">0</span></button>
                     <button id="metaRange">Alcance +1 (40 Ouro) Lv.<span id="lvRange">0</span></button>
                     <button id="metaCritChance">Chance Crítico +1% (50 Ouro) Lv.<span id="lvCritChance">0</span></button>
                 </div>
-                <!-- Vida -->
                 <div class="tab-content" id="tab-vida">
                     <button id="metaHealth">Vida Máx +1 (50 Ouro) Lv.<span id="lvHealth">0</span></button>
                     <button id="metaRegen">Regeneração +0.1/s (60 Ouro) Lv.<span id="lvRegen">0</span></button>
                 </div>
-                <!-- Defesa -->
                 <div class="tab-content" id="tab-defesa">
                     <button id="metaDamageReduction">Dano Reduzido +1 (70 Ouro) Lv.<span id="lvDamageReduction">0</span></button>
                     <button id="metaDodgeChance">Chance Esquiva +0.5% (80 Ouro) Lv.<span id="lvDodgeChance">0</span></button>
                 </div>
-                <!-- Ganhos -->
                 <div class="tab-content" id="tab-ganhos">
                     <button id="metaGoldWave">Ouro por onda +1 (50 Ouro) Lv.<span id="lvGoldWave">0</span></button>
                     <button id="metaCopperWave">Cobre por onda +5 (40 Ouro) Lv.<span id="lvCopperWave">0</span></button>
@@ -140,7 +136,6 @@
         const prestigeInput = document.getElementById('prestigeInput');
         const confirmPrestigeBtn = document.getElementById('confirmPrestige');
 
-        // Variáveis de meta-progressão
         let persistent = { 
             gold: 0, 
             damageLevel: 0, 
@@ -177,7 +172,7 @@
             damage: 15,
             fireRate: 800,
             range: 180,
-            critChance: 0.05, // 5% base
+            critChance: 0.05,
             regenPerSecond: 0,
             damageReduction: 0,
             dodgeChance: 0,
@@ -188,7 +183,7 @@
 
         let enemies = [];
         let projectiles = [];
-        let dodgeFlash = 0; // para efeito visual de esquiva
+        let dodgeFlash = 0;
         let wave = 1;
         let enemiesThisWave = 0;
         let totalEnemiesForWave = 5;
@@ -240,7 +235,7 @@
             tower.lastShot = 0;
             tower.lastRegen = Date.now();
 
-            copper = 50 * persistent.startingGoldLevel; // Dinheiro inicial
+            copper = 50 * persistent.startingGoldLevel;
             costs = { damage: 5, fireRate: 5, health: 5, range: 5 };
             wave = 1;
             enemies = [];
@@ -276,20 +271,26 @@
         }
 
         function updateMetaLevels() {
-            document.getElementById('lvDamage').textContent = persistent.damageLevel;
-            document.getElementById('lvFireRate').textContent = persistent.fireRateLevel;
-            document.getElementById('lvHealth').textContent = persistent.healthLevel;
-            document.getElementById('lvRange').textContent = persistent.rangeLevel;
-            document.getElementById('lvCritChance').textContent = persistent.critChanceLevel;
-            document.getElementById('lvRegen').textContent = persistent.regenLevel;
-            document.getElementById('lvDamageReduction').textContent = persistent.damageReductionLevel;
-            document.getElementById('lvDodgeChance').textContent = persistent.dodgeChanceLevel;
-            document.getElementById('lvGoldWave').textContent = persistent.goldWaveLevel;
-            document.getElementById('lvCopperWave').textContent = persistent.copperWaveLevel;
-            document.getElementById('lvCopperKill').textContent = persistent.copperKillLevel;
-            document.getElementById('lvGoldKillChance').textContent = persistent.goldKillChanceLevel;
-            document.getElementById('lvGoldKillAmount').textContent = persistent.goldKillAmountLevel;
-            document.getElementById('lvStartingGold').textContent = persistent.startingGoldLevel;
+            const levels = {
+                lvDamage: persistent.damageLevel,
+                lvFireRate: persistent.fireRateLevel,
+                lvHealth: persistent.healthLevel,
+                lvRange: persistent.rangeLevel,
+                lvCritChance: persistent.critChanceLevel,
+                lvRegen: persistent.regenLevel,
+                lvDamageReduction: persistent.damageReductionLevel,
+                lvDodgeChance: persistent.dodgeChanceLevel,
+                lvGoldWave: persistent.goldWaveLevel,
+                lvCopperWave: persistent.copperWaveLevel,
+                lvCopperKill: persistent.copperKillLevel,
+                lvGoldKillChance: persistent.goldKillChanceLevel,
+                lvGoldKillAmount: persistent.goldKillAmountLevel,
+                lvStartingGold: persistent.startingGoldLevel
+            };
+            for (const [id, value] of Object.entries(levels)) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            }
         }
 
         function updateGameOverUI() {
@@ -325,7 +326,7 @@
                     let finalDamage = this.damage - tower.damageReduction;
                     if (finalDamage < 0) finalDamage = 0;
                     if (Math.random() < tower.dodgeChance) {
-                        dodgeFlash = Date.now(); // efeito visual
+                        dodgeFlash = Date.now();
                         finalDamage = 0;
                     }
                     tower.health = Math.max(0, tower.health - finalDamage);
@@ -480,48 +481,37 @@
             });
         });
 
-        // Meta upgrades
-        document.getElementById('metaDamage').addEventListener('click', () => { 
-            if (persistent.gold >= 20) { persistent.gold -= 20; persistent.damageLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaFireRate').addEventListener('click', () => { 
-            if (persistent.gold >= 30) { persistent.gold -= 30; persistent.fireRateLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaHealth').addEventListener('click', () => { 
-            if (persistent.gold >= 50) { persistent.gold -= 50; persistent.healthLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaRange').addEventListener('click', () => { 
-            if (persistent.gold >= 40) { persistent.gold -= 40; persistent.rangeLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaCritChance').addEventListener('click', () => { 
-            if (persistent.gold >= 50) { persistent.gold -= 50; persistent.critChanceLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaRegen').addEventListener('click', () => { 
-            if (persistent.gold >= 60) { persistent.gold -= 60; persistent.regenLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaDamageReduction').addEventListener('click', () => { 
-            if (persistent.gold >= 70) { persistent.gold -= 70; persistent.damageReductionLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaDodgeChance').addEventListener('click', () => { 
-            if (persistent.gold >= 80) { persistent.gold -= 80; persistent.dodgeChanceLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaGoldWave').addEventListener('click', () => { 
-            if (persistent.gold >= 50) { persistent.gold -= 50; persistent.goldWaveLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaCopperWave').addEventListener('click', () => { 
-            if (persistent.gold >= 40) { persistent.gold -= 40; persistent.copperWaveLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaCopperKill').addEventListener('click', () => { 
-            if (persistent.gold >= 45) { persistent.gold -= 45; persistent.copperKillLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaGoldKillChance').addEventListener('click', () => { 
-            if (persistent.gold >= 60) { persistent.gold -= 60; persistent.goldKillChanceLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaGoldKillAmount').addEventListener('click', () => { 
-            if (persistent.gold >= 100) { persistent.gold -= 100; persistent.goldKillAmountLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
-        });
-        document.getElementById('metaStartingGold').addEventListener('click', () => { 
-            if (persistent.gold >= 150) { persistent.gold -= 150; persistent.startingGoldLevel += 1; updateGameOverUI(); saveProgress(); updateMetaLevels(); } 
+        // Meta upgrades com verificação de existência
+        const metaButtons = [
+            { id: 'metaDamage', level: 'lvDamage', prop: 'damageLevel', cost: 20 },
+            { id: 'metaFireRate', level: 'lvFireRate', prop: 'fireRateLevel', cost: 30 },
+            { id: 'metaHealth', level: 'lvHealth', prop: 'healthLevel', cost: 50 },
+            { id: 'metaRange', level: 'lvRange', prop: 'rangeLevel', cost: 40 },
+            { id: 'metaCritChance', level: 'lvCritChance', prop: 'critChanceLevel', cost: 50 },
+            { id: 'metaRegen', level: 'lvRegen', prop: 'regenLevel', cost: 60 },
+            { id: 'metaDamageReduction', level: 'lvDamageReduction', prop: 'damageReductionLevel', cost: 70 },
+            { id: 'metaDodgeChance', level: 'lvDodgeChance', prop: 'dodgeChanceLevel', cost: 80 },
+            { id: 'metaGoldWave', level: 'lvGoldWave', prop: 'goldWaveLevel', cost: 50 },
+            { id: 'metaCopperWave', level: 'lvCopperWave', prop: 'copperWaveLevel', cost: 40 },
+            { id: 'metaCopperKill', level: 'lvCopperKill', prop: 'copperKillLevel', cost: 45 },
+            { id: 'metaGoldKillChance', level: 'lvGoldKillChance', prop: 'goldKillChanceLevel', cost: 60 },
+            { id: 'metaGoldKillAmount', level: 'lvGoldKillAmount', prop: 'goldKillAmountLevel', cost: 100 },
+            { id: 'metaStartingGold', level: 'lvStartingGold', prop: 'startingGoldLevel', cost: 150 }
+        ];
+
+        metaButtons.forEach(({ id, level, prop, cost }) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    if (persistent.gold >= cost) {
+                        persistent.gold -= cost;
+                        persistent[prop] += 1;
+                        updateGameOverUI();
+                        saveProgress();
+                        updateMetaLevels();
+                    }
+                });
+            }
         });
 
         // Prestígio com requisitos
@@ -535,20 +525,10 @@
 
         confirmPrestigeBtn.addEventListener('click', () => {
             if (prestigeInput.value.trim() === 'gswolf101') {
-                persistent.damageLevel = 0;
-                persistent.fireRateLevel = 0;
-                persistent.healthLevel = 0;
-                persistent.rangeLevel = 0;
-                persistent.critChanceLevel = 0;
-                persistent.regenLevel = 0;
-                persistent.damageReductionLevel = 0;
-                persistent.dodgeChanceLevel = 0;
-                persistent.goldWaveLevel = 0;
-                persistent.copperWaveLevel = 0;
-                persistent.copperKillLevel = 0;
-                persistent.goldKillChanceLevel = 0;
-                persistent.goldKillAmountLevel = 0;
-                persistent.startingGoldLevel = 0;
+                // Reset todos os níveis
+                Object.keys(persistent).forEach(key => {
+                    if (key.endsWith('Level')) persistent[key] = 0;
+                });
                 persistent.prestigeCount = (persistent.prestigeCount || 0) + 1;
                 prestigeConfirmDiv.style.display = 'none';
                 prestigeInput.value = '';
@@ -585,21 +565,18 @@
             ctx.scale(ZOOM, ZOOM);
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
-            // Efeito de game over (piscando vermelho)
             if (gameOver) {
                 const flash = Math.sin((timestamp - gameOverTime) / 300) * 0.3 + 0.3;
                 ctx.fillStyle = `rgba(139, 0, 0, ${flash})`;
                 ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2);
             }
 
-            // Efeito de esquiva (piscando branco rápido na torre)
             if (dodgeFlash && Date.now() - dodgeFlash < 300) {
                 const flash = Math.sin((Date.now() - dodgeFlash) / 50) * 0.5 + 0.5;
                 ctx.fillStyle = `rgba(255, 255, 255, ${flash})`;
                 ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.size / 2 + 10, 0, Math.PI * 2); ctx.fill();
             }
 
-            // Regeneração
             if (tower.regenPerSecond > 0 && !gameOver) {
                 const now = Date.now();
                 const elapsed = (now - tower.lastRegen) / 1000;
@@ -607,17 +584,14 @@
                 tower.lastRegen = now;
             }
 
-            // Torre
             ctx.fillStyle = tower.color;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.size / 2, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
 
-            // Alcance
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, tower.range, 0, Math.PI * 2); ctx.stroke();
 
-            // Onda
             ctx.font = 'bold 40px Arial';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
@@ -627,7 +601,6 @@
                 spawnEnemy();
                 shoot();
 
-                // Inimigos
                 for (let i = enemies.length - 1; i >= 0; i--) {
                     enemies[i].update(delta);
                     enemies[i].draw();
@@ -643,7 +616,6 @@
                     }
                 }
 
-                // Projéteis
                 for (let i = projectiles.length - 1; i >= 0; i--) {
                     projectiles[i].update(delta);
                     projectiles[i].draw();
@@ -653,7 +625,7 @@
                         const dist = distance(projectiles[i].x, projectiles[i].y, enemies[j].x, enemies[j].y);
                         if (dist < projectiles[i].radius + enemies[j].radius) {
                             let finalDamage = tower.damage;
-                            if (Math.random() < tower.critChance) finalDamage *= 2; // Crítico
+                            if (Math.random() < tower.critChance) finalDamage *= 2;
                             enemies[j].health -= finalDamage;
                             projectiles.splice(i, 1);
                             break;
