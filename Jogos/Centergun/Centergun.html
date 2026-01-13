@@ -80,6 +80,7 @@
     </div>
 
     <script>
+        // Declarações no topo
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -248,7 +249,6 @@
             highScoreUIEl.textContent = persistent.highScore;
             finalWaveEl.textContent = wave - 1;
             updateMetaLevels();
-            updateMetaUI();
         }
 
         class Enemy {
