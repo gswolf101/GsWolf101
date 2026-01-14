@@ -111,7 +111,7 @@
     </div>
 
     <script>
-        // === DECLARAÇÕES DE ELEMENTOS ===
+        // DECLARAÇÕES DE ELEMENTOS (primeiro, pra evitar null)
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -138,7 +138,7 @@
         const prestigeInput = document.getElementById('prestigeInput');
         const confirmPrestigeBtn = document.getElementById('confirmPrestige');
 
-        // === VARIÁVEIS GLOBAIS ===
+        // VARIÁVEIS GLOBAIS
         let persistent = { 
             gold: 0, 
             damageLevel: 0, 
@@ -197,7 +197,7 @@
         let animationFrameId = null;
         let lastTime = 0;
 
-        // === FUNÇÕES ===
+        // FUNÇÕES (todas antes das chamadas)
         function resizeCanvas() {
             const maxW = window.innerWidth * 0.95;
             const maxH = window.innerHeight * 0.65;
@@ -207,6 +207,7 @@
             canvas.width = targetW;
             canvas.height = targetH;
         }
+        window.addEventListener('resize', resizeCanvas);
 
         function random(min, max) { return Math.random() * (max - min) + min; }
         function distance(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
@@ -258,15 +259,15 @@
         }
 
         function updateStatsUI() {
-            statDamage.textContent = tower.damage;
-            statFireRate.textContent = (1000 / tower.fireRate).toFixed(2);
-            statRange.textContent = Math.round(tower.range);
-            statMaxHealth.textContent = tower.maxHealth;
-            statRegen.textContent = tower.regenPerSecond.toFixed(1);
+            if (statDamage) statDamage.textContent = tower.damage;
+            if (statFireRate) statFireRate.textContent = (1000 / tower.fireRate).toFixed(2);
+            if (statRange) statRange.textContent = Math.round(tower.range);
+            if (statMaxHealth) statMaxHealth.textContent = tower.maxHealth;
+            if (statRegen) statRegen.textContent = tower.regenPerSecond.toFixed(1);
         }
 
         function updateUpgradeButtons() {
-            // Pode atualizar textos dos botões temporários aqui se quiser
+            // Pode atualizar textos de botões temporários aqui se quiser
         }
 
         function updateMetaLevels() {
@@ -293,17 +294,145 @@
         }
 
         function updateGameOverUI() {
-            totalGoldEl.textContent = persistent.gold;
-            runGoldEarnedEl.textContent = persistent.gold - runStartGold;
-            highScoreUIEl.textContent = persistent.highScore;
-            finalWaveEl.textContent = wave - 1;
+            if (totalGoldEl) totalGoldEl.textContent = persistent.gold;
+            if (runGoldEarnedEl) runGoldEarnedEl.textContent = persistent.gold - runStartGold;
+            if (highScoreUIEl) highScoreUIEl.textContent = persistent.highScore;
+            if (finalWaveEl) finalWaveEl.textContent = wave - 1;
             updateMetaLevels();
         }
 
-        // ... (classes Enemy e Projectile, spawnEnemy, shoot, updateUI, checkGameOver, nextWave, gameLoop - iguais à versão anterior funcional)
+        class Enemy {
+            constructor(isBoss = false) {
+                this.isBoss = isBoss;
+                const angle = random(0, Math.PI * 2);
+                const spawnDist = tower.range / ZOOM + (isBoss ? 400 : 200) + random(0, 300);
+                this.x = canvas.width / 2 + Math.cos(angle) * spawnDist;
+                this.y = canvas.height / 2 + Math.sin(angle) * spawnDist;
+                this.radius = isBoss ? 30 : 10;
+                const growthFactor = Math.pow(1.15, wave - 1);
+                let baseHealth = 30 * growthFactor + random(0, 20);
+                this.health = isBoss ? Math.floor(baseHealth * 4) : Math.floor(baseHealth);
+                this.maxHealth = this.health;
+                this.damage = Math.floor(15 * Math.pow(1.12, wave - 1)) * (isBoss ? 2 : 1);
+                const speedGrowth = Math.pow(1.09, wave - 1);
+                this.baseSpeed = (0.5 + 0.3 * speedGrowth + random(-0.1, 0.3)) * (isBoss ? 0.7 : 1);
+                this.color = isBoss ? '#8B008B' : 'red';
+            }
+            update(delta) {
+                const dx = canvas.width / 2 - this.x;
+                const dy = canvas.height / 2 - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist < tower.size / 2 + this.radius) {
+                    let finalDamage = this.damage - tower.damageReduction;
+                    if (finalDamage < 0) finalDamage = 0;
+                    if (Math.random() < tower.dodgeChance) {
+                        dodgeFlash = Date.now();
+                        finalDamage = 0;
+                    }
+                    tower.health = Math.max(0, tower.health - finalDamage);
+                    this.x = canvas.width + 100;
+                } else {
+                    const speed = this.baseSpeed * gameSpeed;
+                    this.x += (dx / dist) * speed * delta;
+                    this.y += (dy / dist) * speed * delta;
+                }
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#444';
+                ctx.fillRect(this.x - this.radius, this.y - this.radius - 20, this.radius * 2, 5);
+                if (this.health > 0) {
+                    ctx.fillStyle = this.health > this.maxHealth * 0.5 ? '#4CAF50' : '#f44336';
+                    ctx.fillRect(this.x - this.radius, this.y - this.radius - 20, (this.health / this.maxHealth) * (this.radius * 2), 5);
+                }
+            }
+        }
 
-        // Botões
-        endGameBtn.addEventListener('click', () => {
+        class Projectile {
+            constructor(target) {
+                this.x = canvas.width / 2;
+                this.y = canvas.height / 2;
+                this.radius = 8;
+                this.speed = 7;
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                this.vx = (dx / dist) * this.speed;
+                this.vy = (dy / dist) * this.speed;
+            }
+            update(delta) {
+                this.x += this.vx * gameSpeed * delta;
+                this.y += this.vy * gameSpeed * delta;
+            }
+            draw() {
+                ctx.fillStyle = 'yellow';
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#ff0'; ctx.lineWidth = 2; ctx.stroke();
+            }
+        }
+
+        function spawnEnemy() {
+            if (enemiesThisWave < totalEnemiesForWave && Date.now() - lastEnemySpawn > enemySpawnRate) {
+                const isBoss = (wave % 10 === 0 && wave >= 10 && enemiesThisWave === 0);
+                enemies.push(new Enemy(isBoss));
+                enemiesThisWave++;
+                lastEnemySpawn = Date.now();
+            }
+        }
+
+        function shoot() {
+            if (Date.now() - tower.lastShot > (tower.fireRate / gameSpeed) && enemies.length > 0) {
+                let closest = null;
+                let minDist = Infinity;
+                enemies.forEach(enemy => {
+                    if (enemy.health <= 0) return;
+                    const dist = distance(canvas.width / 2, canvas.height / 2, enemy.x, enemy.y);
+                    if (dist < minDist && dist <= tower.range) {
+                        minDist = dist;
+                        closest = enemy;
+                    }
+                });
+                if (closest) {
+                    projectiles.push(new Projectile(closest));
+                    tower.lastShot = Date.now();
+                }
+            }
+        }
+
+        function updateUI() {
+            if (waveElement) waveElement.textContent = `Onda: ${wave}`;
+            if (statCopper) statCopper.textContent = Math.floor(copper);
+            if (statGold) statGold.textContent = persistent.gold;
+            if (healthBar) healthBar.style.width = `${Math.max(0, (tower.health / tower.maxHealth) * 100)}%`;
+            updateStatsUI();
+        }
+
+        function checkGameOver() {
+            if (tower.health <= 0 && !gameOver) {
+                persistent.highScore = Math.max(persistent.highScore, wave - 1);
+                updateGameOverUI();
+                gameOverScreen.style.display = 'block';
+                saveProgress();
+                gameOver = true;
+                gameOverTime = Date.now();
+            }
+        }
+
+        function nextWave() {
+            if (enemies.length === 0 && enemiesThisWave >= totalEnemiesForWave && !gameOver) {
+                wave++;
+                totalEnemiesForWave += 3;
+                enemiesThisWave = 0;
+                enemySpawnRate = Math.max(800, enemySpawnRate - 100 * gameSpeed);
+                copper += wave * 5;
+                persistent.gold += Math.floor(wave / 3) + 1;
+                saveProgress();
+            }
+        }
+
+        // Encerrar Partida
+        if (endGameBtn) endGameBtn.addEventListener('click', () => {
             if (!gameOver) {
                 gameOver = true;
                 gameOverTime = Date.now();
@@ -313,13 +442,15 @@
             }
         });
 
-        speedToggle.addEventListener('click', () => {
+        // 2x Speed
+        if (speedToggle) speedToggle.addEventListener('click', () => {
             gameSpeed = gameSpeed === 1 ? 2 : 1;
             speedToggle.textContent = `2x (${gameSpeed === 2 ? 'ON' : 'OFF'})`;
             speedToggle.classList.toggle('active', gameSpeed === 2);
         });
 
-        colorPicker.addEventListener('input', () => {
+        // Color Picker
+        if (colorPicker) colorPicker.addEventListener('input', () => {
             tower.color = persistent.color = colorPicker.value;
             saveProgress();
         });
@@ -381,7 +512,7 @@
         });
 
         // Prestígio
-        prestigeResetBtn.addEventListener('click', () => {
+        if (prestigeResetBtn) prestigeResetBtn.addEventListener('click', () => {
             if ((wave - 1) < 50 || persistent.gold < 1000) {
                 alert(`Requisitos não atendidos! ≥ 50 ondas e ≥ 1000 ouro.`);
                 return;
@@ -389,7 +520,7 @@
             prestigeConfirmDiv.style.display = 'block';
         });
 
-        confirmPrestigeBtn.addEventListener('click', () => {
+        if (confirmPrestigeBtn) confirmPrestigeBtn.addEventListener('click', () => {
             if (prestigeInput.value.trim() === 'gswolf101') {
                 Object.keys(persistent).forEach(key => {
                     if (key.endsWith('Level')) persistent[key] = 0;
@@ -405,14 +536,14 @@
             }
         });
 
-        restartBtn.addEventListener('click', () => {
+        if (restartBtn) restartBtn.addEventListener('click', () => {
             newRun();
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             lastTime = 0;
             animationFrameId = requestAnimationFrame(gameLoop);
         });
 
-        // Inicialização final (tudo depois das funções)
+        // Inicialização final (depois de tudo)
         resizeCanvas();
         loadSave();
         animationFrameId = requestAnimationFrame(gameLoop);
