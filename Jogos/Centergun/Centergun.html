@@ -81,7 +81,11 @@
             <!-- Pode adicionar temporários de defesa aqui depois -->
         </div>
         <div class="tab-content" id="tab-ganhos">
-            <!-- Pode adicionar temporários de ganhos aqui depois -->
+            <button id="upgradeCopperWaveTemp">Cobre/Onda +6 (6 Cobre)</button>
+            <button id="upgradeCopperKillTemp">Cobre/Kill +1 (6 Cobre)</button>
+            <button id="upgradeGoldKillChanceTemp">Chance Ouro/Kill +0.6% (6 Cobre)</button>
+            <button id="upgradeGoldKillAmountTemp">Ouro/Kill +1 (10 Cobre)</button>
+            <button id="upgradeStartingGoldTemp">Inicial +60 (10 Cobre)</button>
         </div>
     </div>
 
@@ -469,7 +473,12 @@
             { id: 'upgradeDamageTemp', action: () => { if (copper >= costs.damage) { copper -= costs.damage; tower.damage += 3; costs.damage = Math.floor(costs.damage * 1.6) + 3; } } },
             { id: 'upgradeFireRateTemp', action: () => { if (copper >= costs.fireRate) { copper -= costs.fireRate; tower.fireRate = Math.max(200, tower.fireRate - 60); costs.fireRate = Math.floor(costs.fireRate * 1.6) + 3; } } },
             { id: 'upgradeHealthTemp', action: () => { if (copper >= costs.health) { copper -= costs.health; tower.maxHealth += 15; tower.health += 15; costs.health = Math.floor(costs.health * 1.6) + 3; } } },
-            { id: 'upgradeRangeTemp', action: () => { if (copper >= costs.range) { copper -= costs.range; tower.range += 30; costs.range = Math.floor(costs.range * 1.6) + 3; } } }
+            { id: 'upgradeRangeTemp', action: () => { if (copper >= costs.range) { copper -= costs.range; tower.range += 30; costs.range = Math.floor(costs.range * 1.6) + 3; } } },
+            { id: 'upgradeCopperWaveTemp', action: () => { if (copper >= 6) { copper -= 6; persistent.copperWaveLevel += 1; } } },
+            { id: 'upgradeCopperKillTemp', action: () => { if (copper >= 6) { copper -= 6; persistent.copperKillLevel += 1; } } },
+            { id: 'upgradeGoldKillChanceTemp', action: () => { if (copper >= 6) { copper -= 6; persistent.goldKillChanceLevel += 1; } } },
+            { id: 'upgradeGoldKillAmountTemp', action: () => { if (copper >= 10) { copper -= 10; persistent.goldKillAmountLevel += 1; } } },
+            { id: 'upgradeStartingGoldTemp', action: () => { if (copper >= 10) { copper -= 10; persistent.startingGoldLevel += 1; } } }
         ];
 
         tempButtons.forEach(({ id, action }) => {
