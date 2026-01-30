@@ -111,9 +111,9 @@
     </div>
 
     <script>
-        // ELEMENTOS
+        // ELEMENTOS (todos verificados)
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas ? canvas.getContext('2d') : null;
 
         const waveElement = document.getElementById('wave');
         const statCopper = document.getElementById('statCopper');
@@ -177,7 +177,7 @@
             const save = JSON.parse(localStorage.getItem('centergunSave')) || {};
             Object.assign(persistent, save);
             tower.color = persistent.color || '#0000FF';
-            colorPicker.value = tower.color;
+            if (colorPicker) colorPicker.value = tower.color;
             newRun();
             updateMetaLevels();
         }
@@ -204,18 +204,45 @@
         }
 
         function updateStatsUI() {
-            if (statDamage) statDamage.textContent = tower.damage;
-            if (statFireRate) statFireRate.textContent = (1000 / tower.fireRate).toFixed(2);
-            if (statRange) statRange.textContent = Math.round(tower.range);
-            if (statMaxHealth) statMaxHealth.textContent = tower.maxHealth;
-            if (statRegen) statRegen.textContent = tower.regenPerSecond.toFixed(1);
+            // Apenas os elementos que existem
+            if (statCopper) statCopper.textContent = Math.floor(copper);
+            if (statGold) statGold.textContent = persistent.gold;
         }
 
         function updateUI() {
             if (waveElement) waveElement.textContent = `Onda: ${wave}`;
-            if (statCopper) statCopper.textContent = Math.floor(copper);
-            if (statGold) statGold.textContent = persistent.gold;
             if (healthBar) healthBar.style.width = `${Math.max(0, (tower.health / tower.maxHealth) * 100)}%`;
+        }
+
+        function updateMetaLevels() {
+            const levels = {
+                lvDamage: persistent.damageLevel,
+                lvFireRate: persistent.fireRateLevel,
+                lvHealth: persistent.healthLevel,
+                lvRange: persistent.rangeLevel,
+                lvCritChance: persistent.critChanceLevel,
+                lvRegen: persistent.regenLevel,
+                lvDamageReduction: persistent.damageReductionLevel,
+                lvDodgeChance: persistent.dodgeChanceLevel,
+                lvGoldWave: persistent.goldWaveLevel,
+                lvCopperWave: persistent.copperWaveLevel,
+                lvCopperKill: persistent.copperKillLevel,
+                lvGoldKillChance: persistent.goldKillChanceLevel,
+                lvGoldKillAmount: persistent.goldKillAmountLevel,
+                lvStartingGold: persistent.startingGoldLevel
+            };
+            for (const [id, value] of Object.entries(levels)) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            }
+        }
+
+        function updateGameOverUI() {
+            if (totalGoldEl) totalGoldEl.textContent = persistent.gold;
+            if (runGoldEarnedEl) runGoldEarnedEl.textContent = persistent.gold - runStartGold;
+            if (highScoreUIEl) highScoreUIEl.textContent = persistent.highScore;
+            if (finalWaveEl) finalWaveEl.textContent = wave - 1;
+            updateMetaLevels();
         }
 
         class Enemy {
@@ -322,7 +349,6 @@
             if (statCopper) statCopper.textContent = Math.floor(copper);
             if (statGold) statGold.textContent = persistent.gold;
             if (healthBar) healthBar.style.width = `${Math.max(0, (tower.health / tower.maxHealth) * 100)}%`;
-            updateStatsUI();
         }
 
         function checkGameOver() {
