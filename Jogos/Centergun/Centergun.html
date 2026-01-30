@@ -30,6 +30,7 @@
         button:disabled { background:#555; cursor:not-allowed; opacity:0.7; }
         .icon { margin-right:6px; font-size:1.2em; }
         #game-over { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.92); padding:35px; text-align:center; display:none; z-index:100; border-radius:12px; max-width:90%; box-shadow:0 0 30px rgba(255,0,0,0.6); }
+        #meta-upgrades { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-top:20px; }
         @media (max-width:600px) { #health-container { flex-direction:column; } #upgrades-grid { grid-template-columns:1fr; } button { min-width:140px; } }
     </style>
 </head>
@@ -69,30 +70,18 @@
 
     <div id="upgrades-grid">
         <div class="tab-content active" id="tab-attack">
-            <button id="metaDamage">Dano +1 (25 Ouro) Lv.<span id="lvDamage">0</span></button>
             <button id="upgradeDamageTemp">Dano +3 (6 Cobre)</button>
-            <button id="metaFireRate">Taxa Ataque +1 (35 Ouro) Lv.<span id="lvFireRate">0</span></button>
             <button id="upgradeFireRateTemp">Taxa +60ms (6 Cobre)</button>
-            <button id="metaRange">Alcance +20 (45 Ouro) Lv.<span id="lvRange">0</span></button>
             <button id="upgradeRangeTemp">Alcance +30 (6 Cobre)</button>
-            <button id="metaCritChance">Crítico +1.5% (60 Ouro) Lv.<span id="lvCritChance">0</span></button>
         </div>
         <div class="tab-content" id="tab-vida">
-            <button id="metaHealth">Vida Máx +15 (55 Ouro) Lv.<span id="lvHealth">0</span></button>
             <button id="upgradeHealthTemp">Vida +15 (6 Cobre)</button>
-            <button id="metaRegen">Regen +0.15/s (70 Ouro) Lv.<span id="lvRegen">0</span></button>
         </div>
         <div class="tab-content" id="tab-defesa">
-            <button id="metaDamageReduction">Redução Dano +1.5 (80 Ouro) Lv.<span id="lvDamageReduction">0</span></button>
-            <button id="metaDodgeChance">Esquiva +0.75% (90 Ouro) Lv.<span id="lvDodgeChance">0</span></button>
+            <!-- Pode adicionar temporários de defesa aqui depois -->
         </div>
         <div class="tab-content" id="tab-ganhos">
-            <button id="metaGoldWave">Ouro/Onda +1 (55 Ouro) Lv.<span id="lvGoldWave">0</span></button>
-            <button id="metaCopperWave">Cobre/Onda +6 (45 Ouro) Lv.<span id="lvCopperWave">0</span></button>
-            <button id="metaCopperKill">Cobre/Kill +1 (50 Ouro) Lv.<span id="lvCopperKill">0</span></button>
-            <button id="metaGoldKillChance">Chance Ouro/Kill +0.6% (70 Ouro) Lv.<span id="lvGoldKillChance">0</span></button>
-            <button id="metaGoldKillAmount">Ouro/Kill +1 (110 Ouro) Lv.<span id="lvGoldKillAmount">0</span></button>
-            <button id="metaStartingGold">Inicial +60 (160 Ouro) Lv.<span id="lvStartingGold">0</span></button>
+            <!-- Pode adicionar temporários de ganhos aqui depois -->
         </div>
     </div>
 
@@ -101,6 +90,39 @@
         <p>Ondas: <span id="finalWave">0</span></p>
         <p>Recorde: <span id="highScoreUI">0</span></p>
         <p>Ouro Total: <span id="totalGold">0</span> | Ganho: <span id="runGoldEarned">0</span></p>
+
+        <h3>Upgrades Permanentes (com Ouro)</h3>
+        <div id="upgrades-tabs-over">
+            <button class="tab-button active" data-tab="attack">Ataque</button>
+            <button class="tab-button" data-tab="vida">Vida</button>
+            <button class="tab-button" data-tab="defesa">Defesa</button>
+            <button class="tab-button" data-tab="ganhos">Ganhos</button>
+        </div>
+        <div id="meta-upgrades">
+            <div class="tab-content active" id="tab-attack">
+                <button id="metaDamage">Dano +1 (25 Ouro) Lv.<span id="lvDamage">0</span></button>
+                <button id="metaFireRate">Taxa Ataque +1 (35 Ouro) Lv.<span id="lvFireRate">0</span></button>
+                <button id="metaRange">Alcance +20 (45 Ouro) Lv.<span id="lvRange">0</span></button>
+                <button id="metaCritChance">Crítico +1.5% (60 Ouro) Lv.<span id="lvCritChance">0</span></button>
+            </div>
+            <div class="tab-content" id="tab-vida">
+                <button id="metaHealth">Vida Máx +15 (55 Ouro) Lv.<span id="lvHealth">0</span></button>
+                <button id="metaRegen">Regen +0.15/s (70 Ouro) Lv.<span id="lvRegen">0</span></button>
+            </div>
+            <div class="tab-content" id="tab-defesa">
+                <button id="metaDamageReduction">Redução Dano +1.5 (80 Ouro) Lv.<span id="lvDamageReduction">0</span></button>
+                <button id="metaDodgeChance">Esquiva +0.75% (90 Ouro) Lv.<span id="lvDodgeChance">0</span></button>
+            </div>
+            <div class="tab-content" id="tab-ganhos">
+                <button id="metaGoldWave">Ouro/Onda +1 (55 Ouro) Lv.<span id="lvGoldWave">0</span></button>
+                <button id="metaCopperWave">Cobre/Onda +6 (45 Ouro) Lv.<span id="lvCopperWave">0</span></button>
+                <button id="metaCopperKill">Cobre/Kill +1 (50 Ouro) Lv.<span id="lvCopperKill">0</span></button>
+                <button id="metaGoldKillChance">Chance Ouro/Kill +0.6% (70 Ouro) Lv.<span id="lvGoldKillChance">0</span></button>
+                <button id="metaGoldKillAmount">Ouro/Kill +1 (110 Ouro) Lv.<span id="lvGoldKillAmount">0</span></button>
+                <button id="metaStartingGold">Inicial +60 (160 Ouro) Lv.<span id="lvStartingGold">0</span></button>
+            </div>
+        </div>
+
         <button id="restart">Nova Partida</button>
         <button id="prestigeReset">Prestígio</button>
         <div id="prestigeConfirm" style="display:none; margin-top:15px;">
@@ -111,9 +133,8 @@
     </div>
 
     <script>
-        // ELEMENTOS (todos verificados)
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas ? canvas.getContext('2d') : null;
+        const ctx = canvas.getContext('2d');
 
         const waveElement = document.getElementById('wave');
         const statCopper = document.getElementById('statCopper');
@@ -133,7 +154,6 @@
         const prestigeInput = document.getElementById('prestigeInput');
         const confirmPrestigeBtn = document.getElementById('confirmPrestige');
 
-        // VARIÁVEIS
         let persistent = { 
             gold: 0, damageLevel: 0, fireRateLevel: 0, healthLevel: 0, rangeLevel: 0,
             critChanceLevel: 0, regenLevel: 0, damageReductionLevel: 0, dodgeChanceLevel: 0,
@@ -159,7 +179,6 @@
         let lastEnemySpawn = 0, enemySpawnRate = 3000;
         let animationFrameId = null, lastTime = 0;
 
-        // FUNÇÕES
         function resizeCanvas() {
             const maxW = window.innerWidth * 0.95, maxH = window.innerHeight * 0.65;
             let targetW = Math.min(800, maxW), targetH = targetW * (600 / 800);
@@ -177,7 +196,7 @@
             const save = JSON.parse(localStorage.getItem('centergunSave')) || {};
             Object.assign(persistent, save);
             tower.color = persistent.color || '#0000FF';
-            if (colorPicker) colorPicker.value = tower.color;
+            colorPicker.value = tower.color;
             newRun();
             updateMetaLevels();
         }
@@ -200,17 +219,13 @@
             gameOver = false; gameOverTime = 0; dodgeFlash = 0;
             gameOverScreen.style.display = 'none'; runStartGold = persistent.gold;
 
-            updateStatsUI(); updateUI();
-        }
-
-        function updateStatsUI() {
-            // Apenas os elementos que existem
-            if (statCopper) statCopper.textContent = Math.floor(copper);
-            if (statGold) statGold.textContent = persistent.gold;
+            updateUI();
         }
 
         function updateUI() {
             if (waveElement) waveElement.textContent = `Onda: ${wave}`;
+            if (statCopper) statCopper.textContent = Math.floor(copper);
+            if (statGold) statGold.textContent = persistent.gold;
             if (healthBar) healthBar.style.width = `${Math.max(0, (tower.health / tower.maxHealth) * 100)}%`;
         }
 
@@ -374,7 +389,7 @@
             }
         }
 
-        // Botões
+        // Botões durante a partida
         endGameBtn.addEventListener('click', () => {
             if (!gameOver) {
                 gameOver = true;
@@ -396,17 +411,27 @@
             saveProgress();
         });
 
-        // Abas
-        document.querySelectorAll('.tab-button').forEach(btn => {
+        // Abas durante a partida (só cobre)
+        document.querySelectorAll('#upgrades-tabs .tab-button').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelectorAll('#upgrades-tabs .tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#upgrades-grid .tab-content').forEach(c => c.classList.remove('active'));
                 btn.classList.add('active');
                 document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
             });
         });
 
-        // Meta upgrades permanentes
+        // Abas no game-over (só ouro)
+        document.querySelectorAll('#upgrades-tabs-over .tab-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#upgrades-tabs-over .tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#meta-upgrades .tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+            });
+        });
+
+        // Meta upgrades permanentes (só no game-over)
         const metaButtons = [
             { id: 'metaDamage', prop: 'damageLevel', cost: 25 },
             { id: 'metaFireRate', prop: 'fireRateLevel', cost: 35 },
@@ -439,7 +464,7 @@
             }
         });
 
-        // Upgrades temporários
+        // Upgrades temporários (durante a partida)
         const tempButtons = [
             { id: 'upgradeDamageTemp', action: () => { if (copper >= costs.damage) { copper -= costs.damage; tower.damage += 3; costs.damage = Math.floor(costs.damage * 1.6) + 3; } } },
             { id: 'upgradeFireRateTemp', action: () => { if (copper >= costs.fireRate) { copper -= costs.fireRate; tower.fireRate = Math.max(200, tower.fireRate - 60); costs.fireRate = Math.floor(costs.fireRate * 1.6) + 3; } } },
