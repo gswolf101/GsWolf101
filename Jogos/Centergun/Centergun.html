@@ -111,7 +111,7 @@
     </div>
 
     <script>
-        // DECLARAÇÕES DE ELEMENTOS (primeiro, pra evitar null)
+        // === ELEMENTOS DO DOM ===
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -138,7 +138,7 @@
         const prestigeInput = document.getElementById('prestigeInput');
         const confirmPrestigeBtn = document.getElementById('confirmPrestige');
 
-        // VARIÁVEIS GLOBAIS
+        // === VARIÁVEIS ===
         let persistent = { 
             gold: 0, 
             damageLevel: 0, 
@@ -197,7 +197,7 @@
         let animationFrameId = null;
         let lastTime = 0;
 
-        // FUNÇÕES (todas antes das chamadas)
+        // === FUNÇÕES ===
         function resizeCanvas() {
             const maxW = window.innerWidth * 0.95;
             const maxH = window.innerHeight * 0.65;
@@ -431,8 +431,8 @@
             }
         }
 
-        // Encerrar Partida
-        if (endGameBtn) endGameBtn.addEventListener('click', () => {
+        // Botões
+        endGameBtn.addEventListener('click', () => {
             if (!gameOver) {
                 gameOver = true;
                 gameOverTime = Date.now();
@@ -442,15 +442,13 @@
             }
         });
 
-        // 2x Speed
-        if (speedToggle) speedToggle.addEventListener('click', () => {
+        speedToggle.addEventListener('click', () => {
             gameSpeed = gameSpeed === 1 ? 2 : 1;
             speedToggle.textContent = `2x (${gameSpeed === 2 ? 'ON' : 'OFF'})`;
             speedToggle.classList.toggle('active', gameSpeed === 2);
         });
 
-        // Color Picker
-        if (colorPicker) colorPicker.addEventListener('input', () => {
+        colorPicker.addEventListener('input', () => {
             tower.color = persistent.color = colorPicker.value;
             saveProgress();
         });
@@ -512,7 +510,7 @@
         });
 
         // Prestígio
-        if (prestigeResetBtn) prestigeResetBtn.addEventListener('click', () => {
+        prestigeResetBtn.addEventListener('click', () => {
             if ((wave - 1) < 50 || persistent.gold < 1000) {
                 alert(`Requisitos não atendidos! ≥ 50 ondas e ≥ 1000 ouro.`);
                 return;
@@ -520,7 +518,7 @@
             prestigeConfirmDiv.style.display = 'block';
         });
 
-        if (confirmPrestigeBtn) confirmPrestigeBtn.addEventListener('click', () => {
+        confirmPrestigeBtn.addEventListener('click', () => {
             if (prestigeInput.value.trim() === 'gswolf101') {
                 Object.keys(persistent).forEach(key => {
                     if (key.endsWith('Level')) persistent[key] = 0;
@@ -536,14 +534,14 @@
             }
         });
 
-        if (restartBtn) restartBtn.addEventListener('click', () => {
+        restartBtn.addEventListener('click', () => {
             newRun();
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             lastTime = 0;
             animationFrameId = requestAnimationFrame(gameLoop);
         });
 
-        // Inicialização final (depois de tudo)
+        // Inicialização final
         resizeCanvas();
         loadSave();
         animationFrameId = requestAnimationFrame(gameLoop);
