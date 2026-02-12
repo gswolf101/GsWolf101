@@ -1,0 +1,145 @@
+Site Canal
+=============================================================================================================================
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Três colunas sempre lado a lado – sem scroll, sem quebra</title>
+  <style>
+    * {
+      box-sizing: border-box;   /* ← essencial: padding/borda entram na largura */
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;   /* proporção ≈ 25% / 50% / 25% – ajusta 100% exato */
+      /* Alternativa exata em % (mas cuidado com gap): 25% 50% 25% */
+      gap: 1rem;                            /* espaçamento interno – não causa overflow */
+      width: 100%;                          /* ocupa toda a tela */
+      min-height: 100vh;                    /* só pra exemplo */
+      padding: 1rem;
+      background: DodgerBlue;
+    }
+
+    .item {
+      padding: 1rem;
+      text-align: center;
+      border-radius: 8px;
+      color: #333;
+      font-size: 1.2rem;
+      overflow: hidden;     
+      border-left: solid red;
+      border-right: solid red;
+    }
+
+    #esquerda  { background: #ffcccc; }
+    #centro    { background: #ccffcc; }
+    #direita   { background: #ccccff; }
+    
+    /* ==================================== Esquerda ================================ */
+    
+    #tituloee {
+    	text-align: left;
+        color: red;
+        border-top: solid red;
+    }
+    
+    #tituloe {
+    font-size: large;
+    }
+    
+    #info {
+    text-align: right;
+    color: black;
+    }
+    
+        /* ==================================== Centro ================================ */
+        
+    #dvd {
+    padding: 0;
+    border:solid 1.5px red;
+    }
+    
+    #Centro #imgmascara img{
+    width: 30%;
+    height: 30%;
+	}
+
+	#Centro #redes_sociais img{
+    width: 15%;
+    height: auto;
+	}
+    
+    @media (min-width: 1400px) {
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="item" id="esquerda">
+	<h1 id = "tituloe">Equipamento</h1>
+
+	<p id = "tituloee"> Marca: </p>
+	<p id = "info"> Avell </p>
+
+	<p id = "tituloee"> Tela: </p>
+	<p id = "info"> 144Hz </p>
+
+	<p id = "tituloee"> Processador: </p>
+	<p id = "info"> i7 12650h </p>
+
+	<p id = "tituloee"> Placa de Vídeo: </p>
+	<p id = "info"> RTX3050 BLACK </p>
+
+	<p id = "tituloee"> Espaço: </p>
+	<p id = "info"> NVME 500GB </p>
+
+	<p id = "tituloee"> memória: </p>
+	<p id = "info"> 16GB (2x8): </p>
+
+	<h1 id = "tituloe">Periféricos</h1>
+
+	<p id = "tituloee"> Mouse: </p>
+	<p id = "info"> Razer Deathadder Essential </p>
+
+	<p id = "tituloee"> Fone e Microfone: </p>
+	<p id = "info"> Headset Gamer Redragon Zeus Pro Preto Sem Fio 7.1 H150-PRO </p>
+
+	<p id = "tituloee"> Teclado: </p>
+
+
+
+	</div>
+    <div class="item" id="centro">Centro (≈50%) – texto longo que não deve quebrar nem vazar: Lorem ipsum dolor sit amet...
+    
+    <hr id = "dvd">
+    
+        <h2>Redes sociais</h2>
+        <figure id="redes_sociais">
+            <a href="https://www.instagram.com/gswolf101/" target="_blank" rel="noopener"> <img src="imagens/Logoinstagram.png" alt="Instagram"></a>
+            <a href="https://www.twitch.tv/gswolf101" target="_blank" rel="noopener" ><img src="imagens/Logotwitch.png" alt="Twitch"></a>
+            <a href="https://www.tiktok.com/@gswolf101" target="_blank" rel="noopener"><img src="imagens/Logottk.png" alt="Tiktok"></a>
+            <a href="https://www.youtube.com/@GsWolf101_ofc" target="_blank" rel="noopener"><img src="imagens/Logoyoutube.png" alt="Youtube"></a>
+        </figure>
+        
+<hr id = "dvd">
+    
+    </div>
+    <div class="item" id="direita">Direita (≈25%)</div>
+  </div>
+
+</body>
+</html>
