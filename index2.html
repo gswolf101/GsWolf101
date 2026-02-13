@@ -1,183 +1,183 @@
-Site Canal
-===============================
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GsWolf101</title>
-  <link rel="icon" type="image/png" href="imagens/Cabeca_GsWolf101_icon.png">
-  <style>
-    * {
-      box-sizing: border-box;   /* ← essencial: padding/borda entram na largura */
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GsWolf101</title>
+    <link rel="icon" type="image/png" href="imagens/Cabeca_GsWolf101_icon.png">
 
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f0f0;
-    }
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    .container {
-      display: grid;
-      grid-template-columns: 1fr 2fr 1fr;   /* proporção ≈ 25% / 50% / 25% – ajusta 100% exato */
-      /* Alternativa exata em % (mas cuidado com gap): 25% 50% 25% */
-      gap: 1rem;                            /* espaçamento interno – não causa overflow */
-      width: 100%;                          /* ocupa toda a tela */
-      min-height: 100vh;                    /* só pra exemplo */
-      padding: 1rem;
-      background: DodgerBlue;
-    }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
 
-    .item {
-      padding: 1rem;
-      text-align: center;
-      border-radius: 8px;
-      color: #333;
-      font-size: 1.2rem;
-      overflow: hidden;     
-      border-left: solid red;
-      border-right: solid red;
-    }
-/*
-    #esquerda  { background: ; }
-    #centro    { background: ; }
-    #direita   { background: ; }
-*/
-    /* ==================================== Esquerda ================================ */
-    
-    #tituloee {
-    	text-align: left;
-        color: red;
-        border-top: solid red;
-    }
-    
-    #tituloe {
-    font-size: large;
-    }
-    
-    #info {
-    text-align: right;
-    color: black;
-    }
-    
-        /* ==================================== Centro ================================ */
-        
-    #dvd {
-    padding: 0;
-    border:solid 1.5px red;
-    }
-    
-    #Centro #img1 img{
-    width: 50%;
-    height: auto;
-	}
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 1rem;
+            width: 100%;
+            min-height: 100vh;
+            padding: 1rem;
+            background: DodgerBlue;
+        }
 
-	#Centro #redes_sociais img{
-    width: 15%;
-    height: auto;
-	}
-    
-    #cronograma h1 {
-    	font-size: large;
-        color: red;
-        padding-top:10px;
-    }
+        .item {
+            padding: 1rem;
+            text-align: center;
+            border-radius: 8px;
+            color: #333;
+            font-size: 1.2rem;
+            overflow: hidden;
+            border-left: solid red;
+            border-right: solid red;
+        }
 
-        /* ==================================== Direita ================================ */
+        /* ==================================== Esquerda ==================================== */
+        #tituloee {
+            text-align: left;
+            color: red;
+            border-top: solid red;
+        }
 
-	  #livepix img {
-   		width: 85%;
-    	height: auto;
-	  }
+        #tituloe {
+            font-size: large;
+        }
 
-	  #img2{   		
-		width: 105%;
-    	height: auto;
-	  }
-    @media (min-width: 1400px) {
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
-      }
-    }
-  </style>
+        #info {
+            text-align: right;
+            color: black;
+        }
+
+        /* ==================================== Centro ==================================== */
+        #dvd {
+            padding: 0;
+            border: solid 1.5px red;
+        }
+
+        #centro #img1 img {
+            width: 50%;
+            height: auto;
+        }
+
+        #centro #redes_sociais img {
+            width: 15%;
+            height: auto;
+        }
+
+        #cronograma h1 {
+            font-size: large;
+            color: red;
+            padding-top: 10px;
+        }
+
+        /* ==================================== Direita ==================================== */
+        #livepix img {
+            width: 85%;
+            height: auto;
+        }
+
+        #img2 {
+            width: 105%;
+            height: auto;
+        }
+
+        @media (min-width: 1400px) {
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="item" id="esquerda">
-	<h1 id = "tituloe">Equipamento</h1>
+    <div class="container">
+        <div class="item" id="esquerda">
+            <h1 id="tituloe">Equipamento</h1>
 
-	<p id = "tituloee"> Marca: </p>
-	<p id = "info"> Avell </p>
+            <p id="tituloee">Marca:</p>
+            <p id="info">Avell</p>
 
-	<p id = "tituloee"> Tela: </p>
-	<p id = "info"> 144Hz </p>
+            <p id="tituloee">Tela:</p>
+            <p id="info">144Hz</p>
 
-	<p id = "tituloee"> Processador: </p>
-	<p id = "info"> i7 12650h </p>
+            <p id="tituloee">Processador:</p>
+            <p id="info">i7 12650h</p>
 
-	<p id = "tituloee"> Placa de Vídeo: </p>
-	<p id = "info"> RTX3050 BLACK </p>
+            <p id="tituloee">Placa de Vídeo:</p>
+            <p id="info">RTX3050 BLACK</p>
 
-	<p id = "tituloee"> Espaço: </p>
-	<p id = "info"> NVME 500GB </p>
+            <p id="tituloee">Espaço:</p>
+            <p id="info">NVME 500GB</p>
 
-	<p id = "tituloee"> memória: </p>
-	<p id = "info"> 16GB (2x8): </p>
+            <p id="tituloee">Memória:</p>
+            <p id="info">16GB (2x8)</p>
 
-	<h1 id = "tituloe">Periféricos</h1>
+            <h1 id="tituloe">Periféricos</h1>
 
-	<p id = "tituloee"> Mouse: </p>
-	<p id = "info"> Razer Deathadder Essential </p>
+            <p id="tituloee">Mouse:</p>
+            <p id="info">Razer Deathadder Essential</p>
 
-	<p id = "tituloee"> Fone e Microfone: </p>
-	<p id = "info"> Headset Gamer Redragon Zeus Pro Preto Sem Fio 7.1 H150-PRO </p>
+            <p id="tituloee">Fone e Microfone:</p>
+            <p id="info">Headset Gamer Redragon Zeus Pro Preto Sem Fio 7.1 H150-PRO</p>
 
-	<p id = "tituloee"> Teclado: </p>
+            <p id="tituloee">Teclado:</p>
+            <!-- aqui você pode adicionar o modelo do teclado depois -->
+        </div>
 
+        <div class="item" id="centro">
+            <a href="Jogos/CentralJogos.html" id="img1">
+                <img src="imagens/Wolf_Modelo.png" alt="Wolf segurando uma Firecharge">
+            </a>
 
+            <hr id="dvd">
 
-	</div>
-    <div class="item" id="centro">
+            <h2>Redes sociais</h2>
+            <figure id="redes_sociais">
+                <a href="https://www.instagram.com/gswolf101/" target="_blank" rel="noopener">
+                    <img src="imagens/Logoinstagram.png" alt="Instagram">
+                </a>
+                <a href="https://www.twitch.tv/gswolf101" target="_blank" rel="noopener">
+                    <img src="imagens/Logotwitch.png" alt="Twitch">
+                </a>
+                <a href="https://www.tiktok.com/@gswolf101" target="_blank" rel="noopener">
+                    <img src="imagens/Logottk.png" alt="Tiktok">
+                </a>
+                <a href="https://www.youtube.com/@GsWolf101_ofc" target="_blank" rel="noopener">
+                    <img src="imagens/Logoyoutube.png" alt="Youtube">
+                </a>
+            </figure>
 
-	<a href="Jogos/CentralJogos.html" id="img1"><img src="imagens/Wolf_Modelo.png" alt="Wolf segurando uma Firecharge"></a>
-		
-    <hr id = "dvd">
-    
-        <h2>Redes sociais</h2>
-        <figure id="redes_sociais">
-            <a href="https://www.instagram.com/gswolf101/" target="_blank" rel="noopener"> <img src="imagens/Logoinstagram.png" alt="Instagram"></a>
-            <a href="https://www.twitch.tv/gswolf101" target="_blank" rel="noopener" ><img src="imagens/Logotwitch.png" alt="Twitch"></a>
-            <a href="https://www.tiktok.com/@gswolf101" target="_blank" rel="noopener"><img src="imagens/Logottk.png" alt="Tiktok"></a>
-            <a href="https://www.youtube.com/@GsWolf101_ofc" target="_blank" rel="noopener"><img src="imagens/Logoyoutube.png" alt="Youtube"></a>
-        </figure>
+            <hr id="dvd">
 
-		<canvas class="skin-3d drop-shadow auto-size align-top" width="276" height="368" style="cursor:move;width:276px" data-id="82e2ffa84b9a2db0" data-model="classic" data-flip="false" data-cape="d89779ee546fe4f0" data-theta="-8" data-phi="3"></canvas>
-     <hr id = "dvd">
+            <div id="cronograma">
+                <h1>Lives durante a semana!!</h1>
+                <h2>Das 15h às 17h!!</h2>
+            </div>
+        </div>
 
-     <div id = "cronograma">
-     	<h1>Lives durante a semana!!</h1>
-		<h2>Das 15h as 17h!!</h2>
-     </div>	
-    
+        <div class="item" id="direita">
+            <div id="livepix">
+                <a href="https://livepix.gg/gswolf101" target="_blank" rel="noopener">
+                    <img src="imagens/qrlivepix.jpg" alt="Qrcode">
+                </a>
+            </div>
+
+            <hr id="dvd">
+
+            <h2>Minha Skin!!</h2>
+            <a href="https://pt.namemc.com/profile/GsWolf101.1" target="_blank" rel="noopener">
+                <img src="imagens/skinexemplo.png" alt="Skin atual do wolf" id="img2">
+            </a>
+        </div>
     </div>
-
-	<div  class="item" id = "direita">
-		    <div id="livepix">
-				<a href="https://livepix.gg/gswolf101" target="_blank" rel="noopener"><img src="imagens/qrlivepix.jpg" alt="Qrcode"></a>	
-			</div>
-
-			<hr id = "dvd">
-		<h2>Minha Skin!!</h2>
-		<a href="https://pt.namemc.com/profile/GsWolf101.1" target="_blank" rel="noopener"><img src="imagens/skinexemplo.png" alt="Skin atual do wolf"  id="img2"></a> 
-
-		
-	</div>
-
-  </div>
 
 </body>
 </html>
