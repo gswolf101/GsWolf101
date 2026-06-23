@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simples 2</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #000000, #960000);
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+      color: white;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      max-width: 420px;
+      width: 100%;
+      border-radius: 28px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    /* Foto de Perfil */
+    .profile img {
+      width: 130px;
+      height: 130px;
+      border-radius: 20px;
+      object-fit: cover;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 20px;
+    }
+
+    /* Ícones das Redes Sociais */
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .social-icons a {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 26px;
+      transition: all 0.3s ease;
+    }
+
+    .social-icons a:hover {
+      color: white;
+      transform: translateY(-4px) scale(1.1);
+    }
+
+    /* Textos */
+    h1 {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      opacity: 0.8;
+    }
+
+    .description {
+      margin-top: 12px;
+      opacity: 0.7;
+      font-size: 15px;
+    }
+
+    /* Links grandes */
+    .links {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 30px;
+    }
+
+    .link-btn {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 16px 20px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+      color: white;
+      font-size: 17px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .link-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .link-btn i {
+      width: 28px;
+      font-size: 24px;
+    }
+
+    /* Rodapé */
+    .footer {
+      margin-top: 40px;
+      opacity: 0.5;
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 28px 20px;
+      }
+      .social-icons {
+        gap: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="container">
+    
+    <!-- Foto de Perfil -->
+    <div class="profile">
+      <img src="https://i.imgur.com/8Km9t2k.jpeg" alt="Maninho">
+    </div>S</titl
+
+    <!-- Ícones das Redes Sociais -->
+    <div class="social-icons">
+      <a href="#" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+      <a href="#" target="_blank"><i class="fa-brands fa-youtube"></i></a>
+      <a href="#" target="_blank"><i class="fa-brands fa-tiktok"></i></a>
+      <a href="#" target="_blank"><i class="fa-brands fa-whatsapp"></i></a>
+      <a href="#" target="_blank"><i class="fa-brands fa-x-twitter"></i></a>
+    </div>
+
+    <!-- Nome e Bio -->
+    <h1>Seu nome</h1>
+    <p class="subtitle">Criador de conteúdo • Desenvolvedor</p>
+    <p class="description">
+      Aqui você encontra todos os meus links 🔥
+    </p>
+
+    <!-- Links grandes -->
+    <div class="links">
+      <a href="#" class="link-btn">
+        <i class="fa-brands fa-instagram"></i>
+        <span>Instagram</span>
+      </a>
+
+      <a href="#" class="link-btn">
+        <i class="fa-brands fa-youtube"></i>
+        <span>YouTube</span>
+      </a>
+
+      <a href="#" class="link-btn">
+        <i class="fa-brands fa-tiktok"></i>
+        <span>TikTok</span>
+      </a>
+
+      <a href="#" class="link-btn">
+        <i class="fa-brands fa-whatsapp"></i>
+        <span>WhatsApp</span>
+      </a>
+
+      <a href="#" class="link-btn">
+        <i class="fa-solid fa-link"></i>
+        <span>Outros links</span>
+      </a>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="footer">
+      Frase de efeito (opicional)
+    </div>
+  </div>
+
+</body>
+</html>
