@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elaborado 1</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #000000, #960000);
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: white;
+      padding: 12px 8px;
+      overflow-x: hidden;
+    }
+
+    .main-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 24px 16px;
+      text-align: center;
+    }
+
+    .profile img {
+      width: 105px;
+      height: 105px;
+      border-radius: 18px;
+      object-fit: cover;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 14px;
+    }
+
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .social-icons a {
+      font-size: 24px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .link-btn {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 13px 14px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: white;
+      font-size: 15px;
+    }
+
+    /* CONTEÚDO */
+    .content {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 24px 18px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section h2 {
+      font-size: 23px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid rgba(255,255,255,0.2);
+    }
+
+    /* Carrossel */
+    .carousel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      margin: 0 -4px;
+    }
+
+    .carousel-track {
+      display: flex;
+      transition: transform 0.5s ease;
+    }
+
+    .carousel-item {
+      min-width: 100%;
+      flex-shrink: 0;
+      padding: 0 4px;
+    }
+
+    .game-card {
+      display: flex;
+      align-items: center;
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 10px;
+      gap: 14px;
+    }
+
+    .game-image {
+      width: 88px;
+      height: 88px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    .game-info h3 {
+      font-size: 16.5px;
+      margin-bottom: 4px;
+    }
+
+    .game-info p {
+      font-size: 13px;
+      opacity: 0.8;
+      line-height: 1.3;
+    }
+
+    .carousel-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.75);
+      color: white;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      z-index: 20;
+      cursor: pointer;
+    }
+
+    .carousel-btn.left  { left: 4px; }
+    .carousel-btn.right { right: 4px; }
+
+    @media (max-width: 992px) {
+      .main-container {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 10px 6px;
+      }
+      .sidebar, .content {
+        padding: 20px 14px;
+      }
+      .profile img {
+        width: 95px;
+        height: 95px;
+      }
+      .game-image {
+        width: 78px;
+        height: 78px;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="main-container">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="profile">
+        <img src="https://i.imgur.com/8Km9t2k.jpeg" alt="Maninho">
+      </div>
+      <h1 style="font-size: 25px;">Seu Nome</h1>
+      <p style="opacity: 0.85; margin-bottom: 12px;">Criador de conteúdo • Desenvolvedor</p>
+
+      <div class="social-icons">
+        <a href="#"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#"><i class="fa-brands fa-youtube"></i></a>
+        <a href="#"><i class="fa-brands fa-tiktok"></i></a>
+        <a href="#"><i class="fa-brands fa-whatsapp"></i></a>
+      </div>
+
+      <div class="links">
+        <a href="#" class="link-btn"><i class="fa-brands fa-instagram"></i><span>Instagram</span></a>
+        <a href="#" class="link-btn"><i class="fa-brands fa-youtube"></i><span>YouTube</span></a>
+        <a href="#" class="link-btn"><i class="fa-brands fa-tiktok"></i><span>TikTok</span></a>
+        <a href="#" class="link-btn"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp</span></a>
+        <a href="#" class="link-btn"><i class="fa-solid fa-link"></i><span>Portfólio</span></a>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO -->
+    <div class="content">
+
+      <div class="section">
+        <h2><i class="fa-solid fa-user"></i> Sobre Mim</h2>
+        <p style="line-height: 1.65; opacity: 0.9;">
+          Olá! Sou o Maninho, criador de conteúdo e desenvolvedor apaixonado por games e tecnologia.
+        </p>
+      </div>
+
+      <div class="section">
+        <h2><i class="fa-solid fa-gamepad"></i> Meus Jogos</h2>
+        <div class="carousel" id="gameCarousel">
+          <div class="carousel-btn left" onclick="prevSlide()">‹</div>
+          
+          <div class="carousel-track" id="carouselTrack">
+            <div class="carousel-item">
+              <div class="game-card">
+                <img src="https://i.imgur.com/placehold.co/600x600?text=Jogo+1" class="game-image" alt="">
+                <div class="game-info">
+                  <h3>Jogo 1 - Nome</h3>
+                  <p>Aventura épica com mundo aberto.</p>
+                  <a href="#" style="color: #a5b4fc; font-size: 14px;">Jogar Agora →</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="carousel-item">
+              <div class="game-card">
+                <img src="https://i.imgur.com/placehold.co/600x600?text=Jogo+2" class="game-image" alt="">
+                <div class="game-info">
+                  <h3>Jogo 2 - Nome</h3>
+                  <p>Corrida futurista neon.</p>
+                  <a href="#" style="color: #a5b4fc; font-size: 14px;">Jogar Agora →</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="carousel-item">
+              <div class="game-card">
+                <img src="https://i.imgur.com/placehold.co/600x600?text=Jogo+2" class="game-image" alt="">
+                <div class="game-info">
+                  <h3>Jogo 3 - Nome</h3>
+                  <p>Jogo do besouro.</p>
+                  <a href="#" style="color: #a5b4fc; font-size: 14px;">Jogar Agora →</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="carousel-btn right" onclick="nextSlide()">›</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2><i class="fa-solid fa-folder-open"></i> Projetos</h2>
+        <p style="opacity: 0.8;">Aqui vão aparecer meus principais projetos.</p>
+      </div>
+
+      <!-- CONTATO -->
+      <div class="section">
+        <h2><i class="fa-solid fa-envelope"></i> Contato</h2>
+        <p style="opacity: 0.8; line-height: 1.6;">
+          Email: maninho@email.com<br><br>
+          Quer conversar ou trabalhar junto? Me manda uma mensagem!
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const track = document.getElementById('carouselTrack');
+    const totalSlides = document.querySelectorAll('.carousel-item').length;
+
+    function updateCarousel() {
+      track.style.transform = `translateX(-${currentSlide * 100}%)`;
+    }
+
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      updateCarousel();
+    }
+
+    function prevSlide() {
+      currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+      updateCarousel();
+    }
+
+    setInterval(nextSlide, 5000);
+  </script>
+</body>
+</html>
