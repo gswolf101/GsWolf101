@@ -1,0 +1,191 @@
+import { useState, useMemo, useEffect } from 'react'
+import './App.css'
+
+function App() {
+  const [rodada, setRodada] = useState(0)
+  const [turno, setTurno] = useState(0)
+  const [random, setRandom] = useState(0)
+  const [numeroAleatorio, setNumeroAleatorio] = useState(randint(1, 100))
+  const [contador, setContador] = useState(0)
+  const [vidaAlvo, setVidaAlvo] = useState(0)
+
+  // Status do jogo inteiro
+  const [statusJogo, setStatusJogo] = useState("start")
+  const [interfaceDeBatalha, setInterfacedeBatalha] = useState("inicial")
+
+
+  // Itens
+  const [pocoes, setPocoes] = useState(3)
+
+  const [nomeJogador, setNomeJogador] = useState("Guest")
+  const [vidaJogador, setVidaJogador] = useState(20)
+  const [vidaMaximaJogador, setVidaMaximaJogador] = useState(20)
+  const [nivelJogador, setNivelJogador] = useState(0)
+
+  // Dados dos oponentes
+  const [oponente, setOponente] = useState(["lobo", "slime", "goblin"])
+  const [vidaOponenteLista, setVidaOponenteLista] = useState([20, 10, 25])
+  const [ataqueMinOponenteLista, setAtaqueMinOponenteLista] = useState([8, 4, 6])
+  const [ataqueMaxOponenteLista, setAtaqueMaxOponenteLista] = useState([12, 7, 9])
+
+  // Oponente da batalha atual
+  const [nomeOponente, setNomeOponente] = useState("")
+  const [vidaOponente, setVidaOponente] = useState(0)
+  const [ataqueMinOponente, setAtaqueMinOponente] = useState(0)
+  const [ataqueMaxOponente, setAtaqueMaxOponente] = useState(0)
+  const [ataqueAtualOponente, setAtaqueAtualOponente] = useState([])
+
+  const [ataque1, setAtaque1] = useState([5, 10])
+  const [ataque2, setAtaque2] = useState([2, 8])
+
+  function gerarBatalha() {
+    const indiceOponente = randint(0, 2)
+
+    console.log("Batalha gerada. Índice:", indiceOponente)
+
+    setNomeOponente(oponente[indiceOponente])
+    setVidaOponente(vidaOponenteLista[indiceOponente])
+    setAtaqueMinOponente(ataqueMinOponenteLista[indiceOponente])
+    setAtaqueMaxOponente(ataqueMaxOponenteLista[indiceOponente])
+
+    setAtaqueAtualOponente([
+      ataqueMinOponenteLista[indiceOponente],
+      ataqueMaxOponenteLista[indiceOponente]
+    ])
+  }
+
+  function alterarturno(turno) {
+    if (turno === 1) {
+      setTurno(0)
+    } else {
+      setTurno(1)
+    }
+  }
+  function alterarStatusJogo(status) {
+    setStatusJogo(status)
+  }
+
+  function randint(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+
+  function wait(tempo) {
+    setTimeout(() => {
+      console.log("esperando", tempo, "segundos")
+    }, tempo * 1000)
+  }
+
+  function atacar(vidaAlvo, setVidaAlvo, ataque) {
+    const danoCausado = randint(ataque[0], ataque[1])
+
+    setVidaAlvo((vidaAtual) => Math.max(0, vidaAtual - danoCausado))
+
+    console.log(danoCausado)
+
+    wait(2)
+
+    if (turno === 0) {
+      setTurno(1)
+      setRodada((rodadaAtual) => rodadaAtual + 1)
+      setInterfacedeBatalha("inicial")
+    } else {
+      setTurno(0)
+    }
+  }
+
+  function usarPocao(pocoes, vidaJogador, setVidaJogador, vidaMaximaJogador) {
+    if (pocoes > 0) {
+      const cura = randint(5, 10)
+      setVidaJogador((vidaJogador) => Math.min(vidaJogador + cura, vidaMaximaJogador))
+      setPocoes((pocoes) => pocoes - 1)
+    } else {return}
+  }
+
+  useEffect(() => {
+    if (turno === 1) {
+      atacar(vidaJogador, setVidaJogador, ataqueAtualOponente)
+    }
+  })
+
+  return (
+    <div>
+      {statusJogo === "start" && (
+        <div>
+          <h2>Bem vindo(a)</h2>
+          <p>Por favor insira seu nome antes de continuar:</p>
+          <input type="text"
+          value={nomeJogador}
+          onChange={(e) => setNomeJogador(e.target.value)} />
+          <button onClick={() => {
+            setStatusJogo("batalhando") 
+            gerarBatalha()
+          }}>
+            Começar
+          </button>
+        </div>
+
+      )}
+      {statusJogo === "batalhando" && (
+        <>
+
+          <p>Rodada: {rodada}</p>
+
+          <div>
+            <p>{nomeOponente}</p>
+            <p>{"I".repeat(vidaOponente)}</p>
+          </div>
+
+          <div id="vida">
+            <p>{nomeJogador}</p>
+            <p>{"I".repeat(vidaJogador)}</p>
+          </div>
+
+
+            {/*Interface para escolher as ações*/}
+          <div>
+            {interfaceDeBatalha === "inicial" && (
+              <div>
+                <button onClick={() => setInterfacedeBatalha("atacar")}>Ataques</button>
+                <button onClick={() => setInterfacedeBatalha("itens")}>Itens</button>
+              </div>
+
+              
+            )}
+
+            {/*Ataques*/}
+            {interfaceDeBatalha === "atacar" && (
+            <div id="menu de ataques">
+              {turno === 0 && (
+                  <div>
+                    <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque1)}>
+                      Soco
+                    </button>
+
+                    <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque2)}>
+                      Ataque 2
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/*Itens*/}
+            {pocoes > 0 && (
+              <div>
+                <button onClick={() => usarPocao(pocoes, vidaJogador, setVidaJogador, vidaMaximaJogador)}>
+                  Poção
+                </button>
+              </div>
+            )}
+
+          </div>
+
+
+        </>
+      )}
+    </div>
+  )
+
+}
+
+export default App
