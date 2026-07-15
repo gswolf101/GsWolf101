@@ -13,7 +13,6 @@ function App() {
   const [statusJogo, setStatusJogo] = useState("start")
   const [interfaceDeBatalha, setInterfacedeBatalha] = useState("inicial")
 
-
   // Itens
   const [pocoes, setPocoes] = useState(3)
 
@@ -54,13 +53,14 @@ function App() {
     ])
   }
 
-  function alterarturno(turno) {
-    if (turno === 1) {
+  function alterarturno(turnoAtual) {
+    if (turnoAtual === 1) {
       setTurno(0)
     } else {
       setTurno(1)
     }
   }
+
   function alterarStatusJogo(status) {
     setStatusJogo(status)
   }
@@ -85,49 +85,51 @@ function App() {
     wait(2)
 
     if (turno === 0) {
-      setTurno(1)
+      alterarturno(turno) // usando a função de trocar turno
       setRodada((rodadaAtual) => rodadaAtual + 1)
       setInterfacedeBatalha("inicial")
     } else {
-      setTurno(0)
+      alterarturno(turno) // usando a função de trocar turno
     }
   }
 
-  function usarPocao(pocoes, vidaJogador, setVidaJogador, vidaMaximaJogador) {
+  function usarPocao() {
     if (pocoes > 0) {
       const cura = randint(5, 10)
-      setVidaJogador((vidaJogador) => Math.min(vidaJogador + cura, vidaMaximaJogador))
-      setPocoes((pocoes) => pocoes - 1)
-    } else {return}
+      setVidaJogador((vidaAtual) => Math.min(vidaAtual + cura, vidaMaximaJogador))
+      setPocoes((pocoesAtual) => pocoesAtual - 1)
+      alterarturno(turno) // aplicando trocar turno na poção
+    }
   }
 
   useEffect(() => {
     if (turno === 1) {
       atacar(vidaJogador, setVidaJogador, ataqueAtualOponente)
     }
-  })
+  }, [turno])
 
   return (
     <div>
       {statusJogo === "start" && (
         <div>
-          <h2>Bem vindo(a)</h2>
-          <p>Por favor insira seu nome antes de continuar:</p>
-          <input type="text"
-          value={nomeJogador}
-          onChange={(e) => setNomeJogador(e.target.value)} />
+          Bem vindo(a)<br />
+          Por favor insira seu nome antes de continuar:<br />
+          <input 
+            type="text"
+            value={nomeJogador}
+            onChange={(e) => setNomeJogador(e.target.value)} 
+          />
           <button onClick={() => {
-            setStatusJogo("batalhando") 
+            setStatusJogo("batalhando")
             gerarBatalha()
           }}>
             Começar
           </button>
         </div>
-
       )}
+
       {statusJogo === "batalhando" && (
         <>
-
           <p>Rodada: {rodada}</p>
 
           <div>
@@ -140,22 +142,19 @@ function App() {
             <p>{"I".repeat(vidaJogador)}</p>
           </div>
 
-
-            {/*Interface para escolher as ações*/}
+          {/* Interface para escolher as ações */}
           <div>
             {interfaceDeBatalha === "inicial" && (
               <div>
                 <button onClick={() => setInterfacedeBatalha("atacar")}>Ataques</button>
                 <button onClick={() => setInterfacedeBatalha("itens")}>Itens</button>
               </div>
-
-              
             )}
 
-            {/*Ataques*/}
+            {/* Ataques */}
             {interfaceDeBatalha === "atacar" && (
-            <div id="menu de ataques">
-              {turno === 0 && (
+              <div id="menu de ataques">
+                {turno === 0 && (
                   <div>
                     <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque1)}>
                       Soco
@@ -169,23 +168,24 @@ function App() {
               </div>
             )}
 
-            {/*Itens*/}
-            {pocoes > 0 && (
+            {/* Itens */}
+            {interfaceDeBatalha === "itens" && (
               <div>
-                <button onClick={() => usarPocao(pocoes, vidaJogador, setVidaJogador, vidaMaximaJogador)}>
-                  Poção
-                </button>
+                {pocoes > 0 && (
+                  <div>
+                    <button onClick={usarPocao}>
+                      Poção
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
           </div>
-
-
         </>
       )}
     </div>
   )
-
 }
 
 export default App
