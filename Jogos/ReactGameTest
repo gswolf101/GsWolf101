@@ -1,191 +1,236 @@
-import { useState, useMemo, useEffect } from 'react'
-import './App.css'
+import { useState, useEffect } from 'react';
+import './App.css';
 
 function App() {
-  const [rodada, setRodada] = useState(0)
-  const [turno, setTurno] = useState(0)
-  const [random, setRandom] = useState(0)
-  const [numeroAleatorio, setNumeroAleatorio] = useState(randint(1, 100))
-  const [contador, setContador] = useState(0)
-  const [vidaAlvo, setVidaAlvo] = useState(0)
+  const [rodada, setRodada] = useState(0);
+  const [turno, setTurno] = useState(0);
 
-  // Status do jogo inteiro
-  const [statusJogo, setStatusJogo] = useState("start")
-  const [interfaceDeBatalha, setInterfacedeBatalha] = useState("inicial")
+  // Status do jogo
+  const [statusJogo, setStatusJogo] = useState("start");
+  const [interfaceDeBatalha, setInterfaceDeBatalha] = useState("inicial");
+  const [inimigosRestantes, setInimigosRestantes] = useState(1)
+
+  // Jogador
+  const [nomeJogador, setNomeJogador] = useState("Guest");
+  const [vidaJogador, setVidaJogador] = useState(20);
+  const [vidaMaximaJogador, setVidaMaximaJogador] = useState(20);
+  const [nivelJogador, setNivelJogador] = useState(0);
 
   // Itens
-  const [pocoes, setPocoes] = useState(3)
+  const [pocoes, setPocoes] = useState(3);
 
-  const [nomeJogador, setNomeJogador] = useState("Guest")
-  const [vidaJogador, setVidaJogador] = useState(20)
-  const [vidaMaximaJogador, setVidaMaximaJogador] = useState(20)
-  const [nivelJogador, setNivelJogador] = useState(0)
+  // Oponentes (listas)
+  const [oponente] = useState(["lobo", "slime", "goblin"]);
+  const [vidaOponenteLista] = useState([20, 10, 25]);
+  const [ataqueMinOponenteLista] = useState([8, 4, 6]);
+  const [ataqueMaxOponenteLista] = useState([12, 7, 9]);
+  const [dropMoedasMaxLista] = useState([10, 8, 15])
 
-  // Dados dos oponentes
-  const [oponente, setOponente] = useState(["lobo", "slime", "goblin"])
-  const [vidaOponenteLista, setVidaOponenteLista] = useState([20, 10, 25])
-  const [ataqueMinOponenteLista, setAtaqueMinOponenteLista] = useState([8, 4, 6])
-  const [ataqueMaxOponenteLista, setAtaqueMaxOponenteLista] = useState([12, 7, 9])
+  // Oponente atual
+  const [nomeOponente, setNomeOponente] = useState("");
+  const [vidaOponente, setVidaOponente] = useState(1);
+  const [ataqueAtualOponente, setAtaqueAtualOponente] = useState([]);
 
-  // Oponente da batalha atual
-  const [nomeOponente, setNomeOponente] = useState("")
-  const [vidaOponente, setVidaOponente] = useState(0)
-  const [ataqueMinOponente, setAtaqueMinOponente] = useState(0)
-  const [ataqueMaxOponente, setAtaqueMaxOponente] = useState(0)
-  const [ataqueAtualOponente, setAtaqueAtualOponente] = useState([])
+  // Ataques do jogador
+  const [ataque1] = useState([5, 10]);
+  const [ataque2] = useState([2, 8]);
 
-  const [ataque1, setAtaque1] = useState([5, 10])
-  const [ataque2, setAtaque2] = useState([2, 8])
-
-  function gerarBatalha() {
-    const indiceOponente = randint(0, 2)
-
-    console.log("Batalha gerada. Índice:", indiceOponente)
-
-    setNomeOponente(oponente[indiceOponente])
-    setVidaOponente(vidaOponenteLista[indiceOponente])
-    setAtaqueMinOponente(ataqueMinOponenteLista[indiceOponente])
-    setAtaqueMaxOponente(ataqueMaxOponenteLista[indiceOponente])
-
-    setAtaqueAtualOponente([
-      ataqueMinOponenteLista[indiceOponente],
-      ataqueMaxOponenteLista[indiceOponente]
-    ])
-  }
-
-  function alterarturno(turnoAtual) {
-    if (turnoAtual === 1) {
-      setTurno(0)
-    } else {
-      setTurno(1)
-    }
-  }
-
-  function alterarStatusJogo(status) {
-    setStatusJogo(status)
-  }
+  // ==================== FUNÇÕES ====================
 
   function randint(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
   function wait(tempo) {
-    setTimeout(() => {
-      console.log("esperando", tempo, "segundos")
-    }, tempo * 1000)
+    return new Promise((resolve) => setTimeout(resolve, tempo * 1000));
+  }
+
+  function gerarBatalha() {
+    const indiceOponente = randint(0, 2);
+
+    setNomeOponente(oponente[indiceOponente]);
+    setVidaOponente(vidaOponenteLista[indiceOponente]);
+    setAtaqueAtualOponente([
+      ataqueMinOponenteLista[indiceOponente],
+      ataqueMaxOponenteLista[indiceOponente],
+    ]);
+  }
+
+  function alterarturno(turnoAtual) {
+    setTurno(turnoAtual === 1 ? 0 : 1);
   }
 
   function atacar(vidaAlvo, setVidaAlvo, ataque) {
-    const danoCausado = randint(ataque[0], ataque[1])
+    const danoCausado = randint(ataque[0], ataque[1]);
 
-    setVidaAlvo((vidaAtual) => Math.max(0, vidaAtual - danoCausado))
+    setVidaAlvo((vidaAtual) => Math.max(0, vidaAtual - danoCausado));
+    setInterfaceDeBatalha("esperando");
+    wait(1).then(() => {
+      if (turno === 0) {
+        alterarturno(turno);
+        setRodada((rodadaAtual) => rodadaAtual + 1);
 
-    console.log(danoCausado)
-
-    wait(2)
-
-    if (turno === 0) {
-      alterarturno(turno) // usando a função de trocar turno
-      setRodada((rodadaAtual) => rodadaAtual + 1)
-      setInterfacedeBatalha("inicial")
-    } else {
-      alterarturno(turno) // usando a função de trocar turno
-    }
+      } else {
+        alterarturno(turno);
+        setInterfaceDeBatalha("inicial");
+      }
+    });
   }
 
   function usarPocao() {
     if (pocoes > 0) {
-      const cura = randint(5, 10)
-      setVidaJogador((vidaAtual) => Math.min(vidaAtual + cura, vidaMaximaJogador))
-      setPocoes((pocoesAtual) => pocoesAtual - 1)
-      alterarturno(turno) // aplicando trocar turno na poção
+      const cura = randint(10, 20);
+      setVidaJogador((vidaAtual) =>
+        Math.min(vidaAtual + cura, vidaMaximaJogador)
+      );
+      setPocoes((p) => p - 1);
+      setInterfaceDeBatalha("inicial");
+      alterarturno(turno);
     }
   }
 
+  // ==================== EFFECTS ====================
+
+  // Verifica fim da batalha
   useEffect(() => {
-    if (turno === 1) {
-      atacar(vidaJogador, setVidaJogador, ataqueAtualOponente)
+    if (vidaOponente <= 0) {
+      setInterfaceDeBatalha("vitoria");
+    } else if (vidaJogador <= 0) {
+      setInterfaceDeBatalha("derrota");
     }
-  }, [turno])
+  }, [vidaOponente, vidaJogador]);
+
+  // Turno do inimigo
+  useEffect(() => {
+    if (turno === 1 && interfaceDeBatalha !== "vitoria" && interfaceDeBatalha !== "derrota") {
+      atacar(vidaJogador, setVidaJogador, ataqueAtualOponente);
+    }
+  }, [turno, interfaceDeBatalha]);
+
+  // ==================== JSX ====================
 
   return (
-    <div>
+    <div className="App">
       {statusJogo === "start" && (
-        <div>
-          Bem vindo(a)<br />
-          Por favor insira seu nome antes de continuar:<br />
-          <input 
+        <>
+          <h1>Bem-vindo(a)!</h1>
+          <p>Por favor insira seu nome antes de continuar:</p>
+
+          <input
             type="text"
             value={nomeJogador}
-            onChange={(e) => setNomeJogador(e.target.value)} 
+            onChange={(e) => setNomeJogador(e.target.value)}
           />
-          <button onClick={() => {
-            setStatusJogo("batalhando")
-            gerarBatalha()
-          }}>
+
+          <button
+            onClick={() => {
+              setStatusJogo("batalhando");
+              gerarBatalha();
+            }}
+          >
             Começar
           </button>
+        </>
+      )}
+      {/* Batalha */}
+      {statusJogo === "batalhando" && (
+        <div>
+          {/* Tela de batalha normal */}
+          {interfaceDeBatalha !== "vitoria" && interfaceDeBatalha !== "derrota" && (
+            <>
+              <p><strong>Rodada:</strong> {rodada}</p>
+
+              <div>
+                <p><strong>{nomeOponente}</strong></p>
+                <p>{"I".repeat(vidaOponente)}</p>
+              </div>
+
+              <div>
+                <p><strong>{nomeJogador}</strong></p>
+                <p>{"I".repeat(vidaJogador)}</p>
+              </div>
+
+              {/* Menu principal */}
+              {interfaceDeBatalha === "inicial" && (
+                <div>
+                  <button onClick={() => setInterfaceDeBatalha("atacar")}>
+                    Ataques
+                  </button>
+                  <button onClick={() => setInterfaceDeBatalha("itens")}>
+                    Itens
+                  </button>
+                </div>
+              )}
+
+              {/* Menu de Ataques */}
+              {interfaceDeBatalha === "atacar" && turno === 0 && (
+                <div>
+                  <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque1)}>
+                    Soco
+                  </button>
+                  <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque2)}>
+                    Ataque 2
+                  </button>
+                </div>
+              )}
+
+              {/* Menu de Itens */}
+              {interfaceDeBatalha === "itens" && (
+                <div>
+                  {pocoes > 0 && (
+                    <button onClick={usarPocao}>
+                      Poção ({pocoes})
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Telas de fim de batalha */}
+          {interfaceDeBatalha === "vitoria" && (
+            <div>
+              <h1>Você venceu!</h1>
+              {/*Drops*/}
+              <button onClick={() => setStatusJogo("lobby")}>
+                Voltar para a vila
+              </button>
+            </div>
+            )}
+          {interfaceDeBatalha === "derrota" && <h1>Você foi derrotado...</h1>}
         </div>
       )}
 
-      {statusJogo === "batalhando" && (
-        <>
-          <p>Rodada: {rodada}</p>
-
-          <div>
-            <p>{nomeOponente}</p>
-            <p>{"I".repeat(vidaOponente)}</p>
+      {/*TELA DO LOBBY*/}
+      {statusJogo === "lobby" && (
+        <div>
+          <div id='botao-lobby-casa'>
+            <button onClick={() => setStatusJogo("casa")}>
+              <img src="#" alt="imagem casa" />
+            </button>
           </div>
-
-          <div id="vida">
-            <p>{nomeJogador}</p>
-            <p>{"I".repeat(vidaJogador)}</p>
+          <div id='botao-lobby-floresta'>
+            <button onClick={() => setStatusJogo("floresta")}>
+              <img src="#" alt="floresta" />
+            </button>
           </div>
-
-          {/* Interface para escolher as ações */}
-          <div>
-            {interfaceDeBatalha === "inicial" && (
-              <div>
-                <button onClick={() => setInterfacedeBatalha("atacar")}>Ataques</button>
-                <button onClick={() => setInterfacedeBatalha("itens")}>Itens</button>
-              </div>
-            )}
-
-            {/* Ataques */}
-            {interfaceDeBatalha === "atacar" && (
-              <div id="menu de ataques">
-                {turno === 0 && (
-                  <div>
-                    <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque1)}>
-                      Soco
-                    </button>
-
-                    <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque2)}>
-                      Ataque 2
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Itens */}
-            {interfaceDeBatalha === "itens" && (
-              <div>
-                {pocoes > 0 && (
-                  <div>
-                    <button onClick={usarPocao}>
-                      Poção
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
+          <div id='botao-lobby-loja'>
+            <button onClick={() => setStatusJogo("loja")}>
+              <img src="#" alt="loja" />
+            </button>
           </div>
-        </>
+        </div>
+      )}
+
+      {statusJogo === "floesta" && (
+        <div>
+          <p>O QUÃO FUNDO DEVO IR NA FLORESTA??</p>
+          
+          <img src="#" alt="arvores da floresta" />
+        </div>
       )}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
