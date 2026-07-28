@@ -2,41 +2,68 @@ import { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
+
+  // Game Manager
   const [rodada, setRodada] = useState(0);
   const [turno, setTurno] = useState(0);
-
-  // Status do jogo
   const [statusJogo, setStatusJogo] = useState("start");
   const [interfaceDeBatalha, setInterfaceDeBatalha] = useState("inicial");
-  const [inimigosRestantes, setInimigosRestantes] = useState(1)
+  const [dia, setDia] = useState(0);
+  const [logAtaques, setLogAtaques] = useState([]);
+
+  // Múltiplos inimigos
+  const [inimigosRestantes, setInimigosRestantes] = useState(1);
+
+  //Móveis da casa
+  const [camaLevel, setCamaLevel] = useState(1);
+  const [recuperacaoCama] = useState([0, 0.35, 0.45, 0.6]);
 
   // Jogador
   const [nomeJogador, setNomeJogador] = useState("Guest");
   const [vidaJogador, setVidaJogador] = useState(20);
   const [vidaMaximaJogador, setVidaMaximaJogador] = useState(20);
-  const [nivelJogador, setNivelJogador] = useState(0);
+  const [levelJogador, setLevelJogador] = useState(0)
+  const [xpNecessario, setXpNecessario] = useState(5)
+  const [xpAtual, setXpAtual] = useState(0)
 
   // Itens
   const [pocoes, setPocoes] = useState(3);
+  const [moedas, setMoedas] = useState(5);
 
-  // Oponentes (listas)
+  // Itens de combate
+    //Adaga velha enferrujada
+    const [adagaVelha, setAdagaVelha] = useState(false)
+    const [danoAdagaVelha, setDanoAdagaVelha] = useState([7, 11])
+    const [adagaVelhaEquipada, setAdagaVelhaEquipada] = useState(false)
+    //Adaga primitiva
+    const [adagaPrimitiva, setAdagaPrimitiva] = useState(false)
+    const [danoAdagaPrimitiva, setDanoAdagaPrimitiva] = useState([7, 12])
+    const [adagaPrimitivaEquipada, setAdagaPrimitivaEquipada] = useState(false)
+
+  // Oponentes
   const [oponente] = useState(["lobo", "slime", "goblin"]);
-  const [vidaOponenteLista] = useState([20, 10, 25]);
-  const [ataqueMinOponenteLista] = useState([8, 4, 6]);
-  const [ataqueMaxOponenteLista] = useState([12, 7, 9]);
-  const [dropMoedasMaxLista] = useState([10, 8, 15])
-
+  const [vidaOponenteLista] = useState([15, 10, 17]);
+  const [ataques1OponenteLista] = useState(["arranhão", "pancada", "soco rapido"]);
+  const [ataques2OponenteLista] = useState(["mordida", "empurrão", "pancada"]);
+  const [ataqueMin1OponenteLista] = useState([6, 4, 4]);
+  const [ataqueMax1OponenteLista] = useState([8, 5, 7]);
+  const [ataqueMin2OponenteLista] = useState([4, 2, 3]);
+  const [ataqueMax2OponenteLista] = useState([7, 3, 4]);
+  const [dropMoedasMaxLista] = useState([10, 8, 15]);
+  const [dropRaroLista] = useState(["", "cristal de cura", "adaga primitiva"])
+  const [chanceDropRaro] = useState(["", "8", "8"]) //usar chance de 0 a 10
+  const [dropXPLista, setDropXPLista] = useState([2, 1, 2])
   // Oponente atual
   const [nomeOponente, setNomeOponente] = useState("");
   const [vidaOponente, setVidaOponente] = useState(1);
-  const [ataqueAtualOponente, setAtaqueAtualOponente] = useState([]);
+  const [indiceOponenteAtual, setIndiceOponenteAtual] = useState(0);
+  const [dificuldade, setDificuldade] = useState(1);
 
   // Ataques do jogador
   const [ataque1] = useState([5, 10]);
   const [ataque2] = useState([2, 8]);
 
   // ==================== FUNÇÕES ====================
-
   function randint(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
@@ -45,188 +72,436 @@ function App() {
     return new Promise((resolve) => setTimeout(resolve, tempo * 1000));
   }
 
-  function gerarBatalha() {
-    const indiceOponente = randint(0, 2);
+  function gerarBatalha(quantidade = 1) {
+    const indice = randint(0, 2);
+    
+    setIndiceOponenteAtual(indice);
+    setInimigosRestantes(quantidade);
+    setNomeOponente(oponente[indice]);
+    setVidaOponente(vidaOponenteLista[indice] * dificuldade);
+    setTurno(0);                    // Garante turno do jogador
+    setInterfaceDeBatalha("inicial");
+  }
 
-    setNomeOponente(oponente[indiceOponente]);
-    setVidaOponente(vidaOponenteLista[indiceOponente]);
-    setAtaqueAtualOponente([
-      ataqueMinOponenteLista[indiceOponente],
-      ataqueMaxOponenteLista[indiceOponente],
+  function mudarTurno() {
+    setTurno((atual) => (atual === 0 ? 1 : 0));
+  }
+
+  // ==================== ATAQUES ====================
+  function inimigoAtacar() {
+    if (vidaJogador <= 0 || vidaOponente <= 0) return;
+
+    const escolhaAtaque = randint(1, 2);
+    let dano = 0;
+    let nomeAtaque = "";
+
+    if (escolhaAtaque === 1) {
+      dano = randint(ataqueMin1OponenteLista[indiceOponenteAtual], ataqueMax1OponenteLista[indiceOponenteAtual]);
+      nomeAtaque = ataques1OponenteLista[indiceOponenteAtual];
+    } else {
+      dano = randint(ataqueMin2OponenteLista[indiceOponenteAtual], ataqueMax2OponenteLista[indiceOponenteAtual]);
+      nomeAtaque = ataques2OponenteLista[indiceOponenteAtual];
+    }
+
+    setLogAtaques((log) => [
+      ...log,
+      `${nomeOponente} usou ${nomeAtaque}`
     ]);
-  }
 
-  function alterarturno(turnoAtual) {
-    setTurno(turnoAtual === 1 ? 0 : 1);
-  }
-
-  function atacar(vidaAlvo, setVidaAlvo, ataque) {
-    const danoCausado = randint(ataque[0], ataque[1]);
-
-    setVidaAlvo((vidaAtual) => Math.max(0, vidaAtual - danoCausado));
+    setVidaJogador((vidaAtual) => Math.max(0, vidaAtual - dano));
     setInterfaceDeBatalha("esperando");
-    wait(1).then(() => {
-      if (turno === 0) {
-        alterarturno(turno);
-        setRodada((rodadaAtual) => rodadaAtual + 1);
 
-      } else {
-        alterarturno(turno);
+    wait(1).then(() => {
+      if (vidaJogador > 0) {
+        mudarTurno();
         setInterfaceDeBatalha("inicial");
       }
     });
   }
 
-  function usarPocao() {
-    if (pocoes > 0) {
-      const cura = randint(10, 20);
-      setVidaJogador((vidaAtual) =>
-        Math.min(vidaAtual + cura, vidaMaximaJogador)
-      );
-      setPocoes((p) => p - 1);
-      setInterfaceDeBatalha("inicial");
-      alterarturno(turno);
+  function darDrops(indiceOponenteAtual) {
+    const indice = indiceOponenteAtual
+    // drop das moedas
+    const DropMoedas = randint(3, dropMoedasMaxLista[indice]);
+    setMoedas(moedas => moedas + DropMoedas);
+
+    // drop de XP
+    const xpdropado = randint(1, dropXPLista[indice])
+
+    setLogAtaques(log => [...log, `${DropMoedas} moedas`])
+
+    // drops raros
+    const chance = chanceDropRaro[indice];
+
+    if (chance > 0 && randint(1, 10) <= chance) {
+      const itemDropado = dropRaroLista[indice];
+
+      if (itemDropado === "adaga primitiva" && !adagaPrimitiva) {
+        setAdagaPrimitiva(true);
+        setLogAtaques(log => [...log, "Você encontrou uma Adaga primitiva!!"]);
+      } 
+      else if (itemDropado === "cristal de cura") {
+        setPocoes(p => p + 1);
+        setLogAtaques(log => [...log, "você encontra um cristal de cura!!"])
+      }
     }
   }
 
-  // ==================== EFFECTS ====================
+  function atacar(vidaAlvo, setVidaAlvo, ataque, nomeDoAtaque) {
+    const danoCausado = randint(ataque[0], ataque[1]);
 
-  // Verifica fim da batalha
-  useEffect(() => {
-    if (vidaOponente <= 0) {
+    setLogAtaques((log) => [
+      ...log, 
+      `${nomeJogador} usou ${nomeDoAtaque}`
+    ]);
+
+    setVidaAlvo((vidaAtual) => Math.max(0, vidaAtual - danoCausado));
+    setInterfaceDeBatalha("esperando");
+
+    wait(1).then(() => {
+      mudarTurno();
+      setRodada((rodadaAtual) => rodadaAtual + 1);
+
+      if (vidaOponente - danoCausado > 0 && vidaJogador > 0) {
+        inimigoAtacar();
+      }
+    });
+  }
+
+  function usarPocao() {
+    if (pocoes <= 0) return;
+
+    const cura = randint(10, 20);
+    
+    setVidaJogador((vidaAtual) => Math.min(vidaAtual + cura, vidaMaximaJogador));
+    setPocoes((p) => p - 1);
+    
+    setInterfaceDeBatalha("esperando");
+    setLogAtaques((log) => [...log, `${nomeJogador} usou uma Poção (+${cura} HP)`]);
+
+    wait(0.8).then(() => {
+      mudarTurno();
+      
+      if (vidaJogador > 0 && vidaOponente > 0) {
+        inimigoAtacar();
+      } else {
+        setInterfaceDeBatalha("inicial");
+      }
+    });
+  }
+
+  function comprarItemAcumulavel(setItem, setMoedas, preco, quantidade, moedasAtuais) {
+    if (moedasAtuais >= preco) {
+      setMoedas((moedas) => moedas - preco);
+      setItem((itemAtual) => itemAtual + quantidade);
+    } else {
+      alert("Vendedor: Sem grana, sem itens");
+    }
+  }
+
+  function passarDia() {
+    setDia((diaAtual) => diaAtual + 1);
+    setVidaJogador((vidaAtual) => {
+      const multiplicador = recuperacaoCama[camaLevel] || 1.0;
+      const vidaParaRecuperar = Math.floor(vidaMaximaJogador * multiplicador);
+      return Math.min(vidaAtual + vidaParaRecuperar, vidaMaximaJogador);
+    });
+  }
+
+  function upgradeCama(camaLevel, setCamaLevel, setMoedas, preco, moedasAtuais) {
+    if (moedasAtuais >= preco) {
+      setMoedas((moedas) => moedas - preco);
+      setCamaLevel((camaLevel) => camaLevel + 1);
+    } else {
+      alert("Vendedor: Sem grana, sem itens");
+    }
+  }
+
+  function comprarEspada(espada, setEspada, setMoedas, preco, moedasAtuais) {
+    if (moedasAtuais >= preco) {
+      setMoedas((moedas) => moedas - preco);
+      setEspada(true)
+    } else {
+      alert("Vendedor: Sem grana, sem itens");
+    }
+  }
+
+// ==================== EFFECTS ====================
+useEffect(() => {
+  if (xpAtual >= xpNecessario) {
+    setLevelJogador((levelJogador) => levelJogador + 1);
+    const aumentoVidaMax = levelJogador * 0.20
+    setVidaMaximaJogador((vidaMaximaJogador) => vidaMaximaJogador * aumentoVidaMax)
+    setXpNecessario((xpNecessario) => xpNecessario * 0.35)
+  }
+}, [vidaMaximaJogador, levelJogador, xpNecessario])
+
+useEffect(() => {
+  if (vidaOponente <= 0 && vidaJogador > 0) {
+
+    darDrops(indiceOponenteAtual);
+
+    if (inimigosRestantes > 1) {
+      setInimigosRestantes((q) => q - 1);
+
+      setTimeout(() => {
+        const indice = randint(0, 2);
+
+        setIndiceOponenteAtual(indice);
+        setNomeOponente(oponente[indice]);
+        setVidaOponente(vidaOponenteLista[indice] * dificuldade);
+        
+        setTurno(0);
+        setInterfaceDeBatalha("inicial");
+        
+        setLogAtaques((log) => [
+          ...log, 
+          `✦ Um novo ${oponente[indice]} apareceu! ✦`
+        ]);
+      }, 1000);
+    } else {
       setInterfaceDeBatalha("vitoria");
-    } else if (vidaJogador <= 0) {
-      setInterfaceDeBatalha("derrota");
+      setTurno(0);
     }
-  }, [vidaOponente, vidaJogador]);
-
-  // Turno do inimigo
-  useEffect(() => {
-    if (turno === 1 && interfaceDeBatalha !== "vitoria" && interfaceDeBatalha !== "derrota") {
-      atacar(vidaJogador, setVidaJogador, ataqueAtualOponente);
-    }
-  }, [turno, interfaceDeBatalha]);
+  } 
+  else if (vidaJogador <= 0) {
+    setInterfaceDeBatalha("derrota");
+    setTurno(0);
+  }
+}, [vidaOponente, vidaJogador]); 
 
   // ==================== JSX ====================
-
   return (
     <div className="App">
       {statusJogo === "start" && (
         <>
           <h1>Bem-vindo(a)!</h1>
           <p>Por favor insira seu nome antes de continuar:</p>
-
           <input
             type="text"
             value={nomeJogador}
             onChange={(e) => setNomeJogador(e.target.value)}
           />
-
           <button
             onClick={() => {
               setStatusJogo("batalhando");
-              gerarBatalha();
+              gerarBatalha(1);
             }}
           >
             Começar
           </button>
         </>
       )}
+
       {/* Batalha */}
       {statusJogo === "batalhando" && (
         <div>
-          {/* Tela de batalha normal */}
           {interfaceDeBatalha !== "vitoria" && interfaceDeBatalha !== "derrota" && (
             <>
               <p><strong>Rodada:</strong> {rodada}</p>
+              <p>Inimigos restantes: {inimigosRestantes}</p>
 
               <div>
                 <p><strong>{nomeOponente}</strong></p>
-                <p>{"I".repeat(vidaOponente)}</p>
+                <p>{"I".repeat(Math.max(0, vidaOponente))}</p>
               </div>
 
               <div>
                 <p><strong>{nomeJogador}</strong></p>
-                <p>{"I".repeat(vidaJogador)}</p>
+                <p>{"I".repeat(Math.max(0, vidaJogador))}</p>
               </div>
 
-              {/* Menu principal */}
-              {interfaceDeBatalha === "inicial" && (
+              {interfaceDeBatalha === "inicial" && turno === 0 && (
                 <div>
-                  <button onClick={() => setInterfaceDeBatalha("atacar")}>
-                    Ataques
-                  </button>
-                  <button onClick={() => setInterfaceDeBatalha("itens")}>
-                    Itens
-                  </button>
+                  <button onClick={() => setInterfaceDeBatalha("atacar")}>Ataques</button>
+                  <button onClick={() => setInterfaceDeBatalha("itens")}>Itens</button>
                 </div>
               )}
 
-              {/* Menu de Ataques */}
               {interfaceDeBatalha === "atacar" && turno === 0 && (
                 <div>
-                  <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque1)}>
-                    Soco
-                  </button>
-                  <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque2)}>
-                    Ataque 2
-                  </button>
+                  <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque1, "Soco")}>Soco</button>
+                  <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque2, "Ataque 2")}>Ataque 2</button>
+                  {adagaPrimitivaEquipada && (
+                    <button onClick={() => atacar(vidaOponente, setVidaOponente, danoAdagaPrimitiva, "Corte primitivo")}>Corte primitivo</button>
+                  )}
+                  {adagaVelha && (
+                    <button onClick={() => atacar(vidaOponente, setVidaOponente, danoAdagaVelha, "Corte")}>Corte</button>
+                  )}
                 </div>
               )}
 
-              {/* Menu de Itens */}
+              <div>
+                <h4>Log:</h4>
+                {logAtaques.map((log, index) => (
+                  <p key={index}>{log}</p>
+                ))}
+              </div>
+
               {interfaceDeBatalha === "itens" && (
                 <div>
                   {pocoes > 0 && (
-                    <button onClick={usarPocao}>
-                      Poção ({pocoes})
-                    </button>
+                    <button onClick={usarPocao}>Poção ({pocoes})</button>
                   )}
                 </div>
               )}
             </>
           )}
 
-          {/* Telas de fim de batalha */}
           {interfaceDeBatalha === "vitoria" && (
             <div>
               <h1>Você venceu!</h1>
-              {/*Drops*/}
-              <button onClick={() => setStatusJogo("lobby")}>
+              <button 
+                onClick={() => {
+                  setStatusJogo("lobby");
+                  setInterfaceDeBatalha("inicial");
+                  setTurno(0);
+                  setRodada(0);
+                  setLogAtaques([]);
+                }}
+              >
                 Voltar para a vila
               </button>
             </div>
-            )}
+          )}
+
           {interfaceDeBatalha === "derrota" && <h1>Você foi derrotado...</h1>}
         </div>
       )}
 
-      {/*TELA DO LOBBY*/}
+      {/* LOBBY */}
       {statusJogo === "lobby" && (
         <div>
-          <div id='botao-lobby-casa'>
-            <button onClick={() => setStatusJogo("casa")}>
-              <img src="#" alt="imagem casa" />
-            </button>
+          <div>
+            <p>{nomeJogador}</p>
+            <p>Vida: {vidaJogador}</p>
+            <p>Moedas: {moedas}</p>
           </div>
-          <div id='botao-lobby-floresta'>
-            <button onClick={() => setStatusJogo("floresta")}>
-              <img src="#" alt="floresta" />
-            </button>
-          </div>
-          <div id='botao-lobby-loja'>
-            <button onClick={() => setStatusJogo("loja")}>
-              <img src="#" alt="loja" />
-            </button>
-          </div>
+          <button onClick={() => setStatusJogo("casa")}>Casa</button>
+          <button onClick={() => setStatusJogo("floresta")}>Floresta</button>
+          <button onClick={() => setStatusJogo("loja")}>Loja</button>
         </div>
       )}
 
-      {statusJogo === "floesta" && (
+      {/* FLORESTA */}
+      {statusJogo === "floresta" && (
         <div>
           <p>O QUÃO FUNDO DEVO IR NA FLORESTA??</p>
+          <button onClick={() => {
+            setDificuldade(1);
+            setStatusJogo("batalhando");
+            gerarBatalha(randint(1,2));
+          }}>Bosque</button>
+
+          <button onClick={() => {
+            setDificuldade(2);
+            setStatusJogo("batalhando");
+            gerarBatalha(randint(1, 3));
+          }}>Campo de pinheiros</button>
+
+          <button onClick={() => {
+            setDificuldade(2);
+            setStatusJogo("batalhando");
+            gerarBatalha(randint(1, 5));
+          }}>Profundezas</button>
+        </div>
+      )}
+
+      {statusJogo === "casa" && (
+        <div>
+          <button onClick={() => setStatusJogo("lobby")}>Voltar para aldeia</button>
+          <p>Casa</p>
+          <div>
+            <p>Dia: {dia}</p>
+            <p>Vida: {vidaJogador}/{vidaMaximaJogador}</p>
+          </div>
+          <button onClick={passarDia}>Descansar por hoje</button>
+          <button onClick={() => setStatusJogo("casa-inventario")}>Inventario</button>
+        </div>
+      )}
+
+      {statusJogo === "casa-inventario" && (
+        <div>
+          <figcaption>
+            <button onClick={() => setStatusJogo("casa")}>Voltar</button>
+            <h2>Inventário</h2>
+          </figcaption>
+
+
+          {adagaPrimitiva && (
+            <div>
+              <figure>
+                <img src="#" alt="Adaga Primitiva" />
+                <figcaption>
+                  <p><strong>Adaga Primitiva</strong></p>
+                  <p>Dano: {danoAdagaPrimitiva[0]} - {danoAdagaPrimitiva[1]}</p>
+                </figcaption>
+                
+                {adagaPrimitivaEquipada != true && (
+                <button 
+                  onClick={() => setAdagaPrimitivaEquipada(true)}
+                >
+                  Equipar
+                </button>
+                )}
+
+              </figure>
+            </div>
+          )}
+
+          {adagaVelha && (
+            <div>
+              <figure>
+                <img src="#" alt="Adaga Velha" />
+                <figcaption>
+                  <p><strong>Adaga Velha</strong></p>
+                  <p>Dano: {danoAdagaVelha[0]} - {danoAdagaVelha[1]}</p>
+                </figcaption>
+                
+                {adagaVelhaEquipada != true && (
+                <button 
+                  onClick={() => setAdagaVelhaEquipada(true)}
+                >
+                  Equipar
+                </button>
+                )}
+
+              </figure>
+            </div>
+          )}
+
+          {/* Você pode adicionar mais itens aqui depois */}
+        </div>
+      )}
+
+      {/* LOJA */}
+      {statusJogo === "loja" && (
+        <div>
+          <h1>Loja</h1>
+          <p>Moedas atuais: <strong>{moedas}</strong></p>
           
-          <img src="#" alt="arvores da floresta" />
+          <button onClick={() => comprarItemAcumulavel(setPocoes, setMoedas, 5, 1, moedas)}>
+            Comprar Poção (5 moedas)
+          </button>
+
+          {camaLevel === 1 && (
+            <button onClick={() => upgradeCama(camaLevel, setCamaLevel, setMoedas, 20, moedas)}>
+              Cama Level 2 (20 moedas)
+            </button>
+          )}
+
+          {camaLevel === 2 && (
+            <button onClick={() => upgradeCama(camaLevel, setCamaLevel, setMoedas, 35, moedas)}>
+              Cama level 3 (35 moedas)
+            </button>
+          )}
+
+          {!adagaVelha && (
+            <button onClick={() => comprarEspada(adagaVelha, setAdagaVelha, setMoedas, 10, moedas)}>Adaga velha (10 moedas)</button>
+          )}
+
+          <br /><br />
+          <button onClick={() => setStatusJogo("lobby")}>Voltar para aldeia</button>
         </div>
       )}
     </div>
