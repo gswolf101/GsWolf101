@@ -1,0 +1,146 @@
+/* ===================== TELA DE BATALHA ===================== */
+.Tela_de_batalha {
+  background: #0c3e1f;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  color: white;
+  font-family: 'Courier New', monospace;
+}
+
+/* Arena principal */
+.arena {
+  height: 360px;
+  background: linear-gradient(#1e5c2f, #0f3a22);
+  position: relative;
+  border-bottom: 12px solid #132a1a;
+}
+
+/* === INIMIGO - TOPO ESQUERDO === */
+.area_inimigo {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  z-index: 2;
+}
+
+.informacoes_inimigo {
+  background: white;
+  color: black;
+  border: 4px solid #222;
+  padding: 6px 12px;
+  width: 240px;
+  text-align: left;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.nome_inimigo {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+/* Sprite Inimigo - Topo Direito */
+.area_inimigo_sprite {
+  position: absolute;
+  top: 40px;
+  right: 80px;
+  width: 140px;
+  height: 140px;
+}
+
+/* === JOGADOR - EMBAIXO DIREITO === */
+.area_player_sprite {
+  position: absolute;
+  bottom: 40px;
+  right: 60px;
+  width: 160px;
+  height: 160px;
+}
+
+/* Informações do Jogador - Embaixo Esquerdo */
+.area_player {
+  position: absolute;
+  bottom: 85px;
+  left: 40px;
+  z-index: 2;
+}
+
+.informacoes_player {
+  background: white;
+  color: black;
+  border: 4px solid #222;
+  padding: 6px 12px;
+  width: 240px;
+  text-align: left;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.nome_player {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+/* ===================== INTERFACE INFERIOR ===================== */
+.interface_batalha {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 170px;
+  background: #e0d0b0;
+  border-top: 10px solid #222;
+  padding: 12px 15px;
+  color: black;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Log / "O que devo fazer" */
+.log_batalha {
+  flex: 1;
+  background: #181818;
+  color: #00ff88;
+  padding: 10px 12px;
+  border: 4px solid #222;
+  margin-bottom: 10px;
+  overflow-y: auto;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* Comandos */
+.comandos, .comandos_ataques, .comandos_itens {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.comandos button,
+.comandos_ataques button,
+.comandos_itens button {
+  background: #f0e0c0;
+  border: 4px solid #222;
+  padding: 8px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #222;
+}
+
+.comandos button:active,
+.comandos_ataques button:active,
+.comandos_itens button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #222;
+}
+
+/* Resultados */
+.resultado_vitoria h1 { color: #00ff00; }
+.resultado_derrota h1 { color: #ff4444; }
+
+/* Outras telas */
+.tela_lobby, .tela_floresta, .tela_casa, .tela_inventario, .tela_loja, .tela_inicial {
+  padding: 30px;
+}
