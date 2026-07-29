@@ -25,7 +25,7 @@ function App() {
   const [levelJogador, setLevelJogador] = useState(0);
   const [xpNecessario, setXpNecessario] = useState(5);
   const [xpAtual, setXpAtual] = useState(0);
-  const [armaEquipada, setArmaEquipada] = useState(false);
+  const [armaEquipada, setArmaEquipada] = useState("");
   const [manaJogador, setManaJogador] = useState(5)
 
   // Itens
@@ -76,7 +76,8 @@ function App() {
 
   // ==================== BARRA DE VIDA ====================
   function barraDeVida(vidaAtual, vidaMaxima) {
-    const porcentagem = Math.max(0, Math.min(100, (vidaAtual / vidaMaxima) * 100));
+    const max = vidaMaxima || 1;
+    const porcentagem = Math.max(0, Math.min(100, (vidaAtual / max) * 100));
     
     return (
       <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "8px 0" }}>
@@ -91,12 +92,12 @@ function App() {
           <div style={{
             width: `${porcentagem}%`,
             height: "100%",
-            backgroundColor: vidaAtual > vidaMaxima * 0.35 ? "#22c55e" : "#ef4444",
+            backgroundColor: vidaAtual > max * 0.35 ? "#22c55e" : "#ef4444",
             transition: "width 0.4s ease"
           }} />
         </div>
         <span style={{ fontFamily: "monospace", minWidth: "85px" }}>
-          {vidaAtual} / {vidaMaxima}
+          {vidaAtual} / {max}
         </span>
       </div>
     );
@@ -227,6 +228,15 @@ function App() {
     }
   }
 
+  function comprarItemAcumulavel(setItem, setMoedas, preco, quantidade, moedasAtuais) {
+    if (moedasAtuais >= preco) {
+      setMoedas(m => m - preco);
+      setItem(i => i + quantidade);
+    } else {
+      alert("Sem grana suficiente!");
+    }
+  }
+
   function comprarEspada(espada, setEspada, setMoedas, preco, moedasAtuais) {
     if (moedasAtuais >= preco) {
       setMoedas((moedas) => moedas - preco);
@@ -275,7 +285,7 @@ function App() {
   return (
     <div className="App">
       {statusJogo === "start" && (
-        <>
+        <div className="tela_inicial">
           <h1>Bem-vindo(a)!</h1>
           <p>Por favor insira seu nome antes de continuar:</p>
           <input
@@ -289,85 +299,106 @@ function App() {
           }}>
             Começar
           </button>
-        </>
+        </div>
       )}
 
-      {/* Batalha */}
+      {/* ===================== BATALHA ===================== */}
       {statusJogo === "batalhando" && (
-        <div>
-          {interfaceDeBatalha !== "vitoria" && interfaceDeBatalha !== "derrota" && (
-            <>
-              <p><strong>Rodada:</strong> {rodada}</p>
-              <p>Inimigos restantes: {inimigosRestantes}</p>
+        <div className="Tela_de_batalha">
 
-              <div>
-                <p><strong>{nomeOponente}</strong></p>
+          <div className="arena">
+            
+            {/* Lado do Inimigo */}
+            <div className="area_inimigo">
+              <div className="informacoes_inimigo">
+                <p className="nome_inimigo">{nomeOponente}</p>
                 {barraDeVida(vidaOponente, vidaOponenteLista[indiceOponenteAtual] * dificuldade)}
               </div>
+            </div>
 
-              <div>
-                <p><strong>{nomeJogador}</strong></p>
+            {/* Lado do Jogador */}
+            <div className="area_player">
+              <div className="informacoes_player">
+                <p className="nome_player">{nomeJogador}</p>
                 {barraDeVida(vidaJogador, vidaMaximaJogador)}
               </div>
-
-              {interfaceDeBatalha === "inicial" && turno === 0 && (
-                <div>
-                  <button onClick={() => setInterfaceDeBatalha("atacar")}>Ataques</button>
-                  <button onClick={() => setInterfaceDeBatalha("itens")}>Itens</button>
-                </div>
-              )}
-
-              {interfaceDeBatalha === "atacar" && turno === 0 && (
-                <div>
-                  <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque1, "Soco")}>Soco</button>
-                  {armaEquipada === "adaga primitiva" && (
-                    <button onClick={() => atacar(vidaOponente, setVidaOponente, danoAdagaPrimitiva, "Corte primitivo")}>Corte primitivo</button>
-                  )}
-                  {armaEquipada === "adaga velha" && (
-                    <button onClick={() => atacar(vidaOponente, setVidaOponente, danoAdagaVelha, "Corte")}>Corte</button>
-                  )}
-                  <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
-                </div>
-              )}
-
-              {interfaceDeBatalha === "itens" && (
-                <div>
-                  {pocoes > 0 && <button onClick={usarPocao}>Poção ({pocoes})</button>}
-                  <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
-                </div>
-              )}
-
-              <div>
-                <h4>Log:</h4>
-                {logAtaques.map((log, index) => (
-                  <p key={index}>{log}</p>
-                ))}
-              </div>
-            </>
-          )}
-
-          {interfaceDeBatalha === "vitoria" && (
-            <div>
-              <h1>Você venceu!</h1>
-              <button onClick={() => {
-                setStatusJogo("lobby");
-                setInterfaceDeBatalha("inicial");
-                setTurno(0);
-                setRodada(0);
-                setLogAtaques([]);
-              }}>
-                Voltar para a vila
-              </button>
             </div>
-          )}
+          </div>
 
-          {interfaceDeBatalha === "derrota" && <h1>Você foi derrotado...</h1>}
+          {/* Caixa de Comandos e Log */}
+          <div className="interface_batalha">
+            {interfaceDeBatalha !== "vitoria" && interfaceDeBatalha !== "derrota" && (
+              <>
+                {interfaceDeBatalha === "inicial" && turno === 0 && (
+                  <div className="comandos">
+                    <button onClick={() => setInterfaceDeBatalha("atacar")}>ATACAR</button>
+                    <button onClick={() => setInterfaceDeBatalha("itens")}>ITENS</button>
+                  </div>
+                )}
+
+                {interfaceDeBatalha === "atacar" && turno === 0 && (
+                  <div className="comandos_ataques">
+                    <button onClick={() => atacar(vidaOponente, setVidaOponente, ataque1, "Soco")}>Soco</button>
+                    
+                    {armaEquipada === "adaga primitiva" && (
+                      <button onClick={() => atacar(vidaOponente, setVidaOponente, danoAdagaPrimitiva, "Corte Primitivo")}>
+                        Corte Primitivo
+                      </button>
+                    )}
+
+                    {armaEquipada === "adaga velha" && (
+                      <button onClick={() => atacar(vidaOponente, setVidaOponente, danoAdagaVelha, "Corte")}>
+                        Corte
+                      </button>
+                    )}
+
+                    <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
+                  </div>
+                )}
+
+                {interfaceDeBatalha === "itens" && (
+                  <div className="comandos_itens">
+                    {pocoes > 0 && <button onClick={usarPocao}>Poção ({pocoes})</button>}
+                    <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
+                  </div>
+                )}
+
+                <div className="log_batalha">
+                  <h4>Log</h4>
+                  {logAtaques.map((log, index) => (
+                    <p key={index}>{log}</p>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {interfaceDeBatalha === "vitoria" && (
+              <div className="resultado_vitoria">
+                <h1>Você venceu!</h1>
+                <button onClick={() => {
+                  setStatusJogo("lobby");
+                  setInterfaceDeBatalha("inicial");
+                  setTurno(0);
+                  setRodada(0);
+                  setLogAtaques([]);
+                }}>
+                  Voltar para a vila
+                </button>
+              </div>
+            )}
+
+            {interfaceDeBatalha === "derrota" && (
+              <div className="resultado_derrota">
+                <h1>Você foi derrotado...</h1>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* LOBBY */}
       {statusJogo === "lobby" && (
-        <div>
+        <div className="tela_lobby">
           <p>{nomeJogador}</p>
           <p>Level: {levelJogador}</p>
           <p>Vida: {vidaJogador} / {vidaMaximaJogador}</p>
@@ -378,10 +409,10 @@ function App() {
         </div>
       )}
 
-      {/* Outras telas (casa, inventário, loja) permanecem iguais */}
+      {/* FLORESTA */}
       {statusJogo === "floresta" && (
-        <div>
-          <button onClick={() => setStatusJogo("lobby")}>voltar</button>
+        <div className="tela_floresta">
+          <button onClick={() => setStatusJogo("lobby")}>Voltar</button>
           <p>O QUÃO FUNDO DEVO IR NA FLORESTA??</p>
           <button onClick={() => { setDificuldade(1); setStatusJogo("batalhando"); gerarBatalha(randint(1,2)); }}>Bosque</button>
           <button onClick={() => { setDificuldade(2); setStatusJogo("batalhando"); gerarBatalha(randint(1,3)); }}>Campo de pinheiros</button>
@@ -389,8 +420,9 @@ function App() {
         </div>
       )}
 
+      {/* CASA */}
       {statusJogo === "casa" && (
-        <div>
+        <div className="tela_casa">
           <button onClick={() => setStatusJogo("lobby")}>Voltar para aldeia</button>
           <p>Casa</p>
           <p>Dia: {dia}</p>
@@ -400,30 +432,41 @@ function App() {
         </div>
       )}
 
-      {/* Inventário e Loja mantidos como estavam */}
+      {/* INVENTÁRIO */}
       {statusJogo === "casa-inventario" && (
-        <div>
+        <div className="tela_inventario">
           <button onClick={() => setStatusJogo("casa")}>Voltar</button>
           <h2>Inventário</h2>
 
           {adagaPrimitiva && (
             <div>
               <p><strong>Adaga Primitiva</strong> - Dano: {danoAdagaPrimitiva[0]}-{danoAdagaPrimitiva[1]}</p>
-              {!adagaPrimitivaEquipada && <button onClick={() => armaEquipada("adaga primitiva")}>Equipar</button>}
+              <button 
+                onClick={() => setArmaEquipada("adaga primitiva")}
+                disabled={armaEquipada === "adaga primitiva"}
+              >
+                {armaEquipada === "adaga primitiva" ? "✓ Equipada" : "Equipar"}
+              </button>
             </div>
           )}
 
           {adagaVelha && (
             <div>
               <p><strong>Adaga Velha</strong> - Dano: {danoAdagaVelha[0]}-{danoAdagaVelha[1]}</p>
-              {!adagaVelhaEquipada && <button onClick={() => armaEquipada("adaga velha")}>Equipar</button>}
+              <button 
+                onClick={() => setArmaEquipada("adaga velha")}
+                disabled={armaEquipada === "adaga velha"}
+              >
+                {armaEquipada === "adaga velha" ? "✓ Equipada" : "Equipar"}
+              </button>
             </div>
           )}
         </div>
       )}
 
+      {/* LOJA */}
       {statusJogo === "loja" && (
-        <div>
+        <div className="tela_loja">
           <h1>Loja</h1>
           <p>Moedas: <strong>{moedas}</strong></p>
           
@@ -445,4 +488,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;   // ← ESSA LINHA ERA A PRINCIPAL FALTA
