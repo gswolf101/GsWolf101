@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
-// Ideias
-// mais minigames
-// evento de abrir baú
-// pesca
-// classes de armas e habilidades de cada classe
-// Sistema de mana e magia
-//  -  slimeSquad - cria de 1 a 3 slimes que se sacrificam para proteger de ataques do oponente, custa 2 de mana
-//  - fortifize - aumenta o dano temporariamente do ataque do jogador por 2 rodadas em 1.5X, custa 1 ou 2 de mana
+// Ideias futuras:
+// - mais minigames
+// - evento de abrir baú
+// - pesca
+// - classes de armas e habilidades de cada classe
+// - Sistema de mana e magia
+//   - slimeSquad → cria de 1 a 3 slimes que se sacrificam para proteger de ataques (custa 2 de mana)
+//   - fortifize → aumenta o dano do ataque do jogador em 1.5x por 2 rodadas (custa 1 ou 2 de mana)
 
 function App() {
-
   // ==================== GAME MANAGER ====================
   const [rodada, setRodada] = useState(0);
   const [turno, setTurno] = useState(0);
@@ -41,13 +40,14 @@ function App() {
   const [invocacoes, setInvocacoes] = useState(0);
   const [buffDano, setBuffDano] = useState(1);
   const [buffRodadas, setBuffRodadas] = useState(0);
+  const [intervaloDescanso, setIntervaloDescanso] = useState(0);
 
   // ==================== ITENS ====================
   const [pocoes, setPocoes] = useState(3);
   const [moedas, setMoedas] = useState(5);
   const [grimorio, setGrimorio] = useState(false);
 
-  // ==================== ARMAS (formato de classe) ====================
+  // ==================== ARMAS ====================
   const [armas, setArmas] = useState({
     adagaVelha: {
       nome: "Adaga Velha",
@@ -64,7 +64,8 @@ function App() {
       equipada: false
     }
   });
-  // ==================== FEITIÇOS (formato de classe) ====================
+
+  // ==================== FEITIÇOS ====================
   const [feiticos, setFeiticos] = useState({
     firespear: {
       nome: "firespear",
@@ -72,18 +73,16 @@ function App() {
       custo_mana: "2",
       dano: [10, 18],
       aprendido: false,
-      tipo: "ataque",
+      tipo: "ataque"
     },
-
     slimeSquad: {
       nome: "slimesquad",
       recitar: "limus",
       custo_mana: "2",
-      invocacao: [1, 3], //vai ser usado como quantidade de slimes invocados
+      invocacao: [1, 3],
       aprendido: false,
-      tipo: "invocacao",
+      tipo: "invocacao"
     },
-
     fortifize: {
       nome: "fortifize",
       recitar: "fortis",
@@ -91,11 +90,11 @@ function App() {
       multiplicador: 1.5,
       duracao: 2,
       aprendido: false,
-      tipo: "buff_ataque",
-    },
-  })
+      tipo: "buff_ataque"
+    }
+  });
 
-  // ==================== INIMIGOS (formato de classe) ====================
+  // ==================== INIMIGOS ====================
   const [inimigos] = useState([
     {
       nome: "Lobo",
@@ -152,7 +151,7 @@ function App() {
   const [nomeOponente, setNomeOponente] = useState("");
   const [vidaOponente, setVidaOponente] = useState(1);
 
-  // ==================== ATAQUES BÁSICOS DO JOGADOR ====================
+  // ==================== ATAQUES BÁSICOS ====================
   const ataqueBasico = [5, 10]; // Soco
 
   // ==================== FUNÇÕES UTILITÁRIAS ====================
@@ -171,20 +170,24 @@ function App() {
 
     return (
       <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "8px 0" }}>
-        <div style={{
-          width: "250px",
-          height: "24px",
-          backgroundColor: "#1f2937",
-          border: "2px solid #4b5563",
-          borderRadius: "6px",
-          overflow: "hidden"
-        }}>
-          <div style={{
-            width: `${porcentagem}%`,
-            height: "100%",
-            backgroundColor: vidaAtual > max * 0.35 ? "#22c55e" : "#ef4444",
-            transition: "width 0.4s ease"
-          }} />
+        <div
+          style={{
+            width: "250px",
+            height: "24px",
+            backgroundColor: "#1f2937",
+            border: "2px solid #4b5563",
+            borderRadius: "6px",
+            overflow: "hidden"
+          }}
+        >
+          <div
+            style={{
+              width: `${porcentagem}%`,
+              height: "100%",
+              backgroundColor: vidaAtual > max * 0.35 ? "#22c55e" : "#ef4444",
+              transition: "width 0.4s ease"
+            }}
+          />
         </div>
         <span style={{ fontFamily: "monospace", minWidth: "85px" }}>
           {vidaAtual} / {max}
@@ -204,18 +207,19 @@ function App() {
     setVidaOponente(inimigo.vida * dificuldade);
     setTurno(0);
     setInterfaceDeBatalha("inicial");
+    setIntervaloDescanso(0)
   }
 
   function mudarTurno() {
     setTurno((atual) => {
       const novo = atual === 0 ? 1 : 0;
 
-      id (novo === 0) {
-        setInterfaceDeBatalha("inicial")
+      if (novo === 0) {
+        setInterfaceDeBatalha("inicial");
       }
 
-    })
-    
+      return novo;
+    });
   }
 
   // ==================== ATAQUES ====================
@@ -231,49 +235,52 @@ function App() {
     setInterfaceDeBatalha("esperando");
 
     wait(1).then(() => {
-      if (vidaJogador > 0) {
-        mudarTurno();
-      }
+      // Observação: vidaJogador aqui ainda é o valor antigo (closure)
+      mudarTurno();
     });
   }
 
   function tentarRecitar() {
     const palavra = palavraDigitada.trim().toLowerCase();
 
-    // Encontrar o feitiço pela palavra recitada
     const feitico = Object.values(feiticos).find(
       (f) => f.recitar.toLowerCase() === palavra
-    )
+    );
 
-    if (!feiticos) {
-      setLogAtaques((log) => ["Nada acontece...", ...log])
-    }
-    return
+    if (!feitico) {
+      setLogAtaques((log) => ["Nada acontece...", ...log]);
+      setPalavraDigitada("");
+      setInterfaceDeBatalha("esperando")
+      mudarTurno()
+      return;
     }
 
     if (feitico.tipo === "ataque") {
-      feitiçoAtaque(feitico);
+      feiticoAtaque(feitico)
     } else if (feitico.tipo === "invocacao") {
-      feitiçoInvocacao(feitico);
+      // feiticoInvocacao(feitico); // ainda não implementado
     } else if (feitico.tipo === "buff_ataque") {
-      feitiçoBuffAtaque(feitico);
+      feiticoBuffAtaque(feitico);
     }
 
     setPalavraDigitada("");
   }
 
+  function feiticoAtaque(feitico) {
+    if (!gastarMana(Number(feitico.custo_mana))) return;
+      atacar(feitico.dano, feitico.nome)
+    
+  }
   function feiticoBuffAtaque(feitico) {
     if (!gastarMana(Number(feitico.custo_mana))) return;
 
     setBuffDano(feitico.multiplicador);
     setBuffRodadas(feitico.duracao);
 
-    setLogAtaques((log) => [
-      "Fortifize te deixa mais forte!!", ...log
-    ]);
-    setInterfaceDeBatalha("esperando")
-
+    setLogAtaques((log) => ["Fortifize te deixa mais forte!!", ...log]);
+    mudarTurno()
   }
+
   function darDrops(indice) {
     const inimigo = inimigos[indice];
     const DropMoedas = randint(3, inimigo.dropMoedasMax);
@@ -310,7 +317,7 @@ function App() {
       mudarTurno();
       setRodada((r) => r + 1);
 
-      // Nota: usamos o valor atualizado aproximado
+      // Observação: vidaOponente ainda é o valor antigo
       if (vidaOponente - danoCausado > 0 && vidaJogador > 0) {
         inimigoAtacar();
       }
@@ -337,22 +344,27 @@ function App() {
   }
 
   function passarDia() {
-    setDia((d) => d + 1);
-    setVidaJogador((vidaAtual) => {
+    if (intervaloDescanso >= 1) {
+      alert("Eu ainda não estou cansado...")
+    } else {
+      setIntervaloDescanso(1)
+      setDia((d) => d + 1);
+      setVidaJogador((vidaAtual) => {
       const multiplicador = recuperacaoCama[camaLevel] || 1.0;
       const vidaParaRecuperar = Math.floor(vidaMaximaJogador * multiplicador);
       return Math.min(vidaAtual + vidaParaRecuperar, vidaMaximaJogador);
     });
+    }
   }
 
   function gastarMana(custo) {
     if (manaJogador < custo) {
       setLogAtaques((log) => ["Mana insuficiente...", ...log]);
       return false;
-    } else {
-      setManaJogador((mana) => mana - custo);
-      return true;
     }
+
+    setManaJogador((mana) => mana - custo);
+    return true;
   }
 
   // ==================== COMPRAS ====================
@@ -390,14 +402,13 @@ function App() {
     if (moedas >= preco) {
       if (grimorio) {
         setMoedas((m) => m - preco);
-        setFeiticos(feiticosAnteriores => ({
+        setFeiticos((feiticosAnteriores) => ({
           ...feiticosAnteriores,
-
           [nomeFeitico]: {
             ...feiticosAnteriores[nomeFeitico],
             aprendido: true
           }
-        }))
+        }));
       } else {
         alert("Vendedor: Você não acha que deveria possuir um grimório primeiro?");
       }
@@ -416,9 +427,9 @@ function App() {
     }
   }, [xpAtual, xpNecessario]);
 
+
   useEffect(() => {
     if (vidaOponente <= 0 && vidaJogador > 0) {
-
       if (inimigosRestantes > 1) {
         setInimigosRestantes((q) => q - 1);
         setTimeout(() => {
@@ -433,10 +444,11 @@ function App() {
         }, 1000);
       } else {
         darDrops(indiceOponenteAtual);
-        wait(2)
-        setInterfaceDeBatalha("vitoria")
-        setLogAtaques((Log) => [""])
-        setTurno(0);
+        wait(2).then(() => {
+          setInterfaceDeBatalha("vitoria");
+          setLogAtaques([""]);
+          setTurno(0);
+        });
       }
     } else if (vidaJogador <= 0) {
       setInterfaceDeBatalha("derrota");
@@ -447,6 +459,7 @@ function App() {
   // ==================== JSX ====================
   return (
     <div className="App">
+      {/* TELA INICIAL */}
       {statusJogo === "start" && (
         <div className="tela_inicial">
           <h1>Bem-vindo(a)!</h1>
@@ -456,16 +469,18 @@ function App() {
             value={nomeJogador}
             onChange={(e) => setNomeJogador(e.target.value)}
           />
-          <button onClick={() => {
-            setStatusJogo("batalhando");
-            gerarBatalha(1);
-          }}>
+          <button
+            onClick={() => {
+              setStatusJogo("batalhando");
+              gerarBatalha(1);
+            }}
+          >
             Começar
           </button>
         </div>
       )}
 
-      {/* ===================== BATALHA ===================== */}
+      {/* BATALHA */}
       {statusJogo === "batalhando" && (
         <div className="Tela_de_batalha">
           <div className="arena">
@@ -502,9 +517,7 @@ function App() {
 
                 {interfaceDeBatalha === "atacar" && turno === 0 && (
                   <div className="comandos_ataques">
-                    <button onClick={() => atacar(ataqueBasico, "Soco")}>
-                      Soco
-                    </button>
+                    <button onClick={() => atacar(ataqueBasico, "Soco")}>Soco</button>
 
                     {armaEquipada === "adaga primitiva" && armas.adagaPrimitiva.possui && (
                       <button onClick={() => atacar(armas.adagaPrimitiva.dano, "Corte Primitivo")}>
@@ -531,32 +544,49 @@ function App() {
                   </div>
                 )}
 
+                {interfaceDeBatalha === "recitar" && turno === 0 && (
+                  <div className="comandos_recitar">
+                    <p>Recite o feitiço:</p>
+                    
+                    <input
+                      type="text"
+                      value={palavraDigitada}
+                      onChange={(e) => setPalavraDigitada(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          tentarRecitar();
+                        }
+                      }}
+                      placeholder="Digite a palavra..."
+                      autoFocus
+                    />
+
+                    <button onClick={tentarRecitar}>Recitar</button>
+                    <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
+                  </div>
+                )}
+
                 <div className="log_batalha">
                   <h4>Log</h4>
                   {logAtaques.map((log, index) => (
                     <p key={index}>{log}</p>
                   ))}
                 </div>
-
-                {interfaceDeBatalha === "recitar" && (
-                  <div>
-                    {/* Área de feitiços ainda vazia */}
-                    <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
-                  </div>
-                )}
               </>
             )}
 
             {interfaceDeBatalha === "vitoria" && (
               <div className="resultado_vitoria">
                 <h1>Você venceu!</h1>
-                <button onClick={() => {
-                  setStatusJogo("lobby");
-                  setInterfaceDeBatalha("inicial");
-                  setTurno(0);
-                  setRodada(0);
-                  setLogAtaques([]);
-                }}>
+                <button
+                  onClick={() => {
+                    setStatusJogo("lobby");
+                    setInterfaceDeBatalha("inicial");
+                    setTurno(0);
+                    setRodada(0);
+                    setLogAtaques([]);
+                  }}
+                >
                   Voltar para a vila
                 </button>
               </div>
@@ -589,25 +619,34 @@ function App() {
         <div className="tela_floresta">
           <button onClick={() => setStatusJogo("lobby")}>Voltar</button>
           <p>O QUÃO FUNDO DEVO IR NA FLORESTA??</p>
-          <button onClick={() => {
-            setDificuldade(1);
-            setStatusJogo("batalhando");
-            gerarBatalha(randint(1, 2));
-          }}>
+
+          <button
+            onClick={() => {
+              setDificuldade(1);
+              setStatusJogo("batalhando");
+              gerarBatalha(randint(1, 2));
+            }}
+          >
             Bosque
           </button>
-          <button onClick={() => {
-            setDificuldade(2);
-            setStatusJogo("batalhando");
-            gerarBatalha(randint(1, 3));
-          }}>
+
+          <button
+            onClick={() => {
+              setDificuldade(2);
+              setStatusJogo("batalhando");
+              gerarBatalha(randint(1, 3));
+            }}
+          >
             Campo de pinheiros
           </button>
-          <button onClick={() => {
-            setDificuldade(3);
-            setStatusJogo("batalhando");
-            gerarBatalha(randint(3, 5));
-          }}>
+
+          <button
+            onClick={() => {
+              setDificuldade(3);
+              setStatusJogo("batalhando");
+              gerarBatalha(randint(3, 5));
+            }}
+          >
             Profundezas
           </button>
         </div>
@@ -667,7 +706,9 @@ function App() {
       {statusJogo === "loja" && (
         <div className="tela_loja">
           <h1>Loja</h1>
-          <p>Moedas: <strong>{moedas}</strong></p>
+          <p>
+            Moedas: <strong>{moedas}</strong>
+          </p>
 
           <button onClick={() => comprarItemAcumulavel(setPocoes, 5, 1)}>
             Comprar Poção (5 moedas)
@@ -679,15 +720,17 @@ function App() {
             </button>
           )}
 
-          {!grimorio && dia >= 5 && (
-            <button onClick={() => {
-              if (moedas >= 25) {
-                setMoedas((m) => m - 25);
-                setGrimorio(true);
-              } else {
-                alert("Vendedor: Sem grana, sem itens");
-              }
-            }}>
+          {!grimorio && dia >= 3 && (
+            <button
+              onClick={() => {
+                if (moedas >= 25) {
+                  setMoedas((m) => m - 25);
+                  setGrimorio(true);
+                } else {
+                  alert("Vendedor: Sem grana, sem itens");
+                }
+              }}
+            >
               Grimório (25 moedas)
             </button>
           )}
@@ -698,7 +741,8 @@ function App() {
             </button>
           )}
 
-          <br /><br />
+          <br />
+          <br />
           <button onClick={() => setStatusJogo("lobby")}>Voltar</button>
         </div>
       )}
