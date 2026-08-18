@@ -1,733 +1,373 @@
-/* ==================== FONTE ==================== */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
-/* ==================== GERAL ==================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background: #79B35A;
-  image-rendering: pixelated;
-}
-
-.App {
-  min-height: 100vh;
-  font-family: 'Press Start 2P', cursive;
-  color: #2c2417;
-  background: linear-gradient(#7DBB63, #6FA755);
-}
-
-/* ==================== BOTÕES ==================== */
-button {
-  font-family: 'Press Start 2P', cursive;
-  cursor: pointer;
-  padding: 12px;
-  background: #F8F0C8;
-  border: 4px solid #463B28;
-  color: #2d2417;
-  border-radius: 0;
-  box-shadow:
-    inset 2px 2px 0 #FFF7D7,
-    inset -2px -2px 0 #D7C48B,
-    3px 3px 0 #2A2117;
-  transition: 0.08s;
-}
-
-button:hover:not(:disabled) {
-  background: #E8D695;
-  transform: translateY(2px);
-  box-shadow:
-    inset 2px 2px 0 #FFF7D7,
-    inset -2px -2px 0 #C5AF68,
-    1px 1px 0 #2A2117;
-}
-
-button:active {
-  transform: translateY(3px);
-}
-
-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* ==================== INPUTS ==================== */
-input[type="text"] {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 10px;
-  padding: 10px;
-  border: 3px solid #463B28;
-  background: #FFF8D8;
-  color: #2c2417;
-  outline: none;
-}
-
-input[type="text"]:focus {
-  box-shadow: 0 0 0 2px #E8D695;
-}
-
-/* ==================== TELAS SIMPLES ==================== */
-.tela_inicial,
-.tela_lobby,
-.tela_floresta,
-.tela_casa,
-.tela_loja {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 24px;
-  text-align: center;
-}
-
-.tela_inicial h1,
-.tela_loja h1 {
-  font-size: 18px;
-  margin-bottom: 8px;
-}
-
-.tela_inicial p,
-.tela_lobby p,
-.tela_floresta p,
-.tela_casa p,
-.tela_loja p {
-  font-size: 11px;
-  line-height: 1.8;
-}
-
-.tela_inicial input {
-  width: min(320px, 90vw);
-  margin: 8px 0 4px;
-}
-
-.tela_lobby button,
-.tela_floresta button,
-.tela_casa button,
-.tela_loja button {
-  min-width: 220px;
-}
-
-/* ==================== SKINS ==================== */
-.skin-opcoes {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin: 8px 0 12px;
-}
-
-.botao-personagem {
-  min-width: auto;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.imagem-personagem {
-  width: 72px;
-  height: 72px;
-  object-fit: contain;
-  image-rendering: pixelated;
-  display: block;
-}
-
-.skin-selecionado {
-  outline: 3px solid #463B28;
-  outline-offset: 2px;
-}
-
-/* ==================== INVENTÁRIO ==================== */
-.tela_inventario {
-  min-height: 100vh;
-  padding: 20px 24px 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.inventario-voltar {
-  min-width: auto;
-  padding: 10px 16px;
-  font-size: 10px;
-}
-
-.inventario-corpo {
-  display: flex;
-  align-items: stretch;
-  gap: 16px;
-  width: 100%;
-  max-width: 900px;
-}
-
-.inventario-jogador {
-  width: 200px;
-  min-height: 320px;
-  flex-shrink: 0;
-  border: 4px solid #463B28;
-  background: #F8F0C8;
-  box-shadow: 4px 4px 0 #2B2217;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-
-.inventario-jogador img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.inventario-jogador-placeholder {
-  font-size: 10px;
-  line-height: 1.8;
-  text-align: center;
-  color: #846F48;
-}
-
-.inventario-direita {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 320px;
-  gap: 16px;
-}
-
-.inventario-lista-armas {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.inventario-item-linha {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  border: 4px solid #463B28;
-  background: #F8F0C8;
-  box-shadow: 4px 4px 0 #2B2217;
-  padding: 10px 12px;
-  width: 100%;
-}
-
-.inventario-item-img {
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
-  border: 3px solid #463B28;
-  background: #FFF8D8;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-
-.inventario-item-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.inventario-item-info {
-  flex: 1;
-  text-align: left;
-  min-width: 0;
-}
-
-.inventario-item-nome {
-  font-size: 11px;
-  margin-bottom: 6px;
-  line-height: 1.4;
-}
-
-.inventario-item-dano {
-  font-size: 10px;
-  opacity: 0.85;
-  line-height: 1.4;
-}
-
-.inventario-btn-equipar {
-  flex-shrink: 0;
-  min-width: 110px;
-  padding: 10px 12px;
-  font-size: 9px;
-}
-
-.inventario-vazio {
-  font-size: 10px;
-  color: #786C53;
-  padding: 12px 0;
-}
-
-.inventario-cristais {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 4px solid #463B28;
-  background: #F8F0C8;
-  box-shadow: 4px 4px 0 #2B2217;
-  padding: 10px 14px;
-  width: fit-content;
-  align-self: flex-start;
-  user-select: none;
-}
-
-.inventario-cristais-clicavel {
-  cursor: pointer;
-}
-
-.inventario-cristais-clicavel:hover {
-  background: #E8D695;
-}
-
-.inventario-cristal-img {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border: 3px solid #463B28;
-  background: #FFF8D8;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-
-.inventario-cristal-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.inventario-cristal-qtd {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: left;
-}
-
-.inventario-cristal-label {
-  font-size: 8px;
-  opacity: 0.7;
-}
-
-.inventario-cristal-valor {
-  font-size: 10px;
-}
-
-@media (max-width: 700px) {
-  .inventario-corpo {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .inventario-jogador {
-    width: 100%;
-    min-height: 200px;
-  }
-
-  .inventario-direita {
-    min-height: auto;
-  }
-
-  .inventario-item-linha {
-    flex-wrap: wrap;
-  }
-
-  .inventario-btn-equipar {
-    width: 100%;
-  }
-}
-
-/* ==================== TELA DE BATALHA ==================== */
+/* ===================== TELA DE BATALHA ===================== */
 .Tela_de_batalha {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  padding: 24px;
-  background: linear-gradient(#8CCB68 0%, #7CB75B 65%, #6EA04E 100%);
+  background: #0c3e1f;
+  min-height: 100vh;
   position: relative;
   overflow: hidden;
+  color: white;
+  font-family: 'Courier New', monospace;
 }
 
-.Tela_de_batalha::after {
-  content: "";
+/* Arena principal */
+.arena {
+  height: 360px;
+  background: linear-gradient(#1e5c2f, #0f3a22);
+  position: relative;
+  border-bottom: 12px solid #132a1a;
+}
+
+/* === INIMIGO - TOPO ESQUERDO === */
+.area_inimigo {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  z-index: 2;
+}
+
+.informacoes_inimigo {
+  background: white;
+  color: black;
+  border: 4px solid #222;
+  padding: 6px 12px;
+  width: 240px;
+  text-align: left;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.nome_inimigo {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+/* Sprite Inimigo - Topo Direito */
+.area_inimigo_sprite {
+  position: absolute;
+  top: 40px;
+  right: 80px;
+  width: 140px;
+  height: 140px;
+}
+
+/* === JOGADOR - EMBAIXO DIREITO === */
+.area_player_sprite {
+  position: absolute;
+  bottom: 40px;
+  right: 60px;
+  width: 160px;
+  height: 160px;
+}
+
+/* Informações do Jogador - Embaixo Esquerdo */
+.area_player {
+  position: absolute;
+  bottom: 85px;
+  left: 40px;
+  z-index: 2;
+}
+
+.informacoes_player {
+  background: white;
+  color: black;
+  border: 4px solid #222;
+  padding: 6px 12px;
+  width: 240px;
+  text-align: left;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.nome_player {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+/* ===================== INTERFACE INFERIOR ===================== */
+.interface_batalha {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 100%;
-  height: 28%;
-  background: repeating-linear-gradient(
-    -45deg,
-    #6E984A,
-    #6E984A 8px,
-    #78A854 8px,
-    #78A854 16px
-  );
-  opacity: 0.18;
-  pointer-events: none;
-}
-
-.batalha-topo {
+  right: 0;
+  height: 170px;
+  background: #e0d0b0;
+  border-top: 10px solid #222;
+  padding: 12px 15px;
+  color: black;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 30px;
-  z-index: 2;
-  gap: 16px;
+  flex-direction: column;
 }
 
-.oponente-info,
-.player-info,
-.log-batalha {
-  background: #F8F0C8;
-  border: 4px solid #463B28;
-  box-shadow: 4px 4px 0 #2B2217;
-  padding: 14px;
-  border-radius: 0;
-}
-
-.oponente-info {
-  width: 320px;
-}
-
-.player-info {
-  width: 330px;
-}
-
-.oponente-nome,
-.player-nome {
-  font-size: 14px;
-  color: #332814;
-  margin-bottom: 12px;
-  text-shadow: 1px 1px #FFF;
-}
-
-.rodada-display {
-  background: #F8F0C8;
-  border: 4px solid #463B28;
-  padding: 12px 20px;
-  box-shadow: 4px 4px 0 #2B2217;
-  font-size: 12px;
-  color: #332814;
-  align-self: flex-start;
-}
-
-.imagem-oponente-wrap {
-  position: relative;
-  width: 190px;
-  height: 190px;
-  flex-shrink: 0;
-}
-
-.imagem-oponente,
-.imagem-jogador {
-  width: 190px;
-  height: 190px;
-  background: linear-gradient(#FFF8D8, #E8D7A3);
-  border: 4px solid #463B28;
-  box-shadow: 4px 4px 0 #2B2217;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #846F48;
-  image-rendering: pixelated;
-  font-size: 10px;
-  text-align: center;
-  overflow: hidden;
-}
-
-.imagem-oponente img,
-.imagem-jogador img,
-.ataque-visual img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.imagem-jogador {
-  margin-left: 25px;
-}
-
-.ataque-visual {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 48px;
-  pointer-events: none;
-  z-index: 5;
-  animation: ataque-flash 1s ease-out forwards;
-  filter: drop-shadow(0 0 6px #ff6b00);
-}
-
-@keyframes ataque-flash {
-  0% {
-    opacity: 0;
-    transform: scale(0.4) rotate(-15deg);
-  }
-  20% {
-    opacity: 1;
-    transform: scale(1.15) rotate(0deg);
-  }
-  70% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.3);
-  }
-}
-
-.batalha-centro {
+/* Log */
+.log_batalha {
   flex: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  z-index: 2;
-}
-
-.batalha-inferior {
-  display: grid;
-  grid-template-columns: 260px 1fr 340px;
-  gap: 18px;
-  align-items: flex-end;
-  z-index: 2;
-}
-
-.comandos-coluna {
-  min-height: 160px;
-}
-
-.comandos-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.comandos-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.comandos-coluna button {
-  width: 100%;
-}
-
-.comandos-recitar p {
-  font-size: 10px;
-  margin-bottom: 6px;
-  line-height: 1.6;
-}
-
-.comandos-recitar input {
-  width: 100%;
-  margin-bottom: 8px;
-}
-
-/* ==================== LOG (texto preto) ==================== */
-.log-batalha {
-  height: 190px;
-  overflow-y: auto;
-  color: #000000;
-}
-
-.log-batalha::-webkit-scrollbar {
-  width: 8px;
-}
-
-.log-batalha::-webkit-scrollbar-thumb {
-  background: #A58B55;
-}
-
-.log-titulo {
-  margin-bottom: 12px;
-  font-size: 12px;
-  border-bottom: 3px solid #463B28;
-  padding-bottom: 8px;
-  color: #000000;
-}
-
-.log-item {
-  font-size: 10px;
+  background: #181818;
+  color: #00ff88;
+  padding: 10px 12px;
+  border: 4px solid #222;
   margin-bottom: 10px;
-  line-height: 1.8;
-  color: #000000;
+  overflow-y: auto;
+  font-size: 15px;
+  line-height: 1.45;
 }
 
-.log-item-com-imagem {
+/* Comandos */
+.comandos,
+.comandos_ataques,
+.comandos_itens {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #000000;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.log-item-img {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  image-rendering: pixelated;
+.comandos button,
+.comandos_ataques button,
+.comandos_itens button {
+  background: #f0e0c0;
+  border: 4px solid #222;
+  padding: 8px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #222;
+  transition: all 0.1s ease;
 }
 
-.log-vazio {
-  font-size: 10px;
-  color: #000000;
-  opacity: 0.7;
+.comandos button:hover,
+.comandos_ataques button:hover,
+.comandos_itens button:hover {
+  background: #e8d4a8;
 }
 
-/* ==================== PLAYER EXTRA ==================== */
-.player-extra {
-  margin-top: 10px;
+.comandos button:active,
+.comandos_ataques button:active,
+.comandos_itens button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #222;
+}
+
+/* Resultados */
+.resultado_vitoria h1 { color: #00ff00; }
+.resultado_derrota h1 { color: #ff4444; }
+
+/* Outras telas */
+.tela_lobby,
+.tela_floresta,
+.tela_casa,
+.tela_inventario,
+.tela_inicial {
+  padding: 30px;
+}
+
+/* ===================== LOJA (estética do jogo) ===================== */
+.tela_loja {
+  min-height: 100vh;
+  padding: 20px;
+  position: relative;
+  background: #e0d0b0; /* mesma cor da interface de batalha */
+  font-family: 'Courier New', monospace;
+  color: #222;
+}
+
+.loja-voltar {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  background: #f0e0c0;
+  border: 3px solid #222;
+  padding: 8px 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #222;
+  transition: all 0.1s ease;
+}
+
+.loja-voltar:hover {
+  background: #e8d4a8;
+}
+
+.loja-voltar:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #222;
+}
+
+.loja-header {
+  text-align: center;
+  margin-bottom: 25px;
+  padding-top: 10px;
+}
+
+.loja-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 36px;
+  color: #222;
+}
+
+.loja-moedas {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.loja-conteudo {
+  display: flex;
+  gap: 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+  height: calc(100vh - 150px);
+}
+
+/* ===== VENDEDOR ===== */
+.loja-vendedor {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.player-itens-linha {
-  display: flex;
   align-items: center;
-  gap: 14px;
+  min-width: 230px;
 }
 
-.item-equipado-slot {
-  width: 48px;
-  height: 48px;
-  border: 3px solid #463B28;
-  background: #FFF8D8;
+.loja-vendedor-img {
+  width: 210px;
+  height: 270px;
+  border: 4px solid #222;
+  background: #f5ead7;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: 5px 5px 0 #222;
 }
 
-.item-equipado-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.item-equipado-vazio {
-  font-size: 14px;
-  color: #846F48;
-}
-
-.player-cristal-slot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.player-cristal-img {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.player-cristal-qtd {
-  font-size: 12px;
-  color: #2c2417;
-  min-width: 20px;
-}
-
-/* Mana em esferas */
-.barra-mana-box {
-  width: 100%;
-}
-
-.mana-label {
-  font-size: 9px;
-  margin-bottom: 6px;
-  opacity: 0.85;
-}
-
-.mana-esferas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.mana-esfera {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid #1e3a5f;
-  display: inline-block;
-}
-
-.mana-esfera-cheia {
-  background: #3b82f6;
-  box-shadow: inset 0 0 4px #93c5fd;
-}
-
-.mana-esfera-vazia {
-  background: #cbd5e1;
-}
-
-.buff-info {
-  font-size: 9px;
-  color: #b45309;
+.vendedor-placeholder {
+  text-align: center;
+  color: #666;
+  font-size: 15px;
   line-height: 1.5;
 }
 
-.overlay-resultado {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 20px;
-  background: rgba(20, 20, 20, 0.75);
-  z-index: 9999;
-}
-
-.overlay-resultado h1 {
-  color: #F8F0C8;
-  font-size: 22px;
+.loja-vendedor-nome {
+  background: #f0e0c0;
+  border: 3px solid #222;
+  padding: 10px 18px;
+  font-weight: bold;
   text-align: center;
-  line-height: 1.6;
-  text-shadow: 3px 3px 0 #000;
+  min-width: 190px;
+  box-shadow: 3px 3px 0 #222;
+  font-size: 16px;
 }
 
-@media (max-width: 980px) {
-  .batalha-inferior {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
+/* ===== LISTA DE ITENS ===== */
+.loja-itens-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 100%;
+}
 
-  .oponente-info,
-  .player-info {
-    width: 100%;
-  }
+/* Scrollbar no estilo do jogo */
+.loja-itens-scroll::-webkit-scrollbar {
+  width: 12px;
+}
 
-  .batalha-topo {
-    flex-wrap: wrap;
-  }
+.loja-itens-scroll::-webkit-scrollbar-track {
+  background: #d4c4a8;
+  border: 2px solid #222;
+}
 
-  .imagem-oponente-wrap,
-  .imagem-oponente,
-  .imagem-jogador {
-    width: 140px;
-    height: 140px;
-  }
+.loja-itens-scroll::-webkit-scrollbar-thumb {
+  background: #c4a882;
+  border: 2px solid #222;
+}
 
-  .log-batalha {
-    height: 140px;
-  }
+.loja-itens-scroll::-webkit-scrollbar-thumb:hover {
+  background: #b09060;
+}
+
+/* ===== CADA ITEM ===== */
+.loja-item {
+  display: flex;
+  align-items: center;
+  background: #f5ead7;
+  border: 3px solid #222;
+  padding: 12px 14px;
+  gap: 16px;
+  min-height: 95px;
+  box-shadow: 4px 4px 0 #222;
+  transition: transform 0.1s ease;
+}
+
+.loja-item:hover {
+  transform: translateY(-2px);
+}
+
+.loja-item-img {
+  width: 72px;
+  height: 72px;
+  border: 2px solid #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #e8d9c0;
+}
+
+.loja-item-img img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+}
+
+.item-placeholder {
+  font-size: 32px;
+}
+
+.loja-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.loja-item-nome {
+  font-weight: bold;
+  font-size: 18px;
+  color: #222;
+}
+
+.loja-item-desc {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.3;
+}
+
+.loja-item-btn {
+  background: #f0e0c0;
+  border: 3px solid #222;
+  padding: 11px 16px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 150px;
+  box-shadow: 3px 3px 0 #222;
+  transition: all 0.1s ease;
+  font-size: 14px;
+}
+
+.loja-item-btn:hover:not(:disabled) {
+  background: #e8d4a8;
+}
+
+.loja-item-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #222;
+}
+
+.loja-item-btn:disabled {
+  background: #c8b89a;
+  color: #666;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.85;
 }
