@@ -1,0 +1,1752 @@
+// ============================================================
+// REGRA IMPORTANTE PARA O GROK:
+// Sempre que o usuário mandar este código pedindo alteração,
+// RESPONDA SEMPRE COM O CÓDIGO COMPLETO (arquivo inteiro).
+// Nunca mande só trechos.
+// ============================================================
+
+import { useState, useEffect } from 'react';
+import './App.css';
+
+// Ideias futuras:
+// - mais minigames
+// - seleção de personagens
+// - evento de abrir baú
+// - pesca
+// - classes de armas e habilidades de cada classe
+// - Sistema de mana e magia - Feito
+//   - slimeSquad → cria de 1 a 3 slimes que se sacrificam para proteger de ataques (custa 2 de mana)
+//   - fortifize → aumenta o dano do ataque do jogador em 1.5x por 2 rodadas (custa 1 ou 2 de mana)
+//   - firespear → ataque mágico que causa de 10 a 18 de dano (custa 2 de mana)
+// - Sistema de level e XP - Feito
+// - Sistema de drops de moedas e XP - Feito
+// - Sistema de drops de itens - Feito
+// - Sistema de drops raros - Feito
+
+function App() {
+  // ==================== GAME MANAGER ====================
+  const skins = [
+    { id: "skin1", imagem: "/images/jogador1.png" },
+    { id: "skin2", imagem: "/images/jogador2.png" },
+    { id: "skin3", imagem: "/images/jogador3.png" },
+  ];
+
+  const [skinId, setSkinId] = useState("skin1");
+  const [rodada, setRodada] = useState(0);
+  const [turno, setTurno] = useState(0);
+  const [statusJogo, setStatusJogo] = useState("start");
+  const [interfaceDeBatalha, setInterfaceDeBatalha] = useState("inicial");
+  const [dia, setDia] = useState(0);
+  const [logAtaques, setLogAtaques] = useState([]);
+  const [feiticoSelecionado, setFeiticoSelecionado] = useState(null);
+  const [palavraDigitada, setPalavraDigitada] = useState("");
+  const [inimigosRestantes, setInimigosRestantes] = useState(1);
+  const [dificuldade, setDificuldade] = useState(1);
+  const [mostrarAtaqueVisual, setMostrarAtaqueVisual] = useState(false);
+  const [imagemHitAtual, setImagemHitAtual] = useState(null);
+  const [listaInimigosAtual, setListaInimigosAtual] = useState([]);
+
+  // ==================== SISTEMA DE MOVIMENTO ====================
+  const [playerPos, setPlayerPos] = useState({ x: 400, y: 300 });
+  const [playerDir, setPlayerDir] = useState("baixo");
+  const [keys, setKeys] = useState({
+    w: false, a: false, s: false, d: false,
+    ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
+  });
+  const [pertoDe, setPertoDe] = useState(null);
+
+  const telasComMovimento = ["lobby", "floresta", "aldeiaGoblin", "casa", "pescando"];
+  const podeAndar = telasComMovimento.includes(statusJogo);
+
+  // ==================== SISTEMA DE PESCA ====================
+  const [varaPesca, setVaraPesca] = useState(false);
+  const [bolaPesca, setBolaPesca] = useState({ x: 400, y: 300 });
+  const [bolaDir, setBolaDir] = useState({ x: 1.2, y: 0.8 });
+  const [barraPesca, setBarraPesca] = useState(0);
+
+  // ==================== GAME IMAGENS ====================
+  const [imagemCristal] = useState("/images/cristal.png");
+  const [imagemAdagaPrimitiva] = useState("/images/adaga_primitiva.png");
+  const [imagemAdagaVelha] = useState("/images/adaga_velha.png");
+  const [imagemFirespear] = useState("/images/firespear.png");
+  const [imagemSlimeSquad] = useState("/images/slimesquad.png");
+  const [imagemSlime] = useState("/images/slime.png");
+  const [imagemGoblin] = useState("/images/goblin.png");
+  const [imagemGoblinGuarda] = useState("/images/goblin_guarda.png");
+  const [imagemGoblinXama] = useState("/images/goblin_xama.png");
+  const [imagemJavali] = useState("/images/javali.png");
+  const [imagemLobo] = useState("/images/lobo.png");
+  const [imagemHitAdaga] = useState("/images/hit_adaga.png");
+
+  // ==================== MÓVEIS DA CASA ====================
+  const [camaLevel, setCamaLevel] = useState(0);
+  const recuperacaoCama = [0, 0.35, 0.45, 0.6];
+
+  // ==================== JOGADOR ====================
+  const [imagemJogador, setImagemJogador] = useState("");
+  const [nomeJogador, setNomeJogador] = useState("Guest");
+  const [vidaJogador, setVidaJogador] = useState(20);
+  const [vidaMaximaJogador, setVidaMaximaJogador] = useState(20);
+  const [levelJogador, setLevelJogador] = useState(0);
+  const [xpNecessario, setXpNecessario] = useState(5);
+  const [xpAtual, setXpAtual] = useState(0);
+  const [armaEquipada, setArmaEquipada] = useState("");
+  const [manaJogador, setManaJogador] = useState(5);
+  const [maxManaJogador, setMaxManaJogador] = useState(5);
+  const [invocacoes, setInvocacoes] = useState(0);
+  const [buffDano, setBuffDano] = useState(1);
+  const [buffRodadas, setBuffRodadas] = useState(0);
+  const [intervaloDescanso, setIntervaloDescanso] = useState(0);
+
+  // ==================== ITENS ====================
+  const [cristais, setCristais] = useState(3);
+  const [moedas, setMoedas] = useState(5);
+  const [grimorio, setGrimorio] = useState(false);
+  const [mapaAldeiaGoblin, setMapaAldeiaGoblin] = useState(false);
+
+  // ==================== ARMAS ====================
+  const [armas, setArmas] = useState({
+    adagaVelha: {
+      nome: "Adaga Velha",
+      id: "adaga velha",
+      possui: false,
+      dano: [7, 11],
+      tipoHit: "corte",
+      imagemHit: "/images/hit_adaga.png",
+      equipada: false
+    },
+    adagaPrimitiva: {
+      nome: "Adaga Primitiva",
+      id: "adaga primitiva",
+      possui: false,
+      dano: [7, 12],
+      tipoHit: "corte",
+      imagemHit: "/images/hit_adaga.png",
+      equipada: false
+    }
+  });
+
+  // ==================== FEITIÇOS ====================
+  const [feiticos, setFeiticos] = useState({
+    firespear: {
+      nome: "firespear",
+      recitar: "pyrolance",
+      custo_mana: "2",
+      dano: [10, 18],
+      aprendido: false,
+      tipo: "ataque"
+    },
+    slimeSquad: {
+      nome: "slimesquad",
+      recitar: "limus",
+      custo_mana: "2",
+      invocacao: [1, 3],
+      aprendido: false,
+      tipo: "invocacao"
+    },
+    fortifize: {
+      nome: "fortifize",
+      recitar: "fortis",
+      custo_mana: "1",
+      multiplicador: 1.5,
+      duracao: 2,
+      aprendido: false,
+      tipo: "buff_ataque"
+    }
+  });
+
+  // ==================== INIMIGOS PADRÃO ====================
+  const [inimigos] = useState([
+    {
+      nome: "Lobo",
+      imagem: imagemLobo,
+      vida: 15,
+      ataques: [
+        { nome: "Arranhão", minimo: 6, maximo: 8 },
+        { nome: "Mordida", minimo: 4, maximo: 7 }
+      ],
+      dropMoedasMax: 10,
+      dropRaro: "",
+      chanceDropRaro: 0,
+      dropXP: 2
+    },
+    {
+      nome: "Slime",
+      imagem: imagemSlime,
+      vida: 10,
+      ataques: [
+        { nome: "Pancada", minimo: 4, maximo: 5 },
+        { nome: "Empurrão", minimo: 2, maximo: 3 }
+      ],
+      dropMoedasMax: 8,
+      dropRaro: "cristal de cura",
+      chanceDropRaro: 8,
+      dropXP: 1
+    },
+    {
+      nome: "Goblin",
+      imagem: imagemGoblin,
+      vida: 18,
+      ataques: [
+        { nome: "Soco Rápido", minimo: 4, maximo: 7 },
+        { nome: "Pancada", minimo: 3, maximo: 4 }
+      ],
+      dropMoedasMax: 15,
+      dropRaro: "adaga primitiva",
+      chanceDropRaro: 8,
+      dropXP: 2
+    },
+    {
+      nome: "Javali",
+      imagem: imagemJavali,
+      vida: 14,
+      ataques: [
+        { nome: "Investida", minimo: 5, maximo: 9 },
+        { nome: "Mordida", minimo: 4, maximo: 7 }
+      ],
+      dropMoedasMax: 12,
+      dropRaro: "",
+      chanceDropRaro: 0,
+      dropXP: 2
+    }
+  ]);
+
+  // ==================== INIMIGOS ALDEIA GOBLIN ====================
+  const [inimigosAldeiaGoblin] = useState([
+    {
+      nome: "Goblin",
+      imagem: imagemGoblin,
+      vida: 18,
+      ataques: [
+        { nome: "Soco Rápido", minimo: 4, maximo: 7 },
+        { nome: "Pancada", minimo: 3, maximo: 4 }
+      ],
+      dropMoedasMax: 15,
+      dropRaro: "adaga primitiva",
+      chanceDropRaro: 8,
+      dropXP: 2
+    },
+    {
+      nome: "Goblin Guarda",
+      imagem: imagemGoblinGuarda,
+      vida: 22,
+      ataques: [
+        { nome: "Corte", minimo: 6, maximo: 8 },
+        { nome: "Chute", minimo: 4, maximo: 5 }
+      ],
+      dropMoedasMax: 18,
+      dropRaro: "adaga primitiva",
+      chanceDropRaro: 9,
+      dropXP: 5
+    },
+    {
+      nome: "Goblin Xamã",
+      imagem: imagemGoblinXama,
+      vida: 22,
+      ataques: [
+        { nome: "Fire Spear", minimo: 10, maximo: 14 },
+        { nome: "Porrada", minimo: 4, maximo: 5 }
+      ],
+      dropMoedasMax: 18,
+      dropRaro: "firespear pergaminho",
+      chanceDropRaro: 9,
+      dropXP: 10
+    }
+  ]);
+
+  // ==================== OPONENTE ATUAL ====================
+  const [indiceOponenteAtual, setIndiceOponenteAtual] = useState(0);
+  const [nomeOponente, setNomeOponente] = useState("");
+  const [vidaOponente, setVidaOponente] = useState(1);
+
+  // ==================== ATAQUES BÁSICOS ====================
+  const ataqueBasico = [5, 10];
+
+  // ==================== FUNÇÕES UTILITÁRIAS ====================
+  function randint(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function wait(tempo) {
+    return new Promise((resolve) => setTimeout(resolve, tempo * 1000));
+  }
+
+  function adicionarLog(entrada) {
+    setLogAtaques((log) => [entrada, ...log]);
+  }
+
+  function imagemArmaEquipada() {
+    if (armaEquipada === "adaga primitiva") return imagemAdagaPrimitiva;
+    if (armaEquipada === "adaga velha") return imagemAdagaVelha;
+    return null;
+  }
+
+  // ==================== BARRA DE VIDA ====================
+  function barraDeVida(vidaAtual, vidaMaxima) {
+    const max = vidaMaxima || 1;
+    const porcentagem = Math.max(0, Math.min(100, (vidaAtual / max) * 100));
+
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "8px 0" }}>
+        <div
+          style={{
+            width: "250px",
+            height: "24px",
+            backgroundColor: "#1f2937",
+            border: "2px solid #4b5563",
+            borderRadius: "6px",
+            overflow: "hidden"
+          }}
+        >
+          <div
+            style={{
+              width: `${porcentagem}%`,
+              height: "100%",
+              backgroundColor: vidaAtual > max * 0.35 ? "#22c55e" : "#ef4444",
+              transition: "width 0.4s ease"
+            }}
+          />
+        </div>
+        <span style={{ fontFamily: "monospace", minWidth: "85px" }}>
+          {vidaAtual} / {max}
+        </span>
+      </div>
+    );
+  }
+
+  function esferasDeMana() {
+    const esferas = [];
+    for (let i = 0; i < maxManaJogador; i++) {
+      esferas.push(
+        <span
+          key={i}
+          className={`mana-esfera ${i < manaJogador ? "mana-esfera-cheia" : "mana-esfera-vazia"}`}
+        />
+      );
+    }
+    return <div className="mana-esferas">{esferas}</div>;
+  }
+
+  function dispararVisualAtaque(imagemHit = null) {
+    setImagemHitAtual(imagemHit);
+    setMostrarAtaqueVisual(true);
+    wait(1).then(() => {
+      setMostrarAtaqueVisual(false);
+      setImagemHitAtual(null);
+    });
+  }
+
+  function gerarBatalha(quantidade = 1) {
+    const lista = inimigos;
+    const indice = randint(0, lista.length - 1);
+    const inimigo = lista[indice];
+
+    setListaInimigosAtual(lista);
+    setIndiceOponenteAtual(indice);
+    setInimigosRestantes(quantidade);
+    setNomeOponente(inimigo.nome);
+    setVidaOponente(inimigo.vida * dificuldade);
+    setTurno(0);
+    setInterfaceDeBatalha("inicial");
+    setIntervaloDescanso(0);
+    setMostrarAtaqueVisual(false);
+    setImagemHitAtual(null);
+  }
+
+  function gerarBatalhaGoblin(quantidade = 1) {
+    const lista = inimigosAldeiaGoblin;
+    const indice = randint(0, lista.length - 1);
+    const inimigo = lista[indice];
+
+    setListaInimigosAtual(lista);
+    setIndiceOponenteAtual(indice);
+    setInimigosRestantes(quantidade);
+    setNomeOponente(inimigo.nome);
+    setVidaOponente(inimigo.vida * dificuldade);
+    setTurno(0);
+    setInterfaceDeBatalha("inicial");
+    setIntervaloDescanso(0);
+    setMostrarAtaqueVisual(false);
+    setImagemHitAtual(null);
+  }
+
+  function mudarTurno() {
+    setTurno((atual) => {
+      const novo = atual === 0 ? 1 : 0;
+      if (novo === 0) setInterfaceDeBatalha("inicial");
+      return novo;
+    });
+  }
+
+  function inimigoAtacar() {
+    if (vidaJogador <= 0 || vidaOponente <= 0) return;
+
+    const lista = listaInimigosAtual.length > 0 ? listaInimigosAtual : inimigos;
+    const inimigo = lista[indiceOponenteAtual];
+    if (!inimigo) return;
+
+    const ataqueEscolhido = inimigo.ataques[randint(0, inimigo.ataques.length - 1)];
+    const dano = randint(ataqueEscolhido.minimo, ataqueEscolhido.maximo);
+
+    adicionarLog(`${inimigo.nome} usou ${ataqueEscolhido.nome}`);
+    setVidaJogador((vidaAtual) => Math.max(0, vidaAtual - dano));
+    setInterfaceDeBatalha("esperando");
+
+    wait(1).then(() => mudarTurno());
+  }
+
+  function tentarRecitar() {
+    const palavra = palavraDigitada.trim().toLowerCase();
+    const feitico = Object.values(feiticos).find((f) => f.recitar.toLowerCase() === palavra);
+
+    if (!feitico) {
+      adicionarLog("Nada acontece...");
+      setPalavraDigitada("");
+      setInterfaceDeBatalha("esperando");
+      wait(0.8).then(() => {
+        mudarTurno();
+        if (vidaJogador > 0 && vidaOponente > 0) inimigoAtacar();
+      });
+      return;
+    }
+
+    if (feitico.tipo === "ataque") {
+      feiticoAtaque(feitico);
+    } else if (feitico.tipo === "invocacao") {
+      adicionarLog("Esse feitiço ainda não está pronto...");
+      setInterfaceDeBatalha("esperando");
+      wait(0.8).then(() => {
+        mudarTurno();
+        if (vidaJogador > 0 && vidaOponente > 0) inimigoAtacar();
+      });
+    } else if (feitico.tipo === "buff_ataque") {
+      feiticoBuffAtaque(feitico);
+    }
+
+    setPalavraDigitada("");
+  }
+
+  function feiticoAtaque(feitico) {
+    if (!gastarMana(Number(feitico.custo_mana))) {
+      setInterfaceDeBatalha("esperando");
+      wait(0.8).then(() => {
+        mudarTurno();
+        if (vidaJogador > 0 && vidaOponente > 0) inimigoAtacar();
+      });
+      return;
+    }
+    atacar(feitico.dano, feitico.nome);
+  }
+
+  function feiticoBuffAtaque(feitico) {
+    if (!gastarMana(Number(feitico.custo_mana))) {
+      setInterfaceDeBatalha("esperando");
+      wait(0.8).then(() => {
+        mudarTurno();
+        if (vidaJogador > 0 && vidaOponente > 0) inimigoAtacar();
+      });
+      return;
+    }
+
+    setBuffDano(feitico.multiplicador);
+    setBuffRodadas(feitico.duracao);
+    adicionarLog("Fortifize te deixa mais forte!!");
+    setInterfaceDeBatalha("esperando");
+
+    wait(0.8).then(() => {
+      mudarTurno();
+      if (vidaJogador > 0 && vidaOponente > 0) inimigoAtacar();
+    });
+  }
+
+  function darDrops(indice) {
+    const lista = listaInimigosAtual.length > 0 ? listaInimigosAtual : inimigos;
+    const inimigo = lista[indice];
+    if (!inimigo) return;
+
+    const DropMoedas = randint(3, inimigo.dropMoedasMax);
+    const xpDropado = randint(1, inimigo.dropXP);
+
+    setMoedas((m) => m + DropMoedas);
+    setXpAtual((xp) => xp + xpDropado);
+    adicionarLog(`${DropMoedas} moedas e ${xpDropado} XP`);
+
+    if (inimigo.chanceDropRaro > 0 && randint(1, 10) <= inimigo.chanceDropRaro) {
+      const itemDropado = inimigo.dropRaro.toLowerCase();
+
+      if (itemDropado === "adaga primitiva" && !armas.adagaPrimitiva.possui) {
+        setArmas((prev) => ({
+          ...prev,
+          adagaPrimitiva: { ...prev.adagaPrimitiva, possui: true }
+        }));
+        adicionarLog({
+          texto: "Você encontrou uma Adaga Primitiva!!",
+          imagem: imagemAdagaPrimitiva
+        });
+      } else if (itemDropado === "cristal de cura") {
+        setCristais((c) => c + 1);
+        adicionarLog({
+          texto: "Você encontra um cristal de cura!!",
+          imagem: imagemCristal
+        });
+      } else if (itemDropado === "firespear pergaminho" && !feiticos.firespear.aprendido) {
+        setFeiticos((prev) => ({
+          ...prev,
+          firespear: { ...prev.firespear, aprendido: true }
+        }));
+        adicionarLog({
+          texto: "Você encontrou um pergaminho de Fire Spear!!",
+          imagem: imagemFirespear
+        });
+      }
+    }
+  }
+
+  function atacar(ataque, nomeDoAtaque, imagemHit = null) {
+    const base = randint(ataque[0], ataque[1]);
+    const danoCausado = Math.floor(base * buffDano);
+
+    dispararVisualAtaque(imagemHit);
+    adicionarLog(`${nomeJogador} usou ${nomeDoAtaque}`);
+    setVidaOponente((vidaAtual) => Math.max(0, vidaAtual - danoCausado));
+    setInterfaceDeBatalha("esperando");
+
+    wait(1).then(() => {
+      mudarTurno();
+      setRodada((r) => r + 1);
+
+      setBuffRodadas((br) => {
+        if (br <= 1) {
+          setBuffDano(1);
+          return 0;
+        }
+        return br - 1;
+      });
+
+      if (vidaOponente - danoCausado > 0 && vidaJogador > 0) {
+        inimigoAtacar();
+      }
+    });
+  }
+
+  function usarCristal() {
+    if (cristais <= 0) return;
+
+    const cura = randint(10, 20);
+    setVidaJogador((vidaAtual) => Math.min(vidaAtual + cura, vidaMaximaJogador));
+    setCristais((c) => c - 1);
+    setInterfaceDeBatalha("esperando");
+    adicionarLog({
+      texto: `${nomeJogador} usou um Cristal de Cura (+${cura} HP)`,
+      imagem: imagemCristal
+    });
+
+    wait(0.8).then(() => {
+      mudarTurno();
+      if (vidaJogador > 0 && vidaOponente > 0) {
+        inimigoAtacar();
+      } else {
+        setInterfaceDeBatalha("inicial");
+      }
+    });
+  }
+
+  function usarCristalInventario() {
+    if (cristais <= 0) return;
+    if (vidaJogador >= vidaMaximaJogador) {
+      alert("Sua vida já está cheia!");
+      return;
+    }
+    const cura = randint(10, 20);
+    setVidaJogador((vidaAtual) => Math.min(vidaAtual + cura, vidaMaximaJogador));
+    setCristais((c) => c - 1);
+  }
+
+  function passarDia() {
+    if (intervaloDescanso >= 1) {
+      alert("Eu ainda não estou cansado...");
+    } else {
+      setIntervaloDescanso(1);
+      setDia((d) => d + 1);
+      setVidaJogador((vidaAtual) => {
+        const multiplicador = recuperacaoCama[camaLevel] || 0;
+        const vidaParaRecuperar = Math.floor(vidaMaximaJogador * multiplicador);
+        return Math.min(vidaAtual + vidaParaRecuperar, vidaMaximaJogador);
+      });
+    }
+  }
+
+  function gastarMana(custo) {
+    if (manaJogador < custo) {
+      adicionarLog("Mana insuficiente...");
+      return false;
+    }
+    setManaJogador((mana) => mana - custo);
+    return true;
+  }
+
+  // ==================== COMPRAS ====================
+  function upgradeCama(preco) {
+    if (moedas >= preco) {
+      setMoedas((m) => m - preco);
+      setCamaLevel((l) => Math.min(l + 1, 3));
+    } else {
+      alert("Vendedor: Sem grana, sem itens");
+    }
+  }
+
+  function comprarItemAcumulavel(setItem, preco, quantidade) {
+    if (moedas >= preco) {
+      setMoedas((m) => m - preco);
+      setItem((i) => i + quantidade);
+    } else {
+      alert("Sem grana suficiente!");
+    }
+  }
+
+  function desbloquearItem(setItem, preco) {
+    if (moedas >= preco) {
+      setMoedas((m) => m - preco);
+      setItem(true);
+    } else {
+      alert("Sem grana suficiente!");
+    }
+  }
+
+  function comprarArma(chaveArma, preco) {
+    if (moedas >= preco && !armas[chaveArma].possui) {
+      setMoedas((m) => m - preco);
+      setArmas((prev) => ({
+        ...prev,
+        [chaveArma]: { ...prev[chaveArma], possui: true }
+      }));
+    } else {
+      alert("Vendedor: Sem grana, sem itens");
+    }
+  }
+
+  function comprarSpell(nomeFeitico, preco) {
+    if (moedas >= preco) {
+      if (grimorio) {
+        setMoedas((m) => m - preco);
+        setFeiticos((feiticosAnteriores) => ({
+          ...feiticosAnteriores,
+          [nomeFeitico]: {
+            ...feiticosAnteriores[nomeFeitico],
+            aprendido: true
+          }
+        }));
+      } else {
+        alert("Vendedor: Você não acha que deveria possuir um grimório primeiro?");
+      }
+    } else {
+      alert("Vendedor: Sem grana, sem itens");
+    }
+  }
+
+  // ==================== SISTEMA DE MOVIMENTO - FUNÇÕES ====================
+  function interagir() {
+    if (!pertoDe) return;
+
+    // VILA
+    if (statusJogo === "lobby") {
+      if (pertoDe === "casa") setStatusJogo("casa");
+      if (pertoDe === "floresta") setStatusJogo("floresta");
+      if (pertoDe === "loja") setStatusJogo("loja");
+      if (pertoDe === "aldeiaGoblin" && mapaAldeiaGoblin) setStatusJogo("aldeiaGoblin");
+      if (pertoDe === "lago" && varaPesca) {
+        // Inicia a pesca
+        setBarraPesca(0);
+        setBolaPesca({ x: 400, y: 300 });
+        setBolaDir({ x: 1.5, y: 1.1 });
+        setPlayerPos({ x: 400, y: 450 });
+        setStatusJogo("pescando");
+      }
+    }
+
+    // FLORESTA
+    if (statusJogo === "floresta") {
+      if (pertoDe === "voltar") setStatusJogo("lobby");
+      if (pertoDe === "bosque") {
+        setDificuldade(1);
+        setStatusJogo("batalhando");
+        gerarBatalha(randint(1, 2));
+      }
+      if (pertoDe === "pinheiros") {
+        setDificuldade(2);
+        setStatusJogo("batalhando");
+        gerarBatalha(randint(1, 3));
+      }
+      if (pertoDe === "profundezas") {
+        setDificuldade(3);
+        setStatusJogo("batalhando");
+        gerarBatalha(randint(3, 5));
+      }
+    }
+
+    // ALDEIA GOBLIN
+    if (statusJogo === "aldeiaGoblin") {
+      if (pertoDe === "voltar") setStatusJogo("lobby");
+      if (pertoDe === "entrada") {
+        setDificuldade(1);
+        setStatusJogo("batalhando");
+        gerarBatalhaGoblin(randint(1, 2));
+      }
+      if (pertoDe === "acampamento") {
+        setDificuldade(2);
+        setStatusJogo("batalhando");
+        gerarBatalhaGoblin(randint(2, 3));
+      }
+      if (pertoDe === "templo") {
+        setDificuldade(3);
+        setStatusJogo("batalhando");
+        gerarBatalhaGoblin(randint(3, 5));
+      }
+    }
+
+    // CASA
+    if (statusJogo === "casa") {
+      if (pertoDe === "voltar") setStatusJogo("lobby");
+      if (pertoDe === "descansar") passarDia();
+      if (pertoDe === "inventario") setStatusJogo("casa-inventario");
+    }
+  }
+
+  // ==================== EFFECTS ====================
+  useEffect(() => {
+    if (xpAtual >= xpNecessario && xpNecessario > 0) {
+      setLevelJogador((l) => l + 1);
+      setVidaMaximaJogador((v) => Math.floor(v * 1.2));
+      setXpNecessario((xp) => Math.floor(xp * 1.5));
+      setXpAtual(0);
+    }
+  }, [xpAtual, xpNecessario]);
+
+  useEffect(() => {
+    if (vidaOponente <= 0 && vidaJogador > 0) {
+      if (inimigosRestantes > 1) {
+        setInimigosRestantes((q) => q - 1);
+        setTimeout(() => {
+          const lista = listaInimigosAtual.length > 0 ? listaInimigosAtual : inimigos;
+          const indice = randint(0, lista.length - 1);
+          const inimigo = lista[indice];
+          setIndiceOponenteAtual(indice);
+          setNomeOponente(inimigo.nome);
+          setVidaOponente(inimigo.vida * dificuldade);
+          setTurno(0);
+          setInterfaceDeBatalha("inicial");
+          adicionarLog(`✦ Um novo ${inimigo.nome} apareceu! ✦`);
+        }, 1000);
+      } else {
+        darDrops(indiceOponenteAtual);
+        wait(2).then(() => {
+          setInterfaceDeBatalha("vitoria");
+          setLogAtaques([""]);
+          setTurno(0);
+        });
+      }
+    } else if (vidaJogador <= 0) {
+      setInterfaceDeBatalha("derrota");
+      setTurno(0);
+    }
+  }, [vidaOponente, vidaJogador]);
+
+  // Teclas
+  useEffect(() => {
+    if (!podeAndar) return;
+
+    const handleKeyDown = (e) => {
+      const key = e.key;
+      if (["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
+        e.preventDefault();
+        setKeys((prev) => ({ ...prev, [key]: true }));
+      }
+      if (e.key.toLowerCase() === "e") {
+        interagir();
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      const key = e.key;
+      if (["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
+        setKeys((prev) => ({ ...prev, [key]: false }));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [podeAndar, pertoDe, statusJogo, mapaAldeiaGoblin, varaPesca]);
+
+  // Loop de movimento do jogador
+  useEffect(() => {
+    if (!podeAndar) return;
+
+    let animationId;
+    const mover = () => {
+      const velocidade = 3.8;
+
+      setPlayerPos((pos) => {
+        let novoX = pos.x;
+        let novoY = pos.y;
+        let novaDir = playerDir;
+
+        if (keys.w || keys.ArrowUp) { novoY -= velocidade; novaDir = "cima"; }
+        if (keys.s || keys.ArrowDown) { novoY += velocidade; novaDir = "baixo"; }
+        if (keys.a || keys.ArrowLeft) { novoX -= velocidade; novaDir = "esquerda"; }
+        if (keys.d || keys.ArrowRight) { novoX += velocidade; novaDir = "direita"; }
+
+        novoX = Math.max(40, Math.min(760, novoX));
+        novoY = Math.max(40, Math.min(560, novoY));
+
+        setPlayerDir(novaDir);
+        return { x: novoX, y: novoY };
+      });
+
+      animationId = requestAnimationFrame(mover);
+    };
+
+    animationId = requestAnimationFrame(mover);
+    return () => cancelAnimationFrame(animationId);
+  }, [keys, podeAndar, playerDir]);
+
+  // Loop da bola de pesca + barra
+  useEffect(() => {
+    if (statusJogo !== "pescando") return;
+
+    let animationId;
+
+    const atualizarPesca = () => {
+      // Move a bola
+      setBolaPesca((pos) => {
+        let novoX = pos.x + bolaDir.x;
+        let novoY = pos.y + bolaDir.y;
+        let novaDirX = bolaDir.x;
+        let novaDirY = bolaDir.y;
+
+        // Quica nas bordas
+        if (novoX < 60 || novoX > 740) {
+          novaDirX = -novaDirX;
+          novoX = Math.max(60, Math.min(740, novoX));
+        }
+        if (novoY < 60 || novoY > 540) {
+          novaDirY = -novaDirY;
+          novoY = Math.max(60, Math.min(540, novoY));
+        }
+
+        setBolaDir({ x: novaDirX, y: novaDirY });
+        return { x: novoX, y: novoY };
+      });
+
+      // Verifica se o jogador está dentro da bola
+      setBarraPesca((barra) => {
+        const dx = playerPos.x - bolaPesca.x;
+        const dy = playerPos.y - bolaPesca.y;
+        const distancia = Math.sqrt(dx * dx + dy * dy);
+        const raioBola = 55;
+
+        let novaBarra = barra;
+        if (distancia < raioBola) {
+          novaBarra = Math.min(100, barra + 0.35); // sobe
+        } else {
+          novaBarra = Math.max(0, barra - 0.18); // desce lentamente
+        }
+
+        // Vitória na pesca
+        if (novaBarra >= 100) {
+          const xpGanho = randint(3, 7);
+          setXpAtual((xp) => xp + xpGanho);
+          setTimeout(() => {
+            alert(`Você pescou algo! +${xpGanho} XP`);
+            setStatusJogo("lobby");
+            setBarraPesca(0);
+          }, 100);
+          return 100;
+        }
+
+        return novaBarra;
+      });
+
+      animationId = requestAnimationFrame(atualizarPesca);
+    };
+
+    animationId = requestAnimationFrame(atualizarPesca);
+    return () => cancelAnimationFrame(animationId);
+  }, [statusJogo, bolaDir, playerPos, bolaPesca]);
+
+  // Detectar zonas
+  useEffect(() => {
+    if (!podeAndar) {
+      setPertoDe(null);
+      return;
+    }
+
+    let zonas = [];
+
+    if (statusJogo === "lobby") {
+      zonas = [
+        { id: "casa", x: 150, y: 220, raio: 65 },
+        { id: "floresta", x: 400, y: 180, raio: 65 },
+        { id: "loja", x: 650, y: 220, raio: 65 },
+        { id: "aldeiaGoblin", x: 400, y: 420, raio: 70 },
+        { id: "lago", x: 120, y: 480, raio: 70 }, // Lago no canto inferior esquerdo
+      ];
+    }
+
+    if (statusJogo === "floresta") {
+      zonas = [
+        { id: "voltar", x: 80, y: 80, raio: 55 },
+        { id: "bosque", x: 200, y: 320, raio: 65 },
+        { id: "pinheiros", x: 400, y: 320, raio: 65 },
+        { id: "profundezas", x: 600, y: 320, raio: 65 },
+      ];
+    }
+
+    if (statusJogo === "aldeiaGoblin") {
+      zonas = [
+        { id: "voltar", x: 80, y: 80, raio: 55 },
+        { id: "entrada", x: 200, y: 320, raio: 65 },
+        { id: "acampamento", x: 400, y: 320, raio: 65 },
+        { id: "templo", x: 600, y: 320, raio: 65 },
+      ];
+    }
+
+    if (statusJogo === "casa") {
+      zonas = [
+        { id: "voltar", x: 80, y: 80, raio: 55 },
+        { id: "descansar", x: 280, y: 280, raio: 65 },
+        { id: "inventario", x: 520, y: 280, raio: 65 },
+      ];
+    }
+
+    let encontrado = null;
+    for (const zona of zonas) {
+      if (zona.id === "aldeiaGoblin" && !mapaAldeiaGoblin) continue;
+      if (zona.id === "lago" && !varaPesca) continue;
+
+      const dx = playerPos.x - zona.x;
+      const dy = playerPos.y - zona.y;
+      const distancia = Math.sqrt(dx * dx + dy * dy);
+
+      if (distancia < zona.raio) {
+        encontrado = zona.id;
+        break;
+      }
+    }
+
+    setPertoDe(encontrado);
+  }, [playerPos, statusJogo, mapaAldeiaGoblin, varaPesca, podeAndar]);
+
+  // Resetar posição ao entrar numa tela de movimento
+  useEffect(() => {
+    if (podeAndar && statusJogo !== "pescando") {
+      setPlayerPos({ x: 400, y: 300 });
+      setKeys({
+        w: false, a: false, s: false, d: false,
+        ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
+      });
+    }
+  }, [statusJogo]);
+
+  function renderLogItem(log, index) {
+    if (typeof log === "string") {
+      return <p key={index} className="log-item">{log}</p>;
+    }
+    if (log && typeof log === "object") {
+      return (
+        <div key={index} className="log-item log-item-com-imagem">
+          {log.imagem && <img src={log.imagem} alt="item dropado" className="log-item-img" />}
+          <span>{log.texto}</span>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  // ==================== COMPONENTE DO JOGADOR ====================
+  function JogadorMovel() {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: playerPos.x - 24,
+          top: playerPos.y - 24,
+          width: 48,
+          height: 48,
+          zIndex: 20,
+          pointerEvents: "none"
+        }}
+      >
+        {imagemJogador ? (
+          <img
+            src={imagemJogador}
+            alt="jogador"
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          />
+        ) : (
+          <div style={{
+            width: "100%",
+            height: "100%",
+            backgroundColor: "#63b3ed",
+            borderRadius: "50%",
+            border: "3px solid white",
+            boxShadow: "0 0 12px rgba(0,0,0,0.5)"
+          }} />
+        )}
+      </div>
+    );
+  }
+
+  // ==================== ZONA INTERATIVA ====================
+  function Zona({ id, x, y, label, cor = "#4a5568" }) {
+    const ativo = pertoDe === id;
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: x - 50,
+          top: y - 35,
+          width: 100,
+          height: 70,
+          backgroundColor: ativo ? "#48bb78" : cor,
+          borderRadius: 12,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "white",
+          fontWeight: "bold",
+          fontSize: 14,
+          border: ativo ? "3px solid #68d391" : "2px solid #2d3748",
+          transition: "all 0.15s ease",
+          boxShadow: ativo ? "0 0 15px rgba(72,187,120,0.6)" : "none",
+          textAlign: "center",
+          padding: 4
+        }}
+      >
+        {label}
+        {ativo && (
+          <div style={{
+            position: "absolute",
+            bottom: -28,
+            background: "rgba(0,0,0,0.75)",
+            padding: "3px 10px",
+            borderRadius: 6,
+            fontSize: 13,
+            whiteSpace: "nowrap"
+          }}>
+            Pressione E
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ==================== JSX ====================
+  return (
+    <div className="App">
+      {/* TELA INICIAL */}
+      {statusJogo === "start" && (
+        <div className="tela_inicial">
+          <h1>Bem-vindo(a)!</h1>
+          <p>Por favor insira seu nome antes de continuar:</p>
+          <input
+            type="text"
+            value={nomeJogador}
+            onChange={(e) => setNomeJogador(e.target.value)}
+          />
+
+          <p>Escolha o seu personagem:</p>
+          <div className="skin-opcoes">
+            {skins.map((skin) => (
+              <button
+                key={skin.id}
+                type="button"
+                className={`botao-personagem ${skinId === skin.id ? "skin-selecionado" : ""}`}
+                onClick={() => setSkinId(skin.id)}
+              >
+                <img src={skin.imagem} alt="" className="imagem-personagem" />
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => {
+              const skin = skins.find((s) => s.id === skinId);
+              if (skin) setImagemJogador(skin.imagem);
+              setStatusJogo("batalhando");
+              gerarBatalha(1);
+            }}
+          >
+            Começar
+          </button>
+        </div>
+      )}
+
+      {/* BATALHA */}
+      {statusJogo === "batalhando" && (
+        <div className="Tela_de_batalha">
+          <div className="batalha-topo">
+            <div className="oponente-info">
+              <div className="oponente-nome">{nomeOponente || "Oponente"}</div>
+              {barraDeVida(
+                vidaOponente,
+                (listaInimigosAtual[indiceOponenteAtual]?.vida || inimigos[indiceOponenteAtual]?.vida || 1) * dificuldade
+              )}
+            </div>
+            <div className="rodada-display">Rodada: {rodada}</div>
+            <div className="imagem-oponente-wrap">
+              <div className="imagem-oponente">
+                {(listaInimigosAtual[indiceOponenteAtual]?.imagem || inimigos[indiceOponenteAtual]?.imagem) ? (
+                  <img
+                    src={listaInimigosAtual[indiceOponenteAtual]?.imagem || inimigos[indiceOponenteAtual]?.imagem}
+                    alt={nomeOponente}
+                  />
+                ) : "imagem oponente"}
+              </div>
+              {mostrarAtaqueVisual && (
+                <div className="ataque-visual">
+                  {imagemHitAtual ? (
+                    <img src={imagemHitAtual} alt="hit" className="hit-img" style={{ maxWidth: "140px", maxHeight: "140px" }} />
+                  ) : (
+                    <span style={{ fontSize: "48px" }}>💥</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="batalha-centro">
+            <div className="imagem-jogador">
+              {imagemJogador ? <img src={imagemJogador} alt={nomeJogador} /> : "imagem jogador"}
+            </div>
+            <div style={{ flex: 1 }}></div>
+          </div>
+
+          <div className="batalha-inferior">
+            <div className="comandos-coluna">
+              {interfaceDeBatalha !== "vitoria" && interfaceDeBatalha !== "derrota" && (
+                <>
+                  {interfaceDeBatalha === "inicial" && turno === 0 && (
+                    <div className="comandos-grid">
+                      <button onClick={() => setInterfaceDeBatalha("atacar")}>Ataques</button>
+                      <button onClick={() => setInterfaceDeBatalha("itens")}>Itens</button>
+                      <button onClick={() => setInterfaceDeBatalha("recitar")}>Recitar</button>
+                      <button disabled>por enquanto não tem nada</button>
+                    </div>
+                  )}
+
+                  {interfaceDeBatalha === "atacar" && turno === 0 && (
+                    <div className="comandos-lista">
+                      <button onClick={() => atacar(ataqueBasico, "Soco")}>Soco</button>
+                      {armaEquipada === "adaga primitiva" && armas.adagaPrimitiva.possui && (
+                        <button onClick={() => atacar(armas.adagaPrimitiva.dano, "Corte Primitivo", armas.adagaPrimitiva.imagemHit)}>
+                          Corte Primitivo
+                        </button>
+                      )}
+                      {armaEquipada === "adaga velha" && armas.adagaVelha.possui && (
+                        <button onClick={() => atacar(armas.adagaVelha.dano, "Corte", armas.adagaVelha.imagemHit)}>
+                          Corte
+                        </button>
+                      )}
+                      <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
+                    </div>
+                  )}
+
+                  {interfaceDeBatalha === "itens" && (
+                    <div className="comandos-lista">
+                      {cristais > 0 && <button onClick={usarCristal}>Cristal de Cura ({cristais})</button>}
+                      <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
+                    </div>
+                  )}
+
+                  {interfaceDeBatalha === "recitar" && turno === 0 && (
+                    <div className="comandos-lista comandos-recitar">
+                      <p>Recite o feitiço:</p>
+                      <input
+                        type="text"
+                        value={palavraDigitada}
+                        onChange={(e) => setPalavraDigitada(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") tentarRecitar(); }}
+                        placeholder="Digite a palavra..."
+                        autoFocus
+                      />
+                      <button onClick={tentarRecitar}>Recitar</button>
+                      <button onClick={() => setInterfaceDeBatalha("inicial")}>Voltar</button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="log-batalha">
+              <div className="log-titulo">Log</div>
+              {logAtaques.length === 0 ? (
+                <p className="log-vazio">Aguardando ações...</p>
+              ) : (
+                logAtaques.map((log, index) => renderLogItem(log, index))
+              )}
+            </div>
+
+            <div className="player-info">
+              <div className="player-nome">{nomeJogador}</div>
+              {barraDeVida(vidaJogador, vidaMaximaJogador)}
+              <div className="player-extra">
+                <div className="player-itens-linha">
+                  <div className="item-equipado-slot">
+                    {imagemArmaEquipada() ? (
+                      <img src={imagemArmaEquipada()} alt="Arma equipada" className="item-equipado-img" />
+                    ) : (
+                      <span className="item-equipado-vazio">—</span>
+                    )}
+                  </div>
+                  <div className="player-cristal-slot">
+                    <img src={imagemCristal} alt="Cristal" className="player-cristal-img" />
+                    <span className="player-cristal-qtd">{cristais}</span>
+                  </div>
+                </div>
+                <div className="barra-mana-box">
+                  <div className="mana-label">Mana</div>
+                  {esferasDeMana()}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {interfaceDeBatalha === "vitoria" && (
+            <div className="overlay-resultado">
+              <h1>Você venceu!</h1>
+              <button onClick={() => {
+                setStatusJogo("lobby");
+                setInterfaceDeBatalha("inicial");
+                setTurno(0);
+                setRodada(0);
+                setLogAtaques([]);
+              }}>
+                Voltar para a vila
+              </button>
+            </div>
+          )}
+
+          {interfaceDeBatalha === "derrota" && (
+            <div className="overlay-resultado">
+              <h1>Você foi derrotado...</h1>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ==================== VILA (LOBBY) ==================== */}
+      {statusJogo === "lobby" && (
+        <div className="tela_exploravel" style={{
+          position: "relative",
+          width: "800px",
+          height: "600px",
+          margin: "0 auto",
+          backgroundColor: "#2f855a",
+          border: "4px solid #276749",
+          overflow: "hidden"
+        }}>
+          <div style={{ position: "absolute", top: 15, left: 20, color: "white", zIndex: 5 }}>
+            <strong>{nomeJogador}</strong> | Lv {levelJogador} | ❤️ {vidaJogador}/{vidaMaximaJogador} | 🪙 {moedas}
+          </div>
+
+          <Zona id="casa" x={150} y={220} label="🏠 Casa" cor="#744210" />
+          <Zona id="floresta" x={400} y={180} label="🌲 Floresta" cor="#22543d" />
+          <Zona id="loja" x={650} y={220} label="🏪 Loja" cor="#2b6cb0" />
+          {mapaAldeiaGoblin && (
+            <Zona id="aldeiaGoblin" x={400} y={420} label="👺 Aldeia Goblin" cor="#9b2c2c" />
+          )}
+
+          {/* Lago de pesca (só aparece se tiver a vara) */}
+          {varaPesca && (
+            <Zona id="lago" x={120} y={480} label="🌊 Lago" cor="#2b6cb0" />
+          )}
+
+          <JogadorMovel />
+
+          <div style={{
+            position: "absolute", bottom: 12, left: 20, color: "rgba(255,255,255,0.8)", fontSize: 13
+          }}>
+            WASD / Setas para andar • E para interagir
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TELA DE PESCA ==================== */}
+      {statusJogo === "pescando" && (
+        <div className="tela_exploravel" style={{
+          position: "relative",
+          width: "800px",
+          height: "600px",
+          margin: "0 auto",
+          backgroundColor: "#1a365d",
+          border: "4px solid #2a4365",
+          overflow: "hidden"
+        }}>
+          <div style={{ position: "absolute", top: 15, left: 20, color: "white", fontSize: 18, fontWeight: "bold", zIndex: 10 }}>
+            🎣 Pescando...
+          </div>
+
+          {/* Barra de progresso da pesca */}
+          <div style={{
+            position: "absolute",
+            top: 50,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 300,
+            zIndex: 10
+          }}>
+            <div style={{ color: "white", textAlign: "center", marginBottom: 6, fontSize: 14 }}>
+              Barra de Pesca
+            </div>
+            <div style={{
+              width: "100%",
+              height: 22,
+              backgroundColor: "#1a202c",
+              border: "2px solid #4a5568",
+              borderRadius: 8,
+              overflow: "hidden"
+            }}>
+              <div style={{
+                width: `${barraPesca}%`,
+                height: "100%",
+                backgroundColor: barraPesca > 70 ? "#48bb78" : barraPesca > 30 ? "#ecc94b" : "#63b3ed",
+                transition: "width 0.1s linear"
+              }} />
+            </div>
+          </div>
+
+          {/* Bola de pesca */}
+          <div style={{
+            position: "absolute",
+            left: bolaPesca.x - 55,
+            top: bolaPesca.y - 55,
+            width: 110,
+            height: 110,
+            borderRadius: "50%",
+            backgroundColor: "rgba(99, 179, 237, 0.25)",
+            border: "3px solid #63b3ed",
+            boxShadow: "0 0 20px rgba(99, 179, 237, 0.5)",
+            zIndex: 5,
+            pointerEvents: "none"
+          }} />
+
+          <JogadorMovel />
+
+          <div style={{
+            position: "absolute", bottom: 12, left: 20, color: "rgba(255,255,255,0.8)", fontSize: 13
+          }}>
+            Fique dentro da bola azul para encher a barra • WASD para se mover
+          </div>
+        </div>
+      )}
+
+      {/* ==================== FLORESTA ==================== */}
+      {statusJogo === "floresta" && (
+        <div className="tela_exploravel" style={{
+          position: "relative",
+          width: "800px",
+          height: "600px",
+          margin: "0 auto",
+          backgroundColor: "#1a365d",
+          border: "4px solid #2a4365",
+          overflow: "hidden"
+        }}>
+          <div style={{ position: "absolute", top: 15, left: 20, color: "white", fontSize: 18, fontWeight: "bold" }}>
+            FLORESTA
+          </div>
+
+          <Zona id="voltar" x={80} y={80} label="← Voltar" cor="#4a5568" />
+          <Zona id="bosque" x={200} y={320} label="Bosque" cor="#276749" />
+          <Zona id="pinheiros" x={400} y={320} label="Pinheiros" cor="#22543d" />
+          <Zona id="profundezas" x={600} y={320} label="Profundezas" cor="#1a202c" />
+
+          <JogadorMovel />
+
+          <div style={{
+            position: "absolute", bottom: 12, left: 20, color: "rgba(255,255,255,0.7)", fontSize: 13
+          }}>
+            WASD / Setas • E para interagir
+          </div>
+        </div>
+      )}
+
+      {/* ==================== ALDEIA GOBLIN ==================== */}
+      {statusJogo === "aldeiaGoblin" && (
+        <div className="tela_exploravel" style={{
+          position: "relative",
+          width: "800px",
+          height: "600px",
+          margin: "0 auto",
+          backgroundColor: "#742a2a",
+          border: "4px solid #9b2c2c",
+          overflow: "hidden"
+        }}>
+          <div style={{ position: "absolute", top: 15, left: 20, color: "white", fontSize: 18, fontWeight: "bold" }}>
+            ALDEIA DOS GOBLINS
+          </div>
+
+          <Zona id="voltar" x={80} y={80} label="← Voltar" cor="#4a5568" />
+          <Zona id="entrada" x={200} y={320} label="Entrada" cor="#c53030" />
+          <Zona id="acampamento" x={400} y={320} label="Acampamento" cor="#9b2c2c" />
+          <Zona id="templo" x={600} y={320} label="Templo do Xamã" cor="#742a2a" />
+
+          <JogadorMovel />
+
+          <div style={{
+            position: "absolute", bottom: 12, left: 20, color: "rgba(255,255,255,0.7)", fontSize: 13
+          }}>
+            WASD / Setas • E para interagir
+          </div>
+        </div>
+      )}
+
+      {/* ==================== CASA ==================== */}
+      {statusJogo === "casa" && (
+        <div className="tela_exploravel" style={{
+          position: "relative",
+          width: "800px",
+          height: "600px",
+          margin: "0 auto",
+          backgroundColor: "#744210",
+          border: "4px solid #975a16",
+          overflow: "hidden"
+        }}>
+          <div style={{ position: "absolute", top: 15, left: 20, color: "white" }}>
+            <div style={{ fontSize: 18, fontWeight: "bold" }}>Casa</div>
+            <div>Dia: {dia} | Vida: {vidaJogador}/{vidaMaximaJogador}</div>
+          </div>
+
+          <Zona id="voltar" x={80} y={80} label="← Voltar" cor="#4a5568" />
+          <Zona id="descansar" x={280} y={280} label="🛏️ Descansar" cor="#975a16" />
+          <Zona id="inventario" x={520} y={280} label="🎒 Inventário" cor="#2b6cb0" />
+
+          {grimorio && (
+            <div style={{
+              position: "absolute",
+              right: 20,
+              top: 80,
+              background: "rgba(0,0,0,0.6)",
+              padding: 12,
+              borderRadius: 8,
+              color: "white",
+              maxWidth: 220
+            }}>
+              <strong>Grimório</strong>
+              <ul style={{ margin: "8px 0 0 0", paddingLeft: 18, fontSize: 13 }}>
+                {Object.values(feiticos).filter(f => f.aprendido).length === 0 ? (
+                  <li>Nenhum feitiço</li>
+                ) : (
+                  Object.values(feiticos)
+                    .filter(f => f.aprendido)
+                    .map(f => <li key={f.nome}>{f.nome}</li>)
+                )}
+              </ul>
+            </div>
+          )}
+
+          <JogadorMovel />
+
+          <div style={{
+            position: "absolute", bottom: 12, left: 20, color: "rgba(255,255,255,0.7)", fontSize: 13
+          }}>
+            WASD / Setas • E para interagir
+          </div>
+        </div>
+      )}
+
+      {/* INVENTÁRIO */}
+      {statusJogo === "casa-inventario" && (
+        <div className="tela_inventario">
+          <button className="inventario-voltar" onClick={() => setStatusJogo("casa")}>
+            Voltar
+          </button>
+
+          <div className="inventario-corpo">
+            <div className="inventario-jogador">
+              {imagemJogador ? (
+                <img src={imagemJogador} alt={nomeJogador} />
+              ) : (
+                <span className="inventario-jogador-placeholder">jogador<br />de frente</span>
+              )}
+            </div>
+
+            <div className="inventario-direita">
+              <div className="inventario-lista-armas">
+                {armas.adagaPrimitiva.possui && (
+                  <div className="inventario-item-linha">
+                    <div className="inventario-item-img">
+                      <img src={imagemAdagaPrimitiva} alt={armas.adagaPrimitiva.nome} />
+                    </div>
+                    <div className="inventario-item-info">
+                      <div className="inventario-item-nome">{armas.adagaPrimitiva.nome}</div>
+                      <div className="inventario-item-dano">
+                        {armas.adagaPrimitiva.dano[0]} - {armas.adagaPrimitiva.dano[1]}
+                      </div>
+                      <div className="inventario-item-tipo">
+                        Tipo: {armas.adagaPrimitiva.tipoHit}
+                      </div>
+                    </div>
+                    <button
+                      className="inventario-btn-equipar"
+                      onClick={() => setArmaEquipada("adaga primitiva")}
+                      disabled={armaEquipada === "adaga primitiva"}
+                    >
+                      {armaEquipada === "adaga primitiva" ? "✓ Equipada" : "Equipar"}
+                    </button>
+                  </div>
+                )}
+
+                {armas.adagaVelha.possui && (
+                  <div className="inventario-item-linha">
+                    <div className="inventario-item-img">
+                      <img src={imagemAdagaVelha} alt={armas.adagaVelha.nome} />
+                    </div>
+                    <div className="inventario-item-info">
+                      <div className="inventario-item-nome">{armas.adagaVelha.nome}</div>
+                      <div className="inventario-item-dano">
+                        {armas.adagaVelha.dano[0]} - {armas.adagaVelha.dano[1]}
+                      </div>
+                      <div className="inventario-item-tipo">
+                        Tipo: {armas.adagaVelha.tipoHit}
+                      </div>
+                    </div>
+                    <button
+                      className="inventario-btn-equipar"
+                      onClick={() => setArmaEquipada("adaga velha")}
+                      disabled={armaEquipada === "adaga velha"}
+                    >
+                      {armaEquipada === "adaga velha" ? "✓ Equipada" : "Equipar"}
+                    </button>
+                  </div>
+                )}
+
+                {!armas.adagaPrimitiva.possui && !armas.adagaVelha.possui && (
+                  <p className="inventario-vazio">Nenhuma arma no inventário</p>
+                )}
+              </div>
+
+              <div
+                className={`inventario-cristais ${cristais > 0 ? "inventario-cristais-clicavel" : ""}`}
+                onClick={usarCristalInventario}
+                title={cristais > 0 ? "Clique para curar" : "Sem cristais"}
+              >
+                <div className="inventario-cristal-img">
+                  <img src={imagemCristal} alt="Cristal de Cura" />
+                </div>
+                <div className="inventario-cristal-qtd">
+                  <span className="inventario-cristal-label">quantidade</span>
+                  <span className="inventario-cristal-valor">{cristais} cristais</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== LOJA ==================== */}
+      {statusJogo === "loja" && (
+        <div className="tela_loja">
+          <button className="loja-voltar" onClick={() => setStatusJogo("lobby")}>
+            voltar
+          </button>
+
+          <div className="loja-header">
+            <h1>Loja</h1>
+            <p className="loja-moedas">Moedas: <strong>{moedas}</strong></p>
+          </div>
+
+          <div className="loja-conteudo">
+            <div className="loja-vendedor">
+              <div className="loja-vendedor-img">
+                <div className="vendedor-placeholder">imagem<br />vendedor</div>
+              </div>
+              <div className="loja-vendedor-nome">Vendedor da Vila</div>
+            </div>
+
+            <div className="loja-itens-scroll">
+              {/* Cristal */}
+              <div className="loja-item">
+                <div className="loja-item-img">
+                  <img src={imagemCristal} alt="Cristal de Cura" />
+                </div>
+                <div className="loja-item-info">
+                  <div className="loja-item-nome">Cristal de Cura</div>
+                  <div className="loja-item-desc">Recupera entre 10 e 20 de vida</div>
+                </div>
+                <button
+                  className="loja-item-btn"
+                  onClick={() => comprarItemAcumulavel(setCristais, 5, 1)}
+                >
+                  5 moedas / Comprar
+                </button>
+              </div>
+
+              {/* Vara de Pesca */}
+              {!varaPesca && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <div className="item-placeholder">🎣</div>
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Vara de Pesca</div>
+                    <div className="loja-item-desc">Permite pescar no lago da vila</div>
+                  </div>
+                  <button
+                    className="loja-item-btn"
+                    onClick={() => desbloquearItem(setVaraPesca, 20)}
+                  >
+                    20 moedas / Comprar
+                  </button>
+                </div>
+              )}
+
+              {/* Camas */}
+              {camaLevel === 0 && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <div className="item-placeholder">🛏️</div>
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Cama de Palha</div>
+                    <div className="loja-item-desc">Recupera 35% da vida ao descansar</div>
+                  </div>
+                  <button className="loja-item-btn" onClick={() => upgradeCama(5)}>
+                    5 moedas / Comprar
+                  </button>
+                </div>
+              )}
+
+              {camaLevel === 1 && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <div className="item-placeholder">🛏️</div>
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Cama de Fibras</div>
+                    <div className="loja-item-desc">Recupera 45% da vida ao descansar</div>
+                  </div>
+                  <button className="loja-item-btn" onClick={() => upgradeCama(15)}>
+                    15 moedas / Comprar
+                  </button>
+                </div>
+              )}
+
+              {camaLevel === 2 && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <div className="item-placeholder">🛏️</div>
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Cama de Pano</div>
+                    <div className="loja-item-desc">Recupera 60% da vida ao descansar</div>
+                  </div>
+                  <button className="loja-item-btn" onClick={() => upgradeCama(20)}>
+                    20 moedas / Comprar
+                  </button>
+                </div>
+              )}
+
+              {camaLevel === 3 && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <div className="item-placeholder">🛏️</div>
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Cama de Lã</div>
+                    <div className="loja-item-desc">Melhor cama disponível</div>
+                  </div>
+                  <button className="loja-item-btn" disabled>
+                    Máximo atingido
+                  </button>
+                </div>
+              )}
+
+              {/* Adaga Velha */}
+              {!armas.adagaVelha.possui && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <img src={imagemAdagaVelha} alt="Adaga Velha" />
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Adaga Velha</div>
+                    <div className="loja-item-desc">Dano 7-11 • Tipo: corte</div>
+                  </div>
+                  <button
+                    className="loja-item-btn"
+                    onClick={() => comprarArma("adagaVelha", 10)}
+                  >
+                    10 moedas / Comprar
+                  </button>
+                </div>
+              )}
+
+              {/* Mapa */}
+              {!mapaAldeiaGoblin && levelJogador >= 3 && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <div className="item-placeholder">🗺️</div>
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Mapa da Aldeia dos Goblins</div>
+                    <div className="loja-item-desc">Desbloqueia uma nova área</div>
+                  </div>
+                  <button
+                    className="loja-item-btn"
+                    onClick={() => desbloquearItem(setMapaAldeiaGoblin, 25)}
+                  >
+                    25 moedas / Comprar
+                  </button>
+                </div>
+              )}
+
+              {/* Grimório */}
+              {!grimorio && dia >= 3 && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <div className="item-placeholder">📖</div>
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Grimório</div>
+                    <div className="loja-item-desc">Necessário para aprender feitiços</div>
+                  </div>
+                  <button
+                    className="loja-item-btn"
+                    onClick={() => desbloquearItem(setGrimorio, 25)}
+                  >
+                    25 moedas / Comprar
+                  </button>
+                </div>
+              )}
+
+              {/* Pergaminho de Slimes */}
+              {grimorio && !feiticos.slimeSquad.aprendido && (
+                <div className="loja-item">
+                  <div className="loja-item-img">
+                    <div className="item-placeholder">📜</div>
+                  </div>
+                  <div className="loja-item-info">
+                    <div className="loja-item-nome">Pergaminho de Slimes</div>
+                    <div className="loja-item-desc">Aprende o feitiço Slime Squad</div>
+                  </div>
+                  <button
+                    className="loja-item-btn"
+                    onClick={() => comprarSpell("slimeSquad", 30)}
+                  >
+                    30 moedas / Comprar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
